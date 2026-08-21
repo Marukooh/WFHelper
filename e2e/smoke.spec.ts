@@ -12,6 +12,7 @@ import {
 } from "@playwright/test";
 
 import { mainWindow } from "./mainWindow";
+import { evaluateInMain } from "./electronTestHarness";
 
 test.describe("Electron Smoke", () => {
   let app: ElectronApplication;
@@ -70,7 +71,7 @@ test.describe("Electron Smoke", () => {
   });
 
   test("uses grayscale text with software rendering", async () => {
-    const rendering = await app.evaluate(({ app: electronApp }) => ({
+    const rendering = await evaluateInMain(app, ({ app: electronApp }) => ({
       hardwareAcceleration: electronApp.isHardwareAccelerationEnabled(),
       lcdTextDisabled: electronApp.commandLine.hasSwitch("disable-lcd-text"),
     }));
@@ -79,7 +80,7 @@ test.describe("Electron Smoke", () => {
   });
 
   test("keeps one process and restores its window", async () => {
-    await app.evaluate(({ BrowserWindow }) => {
+    await evaluateInMain(app, ({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()
         .find((window) => window.webContents.getURL().includes("renderer/dist/index.html"))
         ?.minimize();
@@ -99,7 +100,7 @@ test.describe("Electron Smoke", () => {
     await expect(waitForExit(second, 15_000)).resolves.toBe(0);
     await expect
       .poll(() =>
-        app.evaluate(({ BrowserWindow }) => {
+        evaluateInMain(app, ({ BrowserWindow }) => {
           const window = BrowserWindow.getAllWindows().find((candidate) =>
             candidate.webContents.getURL().includes("renderer/dist/index.html"),
           );

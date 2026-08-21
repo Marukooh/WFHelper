@@ -106,6 +106,28 @@ export async function overlayWindow(
   throw new Error(`overlay window ${match} never appeared`);
 }
 
+/**
+ * Playwright loses the main-process context while Electron is still opening
+ * windows, surfacing as "Execution context was destroyed". Retry only that.
+ */
+export async function evaluateInMain<R, A>(
+  app: ElectronApplication,
+  fn: (electron: typeof import("electron"), arg: A) => R | Promise<R>,
+  arg?: A,
+): Promise<R> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      return (await app.evaluate(fn as never, arg as never)) as R;
+    } catch (err) {
+      if (!/Execution context was destroyed/i.test(String(err))) throw err;
+      lastError = err;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+  throw lastError;
+}
+
 export function writeHarnessInventory(harness: ElectronTestHarness, inventory: unknown): void {
   fs.writeFileSync(path.join(harness.helperDir, "inventory.json"), JSON.stringify(inventory));
 }

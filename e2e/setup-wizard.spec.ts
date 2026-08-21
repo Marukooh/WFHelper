@@ -11,6 +11,7 @@ import {
 } from "@playwright/test";
 
 import { mainWindow } from "./mainWindow";
+import { evaluateInMain } from "./electronTestHarness";
 
 // The shared harness seeds setup-completed-v2, so no other spec ever sees the
 // wizard. It is three components now, which is exactly why it needs covering.
@@ -44,7 +45,8 @@ async function launchWizard(inventory: unknown | null): Promise<Wizard> {
   await expect(page.locator("#content.setup-active")).toBeVisible({ timeout: 90_000 });
   if (inventory) {
     // The manual source is the only import path that needs no pinned binary.
-    await app.evaluate(
+    await evaluateInMain(
+      app,
       ({ dialog }, filePaths) => {
         dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths });
       },

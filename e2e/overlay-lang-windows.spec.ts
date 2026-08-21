@@ -4,6 +4,7 @@ import type { ArbiRunRecord } from "../config/shared/arbiTypes";
 
 import {
   closeElectronTestHarness,
+  evaluateInMain,
   launchElectronTestHarness,
   overlayWindow,
   setDisplayLanguage,
@@ -28,7 +29,8 @@ test.describe("Riven, arbitration and trade windows follow the language", () => 
   });
 
   async function callMain(moduleName: string, fn: string, ...args: unknown[]): Promise<void> {
-    await harness.app.evaluate(
+    await evaluateInMain(
+      harness.app,
       async ({ app }, { moduleName: name, fn: method, args: payload }) => {
         const moduleApi = process.getBuiltinModule("module") as {
           createRequire: (filename: string) => (id: string) => Record<string, unknown>;
