@@ -13,6 +13,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   release-windows:
+    needs: ci
     runs-on: windows-latest
     # Normally ~3 min; a stalled runner should go red, not sit for 6 hours.
     timeout-minutes: 20
@@ -152,7 +153,7 @@ jobs:
   # electron-updater on linux). Runs after release-windows so the draft
   # already exists - no create race.
   release-linux:
-    needs: release-windows
+    needs: [ci, release-windows]
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

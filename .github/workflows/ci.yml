@@ -127,8 +127,9 @@ jobs:
       - name: DBWIN worker regression (Electron host)
         run: pnpm run test:dbwin
 
+      # A retry that goes green still hides a broken test. Flaky fails the job.
       - name: E2E smoke tests (Windows)
-        run: pnpm exec playwright test --config playwright.config.ts
+        run: pnpm exec playwright test --config playwright.config.ts --fail-on-flaky-tests
 
       # Failure snapshots (error-context.md, traces) for post-mortems.
       - name: Upload Playwright results
