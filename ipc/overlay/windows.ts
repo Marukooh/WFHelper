@@ -168,6 +168,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   let lastOverlayAnchorMeta: OverlayAnchorMeta | null = null;
   let overlayAutoHideTimer: ReturnType<typeof setTimeout> | null = null;
   let suppressMoveSave = false;
+  // Windows delivers resize events after setBounds returns, so a timer-based
+  // suppression races them. Remember the size we asked for instead.
+  let selfRequestedSize: { width: number; height: number } | null = null;
   let moveSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let resizeSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let rendererReady = false;
@@ -366,6 +369,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
     const { zoomFactor, ...rect } = getOverlayBoundsForActiveDisplay(anchorMeta);
     suppressMoveSave = true;
+    selfRequestedSize = { width: rect.width, height: rect.height };
     overlayWindow.setBounds(rect, false);
     overlayWindow.webContents.setZoomFactor(zoomFactor);
     setTimeout(() => {
@@ -408,6 +412,15 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     );
   }
 
+  /** Windows trims a pixel or two off a frame it grants, so never compare exactly. */
+  function sizeMatches(
+    a: { width: number; height: number },
+    b: { width: number; height: number } | null,
+  ): boolean {
+    if (!b) return false;
+    return Math.abs(a.width - b.width) <= 2 && Math.abs(a.height - b.height) <= 2;
+  }
+
   // Zoom follows the frame while the drag is live, so the content the user is
   // sizing is the content they end up with.
   function applyZoomForCurrentSize(overlayWindow: import("electron").BrowserWindow): void {
@@ -422,8 +435,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     const bounds = overlayWindow.getBounds();
     // Our own sizing lands here too. Only a size we never asked for came from the
     // user, and a size clamped to the work area must not rewrite their scale.
-    const asked = getOverlayBoundsForActiveDisplay();
-    if (bounds.width === asked.width && bounds.height === asked.height) return;
+    if (sizeMatches(bounds, selfRequestedSize)) return;
+    if (sizeMatches(bounds, getOverlayBoundsForActiveDisplay())) return;
     const display = displayMatchingBounds(bounds) || getDisplayForOverlay(lastOverlayAnchorMeta);
     saveCurrentWindowBounds(overlayWindow, scaleFromWindowSize(bounds, display));
     // Settle on the size the saved scale spells out, so a drag past either end
@@ -443,6 +456,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     overlayWindow.on("resize", () => {
       if (suppressMoveSave || overlayWindow.isDestroyed()) return;
       if (!readInteractiveMode() && !persistBoundsWhenPassive) return;
+      // The frame we just asked for is not a drag, whenever the event lands.
+      if (sizeMatches(overlayWindow.getBounds(), selfRequestedSize)) return;
+      selfRequestedSize = null;
       applyZoomForCurrentSize(overlayWindow);
       if (resizeSaveTimer) clearTimeout(resizeSaveTimer);
       resizeSaveTimer = setTimeout(() => {
