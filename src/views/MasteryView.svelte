@@ -615,6 +615,7 @@
       <MasteryRoadmap
         roadmap={masteryRoadmap}
         totalXp={stats.profileMastery?.totalXp ?? null}
+        currentRank={stats.profileMastery?.rank ?? null}
         onOpen={(item) => activeItem.set(item)}
       />
     {:else}

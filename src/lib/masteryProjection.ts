@@ -1,6 +1,29 @@
 import { masteryXpToRank } from "../../config/shared/masteryXp.js";
 import type { Translator } from "./i18n.js";
 
+/**
+ * Rank the account already holds: the profile rank, or the rank its XP total
+ * covers when a mastery test is still pending.
+ */
+function bankedMasteryRank(currentRank: number, totalXp: number): number {
+  return Math.max(currentRank, masteryXpToRank(totalXp));
+}
+
+/**
+ * Rank the Easy Mastery items would reach, or null when they stay inside a rank
+ * the account already holds. Naming the current MR as a "potential" is noise.
+ */
+export function easyMasteryPotentialRank(
+  currentRank: number | null,
+  totalXp: number | null,
+  easyXp: number,
+): number | null {
+  if (currentRank == null || totalXp == null) return null;
+  if (!Number.isFinite(totalXp) || !Number.isFinite(easyXp)) return null;
+  const projected = masteryXpToRank(totalXp + Math.max(0, easyXp));
+  return projected > bankedMasteryRank(currentRank, totalXp) ? projected : null;
+}
+
 export function masteryProjectionSubtext(
   t: Translator,
   currentRank: number,
@@ -10,7 +33,7 @@ export function masteryProjectionSubtext(
 ): string | null {
   if (!Number.isFinite(totalXp) || !Number.isFinite(readyXp) || readyXp <= 0) return null;
 
-  const bankedRank = Math.max(currentRank, masteryXpToRank(totalXp));
+  const bankedRank = bankedMasteryRank(currentRank, totalXp);
   const projectedRank = Math.max(bankedRank, masteryXpToRank(totalXp + readyXp));
   const formattedReadyXp = readyXp.toLocaleString(locale);
   const banked =

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { en } from "../../../src/i18n/en.js";
-import { masteryProjectionSubtext } from "../../../src/lib/masteryProjection.js";
+import {
+  easyMasteryPotentialRank,
+  masteryProjectionSubtext,
+} from "../../../src/lib/masteryProjection.js";
 import type { Translator } from "../../../src/lib/i18n.js";
 
 // Mirrors the app translator so the assertions stay against real English copy.
@@ -47,5 +50,27 @@ describe("masteryProjectionSubtext", () => {
 
   it("returns no projection without positive ready XP", () => {
     expect(masteryProjectionSubtext(t, 25, 1_600_000, 0, "en")).toBeNull();
+  });
+});
+
+describe("easyMasteryPotentialRank", () => {
+  // Issue 23: an MR 28 account with 40,600 easy XP was told it could reach MR 28.
+  it("stays silent when the easy items do not cross a rank", () => {
+    expect(easyMasteryPotentialRank(28, 2_000_000, 40_600)).toBeNull();
+  });
+
+  it("names the rank the easy items actually unlock", () => {
+    expect(easyMasteryPotentialRank(25, 1_600_000, 200_000)).toBe(26);
+  });
+
+  it("measures against banked XP, not the untested profile rank", () => {
+    // Tests pending: the XP already covers a higher rank, so a small top-up
+    // that lands inside it is not news.
+    expect(easyMasteryPotentialRank(22, 1_759_845, 1_000)).toBeNull();
+  });
+
+  it("returns null without a profile rank or XP total", () => {
+    expect(easyMasteryPotentialRank(null, 1_600_000, 50_000)).toBeNull();
+    expect(easyMasteryPotentialRank(25, null, 50_000)).toBeNull();
   });
 });

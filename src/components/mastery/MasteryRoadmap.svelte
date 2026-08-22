@@ -4,7 +4,7 @@
   import ItemImage from "../ItemImage.svelte";
   import SearchBox from "../SearchBox.svelte";
   import ThemedPanel from "../ThemedPanel.svelte";
-  import { masteryXpToRank } from "../../../config/shared/masteryXp.js";
+  import { easyMasteryPotentialRank } from "../../lib/masteryProjection.js";
   import { readStorage, writeStorage } from "../../lib/persistence.js";
   import { locale, tr } from "../../lib/i18n.js";
   import type { MasteryRoadmap, MasteryRoadmapRecommendation } from "../../lib/masteryRoadmap.js";
@@ -16,6 +16,7 @@
 
   export let roadmap: MasteryRoadmap;
   export let totalXp: number | null = null;
+  export let currentRank: number | null = null;
   export let onOpen: (item: MasteryRoadmapRecommendation) => void;
 
   $: MODE_TABS = [
@@ -74,7 +75,7 @@
   $: easyXp = roadmap.easy.reduce((sum, item) => sum + item.masteryXpRemaining, 0);
   $: relicXp = roadmap.relics.reduce((sum, item) => sum + item.masteryXpRemaining, 0);
   $: buyableXp = roadmap.platinum.reduce((sum, item) => sum + item.masteryXpRemaining, 0);
-  $: easyPotentialRank = totalXp == null ? null : masteryXpToRank(totalXp + easyXp);
+  $: easyPotentialRank = easyMasteryPotentialRank(currentRank, totalXp, easyXp);
   $: bestValue = roadmap.platinum[0] ?? null;
 
   function selectMode(value: string): void {
