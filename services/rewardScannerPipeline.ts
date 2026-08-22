@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { NativeImage } from "electron";
 
 import { REWARD_FRAME_DEDUP_TTL_MS } from "../config/runtime/cacheConfig";
+import { REFERENCE_WARFRAME_UI_SCALE } from "../config/runtime/overlaySettings";
 import { normalizeErrorMessage } from "../config/shared/errors";
 import { withScope } from "./logger";
 import { captureScreenFast, type CaptureResult } from "./screenCapture";
@@ -43,6 +44,7 @@ export interface RewardScanSettings {
   ocrPasses: number;
   matchThreshold: number;
   ocrTimeoutMs: number;
+  warframeUiScale?: number;
 }
 
 interface RewardScanPipelineOptions {
@@ -276,9 +278,12 @@ export async function runRewardScanPipeline({
   if (consoleOpen) log.info("[RewardScanner] Chat console detected - scanning anyway");
 
   const frameHash = computeFrameHash(screenshot.image);
+  const cacheKey = frameHash
+    ? `${frameHash}:${settings.warframeUiScale ?? REFERENCE_WARFRAME_UI_SCALE}`
+    : null;
   if (
-    frameHash &&
-    frameHash === _lastFrameHash &&
+    cacheKey &&
+    cacheKey === _lastFrameHash &&
     _lastFrameResult &&
     Date.now() - _lastFrameHashTs < REWARD_FRAME_DEDUP_TTL_MS
   ) {
@@ -298,6 +303,7 @@ export async function runRewardScanPipeline({
       ocrTimeoutMs: settings.ocrTimeoutMs,
       runOCRStructuredBuffer,
       reader,
+      warframeUiScale: settings.warframeUiScale,
       stats: slotStats,
     },
   );
@@ -370,6 +376,6 @@ export async function runRewardScanPipeline({
     }),
   };
 
-  cacheFrameResult(frameHash, result);
+  cacheFrameResult(cacheKey, result);
   return result;
 }

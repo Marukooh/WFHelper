@@ -57,6 +57,8 @@ export interface OverlaySettings {
   /** Refuse the legacy Windows injection vectors audio and overlay suites use.
    *  Takes effect on the next start; also blocks legacy IMEs. */
   blockThirdPartyInjection: boolean;
+  /** Warframe's in-game interface scale, used to align reward OCR crops. */
+  warframeUiScale: number;
   /** Main-window zoom multiplier applied on top of the display-derived base. */
   uiScale: number;
   overlayScale: number;
@@ -70,6 +72,10 @@ export interface OverlaySettings {
 // The injection guard reads this file straight off disk before the settings
 // controller exists, so the name has two readers and must only be typed once.
 export const OVERLAY_SETTINGS_FILE_NAME = "overlay-settings.json";
+
+// The reward crop ratios were measured at 99% in-game interface scale, so this
+// default keeps the scale correction an exact no-op for untouched settings.
+export const REFERENCE_WARFRAME_UI_SCALE = 0.99;
 
 export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   autoTriggerEnabled: true,
@@ -107,6 +113,7 @@ export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   autoInventorySyncEnabled: true,
   ocrDebugImagesEnabled: true,
   blockThirdPartyInjection: true,
+  warframeUiScale: REFERENCE_WARFRAME_UI_SCALE,
   uiScale: 1,
   overlayScale: 1,
   overlayWindowScales: Object.freeze({}),

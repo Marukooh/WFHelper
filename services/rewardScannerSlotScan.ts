@@ -277,11 +277,12 @@ export async function scanRewardSlotsFallback(
     ocrTimeoutMs: number;
     runOCRStructuredBuffer: StructuredOcrBufferRunner;
     reader?: RewardReader;
+    warframeUiScale?: number;
     stats?: SlotScanStats;
   },
 ): Promise<SlotScanResult | null> {
   await yieldToEventLoop();
-  const layouts = detectRewardSlotLayoutCandidates(screenshot?.image)
+  const layouts = detectRewardSlotLayoutCandidates(screenshot?.image, options.warframeUiScale)
     .filter((layout) => hasConfidentSlotLayout(layout))
     .slice(0, 6);
   if (options.stats) options.stats.layoutCount = layouts.length;

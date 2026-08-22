@@ -151,6 +151,16 @@ describe("overlay settings controller", () => {
     });
   });
 
+  it("bounds the configured Warframe interface scale", () => {
+    const { controller } = buildController();
+
+    expect(controller.normalizeOverlaySettings({ warframeUiScale: 0.75 }).warframeUiScale).toBe(
+      0.75,
+    );
+    expect(controller.normalizeOverlaySettings({ warframeUiScale: 0.1 }).warframeUiScale).toBe(0.5);
+    expect(controller.normalizeOverlaySettings({ warframeUiScale: 2 }).warframeUiScale).toBe(1);
+  });
+
   it("defaults the drag hint to visible and round-trips a dismissal", () => {
     const { controller } = buildController();
 

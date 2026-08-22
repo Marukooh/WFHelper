@@ -12,6 +12,7 @@ import {
 } from "./rewardScannerPipeline";
 import type { SortedItem } from "./rewardScannerMatch";
 import type { RewardReader } from "./rewardScannerSlotScan";
+import { REFERENCE_WARFRAME_UI_SCALE } from "../config/runtime/overlaySettings";
 
 export { captureSourceMeta } from "./screenCapture";
 export { resetFrameDedup };
@@ -57,7 +58,7 @@ export function detectRelicSelectionEra(
 
 export async function scanRewardsDetailed(
   preCapture?: PreCaptureResult | null,
-  scanOptions?: { reader?: RewardReader },
+  scanOptions?: { reader?: RewardReader; warframeUiScale?: number },
 ): Promise<{
   items: SortedItem[];
   meta: Record<string, unknown>;
@@ -70,7 +71,10 @@ export async function scanRewardsDetailed(
   return runRewardScanPipeline({
     preCapture,
     sortedItems,
-    settings: REWARD_SCAN_SETTINGS,
+    settings: {
+      ...REWARD_SCAN_SETTINGS,
+      warframeUiScale: scanOptions?.warframeUiScale ?? REFERENCE_WARFRAME_UI_SCALE,
+    },
     runOCRStructuredBuffer,
     // Windows OCR does not exist off-Windows; pin the cross-platform onnx reader.
     reader: process.platform === "win32" ? scanOptions?.reader : "onnx",

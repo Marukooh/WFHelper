@@ -8,6 +8,7 @@ import { normalizeErrorMessage } from "../../config/shared/errors";
 import { pendingRecipeCounts, withoutFoundryPending } from "../../config/shared/foundryPending";
 import { RELIC_REWARD_ITEMS, RELIC_REWARD_TRIGGER } from "../../config/shared/ipcChannels";
 import { normalizeWfmSlug } from "../../config/shared/wfm";
+import { REFERENCE_WARFRAME_UI_SCALE } from "../../config/runtime/overlaySettings";
 import * as itemDatabase from "../../services/itemDatabase";
 import { computeMasteryProgress } from "../../services/masteryHelper";
 import { getWindowsOcrHealth } from "../../services/ocrServer";
@@ -99,6 +100,7 @@ type OverlayScanControllerOptions = {
         sourceId: string | null;
         sourceDisplayId: string | null;
       } | null,
+      scanOptions?: { warframeUiScale?: number },
     ) => Promise<RewardScanResult | null>;
   };
   ctx: {
@@ -409,7 +411,10 @@ export function createOverlayScanController(options: OverlayScanControllerOption
 
       let result: RewardScanResult | null | undefined;
       try {
-        result = await rewardScanner.scanRewardsDetailed();
+        result = await rewardScanner.scanRewardsDetailed(null, {
+          warframeUiScale:
+            Number(ctx.overlaySettings.warframeUiScale) || REFERENCE_WARFRAME_UI_SCALE,
+        });
       } catch (err) {
         log.error(`[Trigger] scan attempt ${attempts} failed:`, normalizeErrorMessage(err));
       }

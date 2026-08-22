@@ -2,7 +2,10 @@ import { normalizeErrorMessage } from "../../config/shared/errors";
 import { clampNumber } from "../../config/shared/numeric";
 import { normalizeWfmHoldMinutes } from "../../config/shared/wfm";
 import { asRecord } from "../ipcValidators";
-import { LEGACY_INTERACTION_HOTKEY } from "../../config/runtime/overlaySettings";
+import {
+  LEGACY_INTERACTION_HOTKEY,
+  REFERENCE_WARFRAME_UI_SCALE,
+} from "../../config/runtime/overlaySettings";
 import type {
   OverlaySavedWindowBounds,
   OverlaySettings,
@@ -135,6 +138,12 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
     return Number(clampNumber(value, 0.75, 1.5, Number(fallback ?? 1)).toFixed(2));
   }
 
+  function normalizeWarframeUiScale(value: unknown, fallback: unknown): number {
+    return Number(
+      clampNumber(value, 0.5, 1, Number(fallback ?? REFERENCE_WARFRAME_UI_SCALE)).toFixed(2),
+    );
+  }
+
   function normalizeWindowScales(value: unknown): Partial<Record<OverlayWindowKey, number>> {
     const input = asRecord(value);
     if (!input) return {};
@@ -240,6 +249,10 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
       autoInventorySyncEnabled: booleanSetting("autoInventorySyncEnabled"),
       ocrDebugImagesEnabled: booleanSetting("ocrDebugImagesEnabled"),
       blockThirdPartyInjection: booleanSetting("blockThirdPartyInjection"),
+      warframeUiScale: normalizeWarframeUiScale(
+        candidate.warframeUiScale,
+        defaults.warframeUiScale,
+      ),
       uiScale: normalizeOverlayScale(candidate.uiScale, defaults.uiScale),
       overlayScale: normalizeOverlayScale(candidate.overlayScale, defaults.overlayScale),
       overlayWindowScales: normalizeWindowScales(candidate.overlayWindowScales),
