@@ -810,6 +810,7 @@ export function buildDatabase(): void {
 
   // Reset so a rebuild (e.g. after the DE export refresh) starts clean.
   itemsByUniqueName = {};
+  nameSlugIndex = null;
   wfcdItemsByUniqueName = {};
   recipesByResultType = {};
   resultTypeByBlueprint = {};
@@ -835,6 +836,70 @@ export function lookupItem(uniqueName: string): ItemEntry | null {
   return itemsByUniqueName[uniqueName] || null;
 }
 
+interface NameIndexEntry {
+  order: number;
+  uniqueName: string;
+  item: ItemEntry;
+}
+
+/** First match in build order, and the first that also carries part metadata. */
+interface NameIndexBucket {
+  strong: NameIndexEntry | null;
+  first: NameIndexEntry;
+}
+
+interface NameSlugIndex {
+  byName: Map<string, NameIndexBucket>;
+  bySlug: Map<string, NameIndexBucket>;
+}
+
+// Rebuilt lazily because buildDatabase() drops it. The scan this replaces
+// slugified all 20k names per call, and the relic reward list makes ~600 calls.
+let nameSlugIndex: NameSlugIndex | null = null;
+
+function hasPartMetadata(item: ItemEntry): boolean {
+  return Boolean(item.componentOf || item.ducats != null || item.isBuildComponent);
+}
+
+function indexUnderKey(
+  map: Map<string, NameIndexBucket>,
+  key: string,
+  entry: NameIndexEntry,
+): void {
+  const bucket = map.get(key);
+  if (!bucket) {
+    map.set(key, { strong: hasPartMetadata(entry.item) ? entry : null, first: entry });
+    return;
+  }
+  if (!bucket.strong && hasPartMetadata(entry.item)) bucket.strong = entry;
+}
+
+function getNameSlugIndex(): NameSlugIndex {
+  if (nameSlugIndex) return nameSlugIndex;
+
+  const byName = new Map<string, NameIndexBucket>();
+  const bySlug = new Map<string, NameIndexBucket>();
+  let order = 0;
+  for (const [uniqueName, item] of Object.entries(itemsByUniqueName)) {
+    const entry: NameIndexEntry = { order: order++, uniqueName, item };
+    const itemName = typeof item.name === "string" ? item.name.trim().toLowerCase() : "";
+    if (itemName) indexUnderKey(byName, itemName, entry);
+    const itemSlug = normalizeWfmSlug(item.name || "");
+    if (itemSlug) indexUnderKey(bySlug, itemSlug, entry);
+  }
+
+  nameSlugIndex = { byName, bySlug };
+  return nameSlugIndex;
+}
+
+function earliestEntry(entries: Array<NameIndexEntry | null>): NameIndexEntry | null {
+  let best: NameIndexEntry | null = null;
+  for (const entry of entries) {
+    if (entry && (!best || entry.order < best.order)) best = entry;
+  }
+  return best;
+}
+
 export function lookupItemByNameOrSlug(
   name: string | null | undefined,
   slug: string | null | undefined,
@@ -843,20 +908,19 @@ export function lookupItemByNameOrSlug(
   const normalizedSlug = typeof slug === "string" ? normalizeWfmSlug(slug) : null;
   if (!normalizedName && !normalizedSlug) return null;
 
-  let fallback: { uniqueName: string; item: ItemEntry } | null = null;
-  for (const [uniqueName, item] of Object.entries(itemsByUniqueName)) {
-    const itemName = typeof item.name === "string" ? item.name.trim().toLowerCase() : "";
-    const itemSlug = normalizeWfmSlug(item.name || "");
-    const matchesName = normalizedName && itemName === normalizedName;
-    const matchesSlug = normalizedSlug && itemSlug === normalizedSlug;
-    if (!matchesName && !matchesSlug) continue;
+  const index = getNameSlugIndex();
+  const buckets = [
+    normalizedName ? index.byName.get(normalizedName) : undefined,
+    normalizedSlug ? index.bySlug.get(normalizedSlug) : undefined,
+  ].filter((bucket): bucket is NameIndexBucket => bucket != null);
+  if (buckets.length === 0) return null;
 
-    const resolved = { uniqueName, item };
-    if (item.componentOf || item.ducats != null || item.isBuildComponent) return resolved;
-    fallback = fallback || resolved;
-  }
-
-  return fallback;
+  // The scan returned the first part-metadata match it reached, else the first
+  // match of any kind, so both picks stay ordered by build position.
+  const best =
+    earliestEntry(buckets.map((bucket) => bucket.strong)) ??
+    earliestEntry(buckets.map((bucket) => bucket.first));
+  return best ? { uniqueName: best.uniqueName, item: best.item } : null;
 }
 
 /** True when building this blueprint does not consume the owned copy. */

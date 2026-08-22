@@ -221,3 +221,41 @@ describe("itemDatabase reusable blueprints", () => {
     expect(lookup[FORMA_BP]?.reusableBlueprint).toBeUndefined();
   });
 });
+
+describe("itemDatabase name and slug index", () => {
+  const AKARIUS_BP = "/Lotus/Types/Recipes/Weapons/AkariusPrimeBlueprint";
+
+  beforeAll(() => {
+    itemDb.buildDatabase();
+  });
+
+  it("resolves from either half on its own", () => {
+    expect(itemDb.lookupItemByNameOrSlug(null, "akarius_prime_blueprint")?.uniqueName).toBe(
+      AKARIUS_BP,
+    );
+    expect(itemDb.lookupItemByNameOrSlug("Akarius Prime Blueprint", null)?.uniqueName).toBe(
+      AKARIUS_BP,
+    );
+    expect(itemDb.lookupItemByNameOrSlug(null, null)).toBeNull();
+    expect(itemDb.lookupItemByNameOrSlug("No Such Item", "no_such_item")).toBeNull();
+  });
+
+  it("rebuilds its index after the database is rebuilt", () => {
+    itemDb.buildDatabase();
+
+    expect(
+      itemDb.lookupItemByNameOrSlug("Akarius Prime Blueprint", "akarius_prime_blueprint")
+        ?.uniqueName,
+    ).toBe(AKARIUS_BP);
+  });
+
+  // The fixture is deterministic, so a stale index still answers with the right
+  // uniqueName. Only object identity separates it from the rebuilt database.
+  it("hands back the rebuilt entry, not the one it indexed before", () => {
+    itemDb.lookupItemByNameOrSlug("Akarius Prime Blueprint", null);
+    itemDb.buildDatabase();
+
+    const indexed = itemDb.lookupItemByNameOrSlug("Akarius Prime Blueprint", null);
+    expect(indexed?.item).toBe(itemDb.lookupItem(AKARIUS_BP));
+  });
+});
