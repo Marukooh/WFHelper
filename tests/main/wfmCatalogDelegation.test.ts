@@ -47,6 +47,41 @@ describe("wfmCatalog item lookups", () => {
     });
   });
 
+  it("indexes a disambiguated listing under the bare game name", async () => {
+    const item = (id: string, slug: string, name: string) => ({
+      id,
+      slug,
+      name,
+      thumb: null,
+      icon: null,
+      maxRank: null,
+      gameRef: null,
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          updatedAt: 123,
+          items: [
+            item("a", "mutalist_alad_v_assassinate_key", "Mutalist Alad V Assassinate (Key)"),
+            item("b", "equilibrium_(steam_pinnacle_pack)", "Equilibrium (Steam Pinnacle Pack)"),
+            item("c", "equilibrium", "Equilibrium"),
+          ],
+        }),
+      }),
+    );
+    const wfmCatalog = await import("../../services/wfmCatalog");
+
+    await expect(wfmCatalog.ensureLoaded()).resolves.toBe(3);
+    expect(wfmCatalog.lookupByName("Mutalist Alad V Assassinate")).toMatchObject({
+      url_name: "mutalist_alad_v_assassinate_key",
+    });
+    // The pack reprint must not shadow the mod that owns the bare name.
+    expect(wfmCatalog.lookupByName("Equilibrium")).toMatchObject({ url_name: "equilibrium" });
+  });
+
   it("falls back to direct WFM when the backend catalog is empty", async () => {
     vi.stubGlobal(
       "fetch",

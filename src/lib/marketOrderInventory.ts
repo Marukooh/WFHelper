@@ -6,24 +6,53 @@ import type { WfmItemsLookup } from "../types/ipc.js";
 import type { WfmOrder } from "../types/market.js";
 
 type MarketOrderInventoryItem = InventoryBaseItem & { sourceOrderId: string };
+type WfmCatalogEntry = WfmItemsLookup[string];
 
-function parsedItemForOrder(order: WfmOrder, parsedItems: ParsedItem[]): ParsedItem | null {
+// The lookup carries an entry per name and per game reference, so scanning it
+// once per order is thousands of comparisons. It only changes on a reload.
+let indexedLookup: WfmItemsLookup | null = null;
+let indexBySlug = new Map<string, WfmCatalogEntry>();
+
+function catalogBySlug(wfmItems: WfmItemsLookup): Map<string, WfmCatalogEntry> {
+  if (indexedLookup === wfmItems) return indexBySlug;
+  const index = new Map<string, WfmCatalogEntry>();
+  for (const item of Object.values(wfmItems)) {
+    const slug = toMarketSlug(item.url_name);
+    if (slug && !index.has(slug)) index.set(slug, item);
+  }
+  indexedLookup = wfmItems;
+  indexBySlug = index;
+  return index;
+}
+
+function catalogEntryForOrder(order: WfmOrder, wfmItems: WfmItemsLookup): WfmCatalogEntry | null {
+  const slug = toMarketSlug(order.itemUrlName || order.itemName);
+  if (!slug) return null;
+  return catalogBySlug(wfmItems).get(slug) ?? null;
+}
+
+function parsedItemForOrder(
+  order: WfmOrder,
+  parsedItems: ParsedItem[],
+  wfmItems: WfmItemsLookup,
+): ParsedItem | null {
   const orderName = normalizeMarketName(order.itemName);
   const orderSlug = toMarketSlug(order.itemUrlName || order.itemName);
+  // warframe.market renames a handful of items to keep them apart, so the game
+  // reference is the only join that survives "Mutalist Alad V Assassinate (Key)".
+  const gameRef = normalizeMarketName(catalogEntryForOrder(order, wfmItems)?.gameRef || "");
   return (
     parsedItems.find((item) => normalizeMarketName(item.name) === orderName) ||
     parsedItems.find((item) => toMarketSlug(item.name) === orderSlug) ||
+    (gameRef
+      ? parsedItems.find((item) => normalizeMarketName(item.internalName) === gameRef)
+      : undefined) ||
     null
   );
 }
 
 function lookupMaxRank(order: WfmOrder, wfmItems: WfmItemsLookup): number | null {
-  const slug = toMarketSlug(order.itemUrlName || order.itemName);
-  for (const item of Object.values(wfmItems)) {
-    if (toMarketSlug(item.url_name) !== slug) continue;
-    return toFinitePositiveInt(item.maxRank);
-  }
-  return null;
+  return toFinitePositiveInt(catalogEntryForOrder(order, wfmItems)?.maxRank);
 }
 
 function inventoryGroupForOrder(order: WfmOrder, parsedItem: ParsedItem | null): InventoryGroup {
@@ -40,8 +69,12 @@ function ownedCountForOrder(parsedItem: ParsedItem | null): number {
   return parsedItem.currentlyOwned ? 1 : 0;
 }
 
-export function ownedCountForMarketOrder(order: WfmOrder, parsedItems: ParsedItem[]): number {
-  return ownedCountForOrder(parsedItemForOrder(order, parsedItems));
+export function ownedCountForMarketOrder(
+  order: WfmOrder,
+  parsedItems: ParsedItem[],
+  wfmItems: WfmItemsLookup = {},
+): number {
+  return ownedCountForOrder(parsedItemForOrder(order, parsedItems, wfmItems));
 }
 
 export function buildMarketOrderInventoryItem(
@@ -49,7 +82,7 @@ export function buildMarketOrderInventoryItem(
   parsedItems: ParsedItem[],
   wfmItems: WfmItemsLookup,
 ): MarketOrderInventoryItem {
-  const parsedItem = parsedItemForOrder(order, parsedItems);
+  const parsedItem = parsedItemForOrder(order, parsedItems, wfmItems);
   const inventoryGroup = inventoryGroupForOrder(order, parsedItem);
   const isRankedListing = isRankedGroup(inventoryGroup);
   const rank = isRankedListing ? Math.max(0, Math.floor(order.modRank ?? 0)) : 0;

@@ -50,7 +50,7 @@
     WfmOrder,
     WfmStatus,
   } from "../types/market.js";
-  import type { DecodedRiven } from "../types/ipc.js";
+  import type { DecodedRiven, WfmItemsLookup } from "../types/ipc.js";
   import type { SharedSortKey } from "../types/filters.js";
   import type { ParsedItem } from "../types/inventory.js";
 
@@ -102,6 +102,7 @@
   function normalizeOrderForFilter(
     order: WfmOrder,
     parsedItems: ParsedItem[],
+    wfmItems: WfmItemsLookup,
   ): WfmOrder & {
     name: string;
     amount: number;
@@ -113,7 +114,7 @@
       ...order,
       name: order.itemName,
       amount: order.quantity,
-      count: ownedCountForMarketOrder(order, parsedItems),
+      count: ownedCountForMarketOrder(order, parsedItems, wfmItems),
       internalName: order.itemUrlName || "",
       keywords: [order.orderType || "", order.visible ? "visible" : "hidden"],
     };
@@ -595,7 +596,7 @@
     ? $marketOrders[$marketViewState.typeTab] || []
     : [];
   $: filteredOrderRows = applySharedFiltersAndSort(
-    activeOrders.map((order) => normalizeOrderForFilter(order, $parsedItems)),
+    activeOrders.map((order) => normalizeOrderForFilter(order, $parsedItems, $wfmItems)),
     $marketFilters,
   );
   $: visibleOrderIds = new Set(filteredOrderRows.map((order) => order.id));

@@ -66,6 +66,25 @@ describe("ownedCountForMarketOrder", () => {
     ).toBe(3);
   });
 
+  it("joins a renamed listing to the inventory through its game reference", () => {
+    const gameRef = "/Lotus/Types/Keys/InfestedAladVQuest/AssassinateInfestedAladVKey";
+    const wfmItems = {
+      "mutalist alad v assassinate (key)": {
+        url_name: "mutalist_alad_v_assassinate_key",
+        gameRef,
+      },
+    };
+    const inventory = [
+      parsedItem({ name: "Mutalist Alad V Assassinate", internalName: gameRef, amount: 8 }),
+    ];
+    const listing = order({
+      itemName: "Mutalist Alad V Assassinate (Key)",
+      itemUrlName: "mutalist_alad_v_assassinate_key",
+    });
+    expect(ownedCountForMarketOrder(listing, inventory)).toBe(0);
+    expect(ownedCountForMarketOrder(listing, inventory, wfmItems)).toBe(8);
+  });
+
   it("returns 0 for items missing from the inventory", () => {
     expect(ownedCountForMarketOrder(order({ itemName: "Ash Prime Systems" }), [])).toBe(0);
   });

@@ -17,6 +17,7 @@ const LOAD_FAILURE_COOLDOWN_MS = 15_000;
 const BACKEND_CATALOG_TIMEOUT_MS = 10_000;
 const NAME_SET_SUFFIX = " set";
 const SLUG_SET_SUFFIX_RE = /_set$/;
+const NAME_PAREN_SUFFIX_RE = /^(.+?)\s*\([^()]*\)\s*$/;
 const SEARCH_MIN_QUERY_LENGTH = 2;
 const SEARCH_SCAN_MULTIPLIER = 2;
 
@@ -175,6 +176,14 @@ async function _load(): Promise<void> {
         const slugNameLc = slugName.toLowerCase();
         if (slugNameLc && !_byNameLc.has(slugNameLc)) {
           _byNameLc.set(slugNameLc, item);
+        }
+
+        // A few listings append "(Key)" or "(Veiled)" to keep names apart while
+        // the game says the bare name. Real names are set unconditionally above,
+        // so an alias never displaces the item that owns the name.
+        const parenBaseLc = (NAME_PAREN_SUFFIX_RE.exec(nameLc)?.[1] ?? "").trim();
+        if (parenBaseLc && !_byNameLc.has(parenBaseLc)) {
+          _byNameLc.set(parenBaseLc, item);
         }
       }
 
