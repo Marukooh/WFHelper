@@ -19,7 +19,27 @@ import { formatWfmAssetUrl, sanitizeWfmSlug } from "../../config/shared/wfm.js";
 import { rendererPriceCacheKey } from "../../config/shared/wfmCacheKeys.js";
 import { isExcludedRankedMarketItem } from "../../config/shared/wfmExclusions.js";
 
-export type InventoryFilterTab = InventoryGroup | "resources";
+export type InventoryFilterTab = InventoryGroup | "resources" | "everything";
+
+/**
+ * Groups the Everything tab can draw from, in tab order. Resources come from a
+ * separate parse and are appended by the view, not by buildBaseInventoryItems.
+ */
+export const EVERYTHING_SOURCES: readonly InventoryFilterTab[] = [
+  "all_parts",
+  "relics",
+  "mods",
+  "arcanes",
+  "full_sets",
+  "equipment",
+  "resources",
+  "misc",
+];
+
+/** Set rows aggregate parts already listed, so they stay opt-in. */
+export const EVERYTHING_DEFAULT_SOURCES: readonly InventoryFilterTab[] = EVERYTHING_SOURCES.filter(
+  (source) => source !== "full_sets",
+);
 
 export interface InventoryBaseItem extends ParsedItem {
   inventoryGroup: InventoryGroup;
@@ -79,6 +99,7 @@ export interface MetricNeeds {
 }
 
 export const INVENTORY_FILTERS: Array<{ key: InventoryFilterTab; labelKey: MessageKey }> = [
+  { key: "everything", labelKey: "inventory.tab.everything" },
   { key: "all_parts", labelKey: "inventory.tab.allParts" },
   { key: "relics", labelKey: "common.relics" },
   { key: "mods", labelKey: "inventory.tab.mods" },
@@ -192,6 +213,9 @@ function itemGroupFallback(item: ParsedItem): InventoryFilterTab {
 
 function matchesFilterTab(item: ParsedItem, tab: InventoryFilterTab): boolean {
   const group = item.inventoryGroup || itemGroupFallback(item);
+  // Incomplete sets are the Full Sets tab's own toggle, never a category of
+  // their own, so Everything must not surface them.
+  if (tab === "everything") return group !== "incomplete_sets";
   return group === tab;
 }
 
@@ -271,8 +295,10 @@ export function metricNeedsFromFilters(
   filters: SharedFiltersState,
   activeTab: InventoryFilterTab,
 ): MetricNeeds {
-  const needsDucatsForTab = activeTab === "all_parts" || activeTab === "full_sets";
-  const needsOrdersForTab = isRankedGroup(activeTab);
+  // Everything carries parts and ranked items at once, so it needs both.
+  const needsDucatsForTab =
+    activeTab === "all_parts" || activeTab === "full_sets" || activeTab === "everything";
+  const needsOrdersForTab = isRankedGroup(activeTab) || activeTab === "everything";
   return {
     price: true,
     ducats: needsDucatsForTab || filters.sortBy === "ducats" || filters.sortBy === "ducatonator",

@@ -16,6 +16,8 @@
   import { parseResources } from "../lib/inventory.js";
   import { applySharedFiltersAndSort } from "../lib/filters.js";
   import {
+    EVERYTHING_DEFAULT_SOURCES,
+    EVERYTHING_SOURCES,
     INVENTORY_FILTERS,
     buildBaseInventoryItems,
     buildInventoryViewItems,
@@ -50,11 +52,25 @@
   const HOTSET_REFRESH_LIMIT = 12;
 
   const FILTER_TAB_KEY = "wf_inventory_tab";
+  const EVERYTHING_SOURCES_KEY = "wf_inventory_everything_sources";
 
   function restoreFilterTab(): InventoryFilterTab {
     const raw = readStorage(FILTER_TAB_KEY);
     const known = INVENTORY_FILTERS.some((entry) => entry.key === raw);
     return known ? (raw as InventoryFilterTab) : "all_parts";
+  }
+
+  function restoreEverythingSources(): InventoryFilterTab[] {
+    const raw = readStorage(EVERYTHING_SOURCES_KEY);
+    if (raw == null) return [...EVERYTHING_DEFAULT_SOURCES];
+    // An empty saved list is a real choice (everything hidden), so only an
+    // absent key falls back to the defaults.
+    const saved = raw
+      .split(",")
+      .filter((key): key is InventoryFilterTab =>
+        EVERYTHING_SOURCES.includes(key as InventoryFilterTab),
+      );
+    return saved;
   }
 
   // Only sorts the active tab can actually compute; anything else would
@@ -84,6 +100,7 @@
   } as Partial<Record<InventoryFilterTab, Array<[SharedSortKey, string]>>>;
 
   let filter: InventoryFilterTab = restoreFilterTab();
+  let everythingSources: InventoryFilterTab[] = restoreEverythingSources();
   let missingIconsOnly = false;
   let showFilterPanel = false;
   // Full Sets lists sellable spares; this folds in the sets still missing parts.
@@ -120,6 +137,18 @@
   function handleFilterSelect(event: CustomEvent<InventoryFilterTab>): void {
     filter = event.detail;
     writeStorage(FILTER_TAB_KEY, filter);
+    // Resources hides the advanced panel, so a carried-over amount would cut
+    // rows with no control and no badge to reveal it.
+    if (filter === "resources" && $inventoryFilters.minimumAmount > 0) {
+      updateSharedFilters("inventory", { minimumAmount: 0 });
+    }
+  }
+
+  function toggleEverythingSource(source: InventoryFilterTab): void {
+    everythingSources = everythingSources.includes(source)
+      ? everythingSources.filter((entry) => entry !== source)
+      : [...everythingSources, source];
+    writeStorage(EVERYTHING_SOURCES_KEY, everythingSources.join(","));
   }
 
   function toggleIncompleteSets(): void {
@@ -176,11 +205,11 @@
     if (!visibleBaseItem || !shouldHydrateMetrics(visibleBaseItem)) return;
     trackRankedHotset(visibleBaseItem);
 
-    const isRankedTab = isRankedGroup(filter);
+    // Everything mixes ranked and unranked rows, so the item decides, not the tab.
     hydration.enqueue([visibleBaseItem], $wfmItems, {
       price: true,
       ducats: false,
-      orders: isRankedTab,
+      orders: isRankedGroup(visibleBaseItem.inventoryGroup),
       network: true,
     });
   }
@@ -238,6 +267,15 @@
     }, HOTSET_REFRESH_DELAY_MS);
   }
 
+  function limitToEnabledSources(
+    items: InventoryBaseItem[],
+    tab: InventoryFilterTab,
+    enabled: Set<InventoryFilterTab>,
+  ): InventoryBaseItem[] {
+    if (tab !== "everything") return items;
+    return items.filter((item) => enabled.has(item.inventoryGroup));
+  }
+
   function mergeKeywords(base: string[] | undefined, extra: string[]): string[] {
     const merged = Array.isArray(base) ? [...base] : [];
     for (const keyword of extra) {
@@ -273,17 +311,23 @@
           $relicDb,
         )
       : [];
-  $: tabBaseItems = [
-    ...buildBaseInventoryItems(
-      $parsedItems,
-      filter,
-      $wfmItems,
-      orderedNames,
-      orderedSlugs,
-      $relicDb,
-    ),
-    ...incompleteSetBaseItems,
-  ];
+  $: enabledEverythingSources = new Set(everythingSources);
+  $: showEverythingResources = filter === "everything" && enabledEverythingSources.has("resources");
+  $: tabBaseItems = limitToEnabledSources(
+    [
+      ...buildBaseInventoryItems(
+        $parsedItems,
+        filter,
+        $wfmItems,
+        orderedNames,
+        orderedSlugs,
+        $relicDb,
+      ),
+      ...incompleteSetBaseItems,
+    ],
+    filter,
+    enabledEverythingSources,
+  );
   $: allRankedBaseItems = [
     ...buildBaseInventoryItems(
       $parsedItems,
@@ -305,7 +349,7 @@
   $: tabItems = buildInventoryViewItems(tabBaseItems, $hydrationMetrics);
   $: relicSearchKeywordIndex = buildRelicSearchKeywordIndex($relicDb);
   $: searchableTabItems =
-    filter !== "relics"
+    filter !== "relics" && filter !== "everything"
       ? tabItems
       : tabItems.map((item) => {
           const relicKeywords = relicSearchKeywordIndex[item.internalName] || [];
@@ -347,14 +391,21 @@
             r.name.toLowerCase().includes(search) || r.internalName.toLowerCase().includes(search),
         )
       : list;
+    const gated =
+      filters.minimumAmount > 0
+        ? searched.filter((r) => r.count >= filters.minimumAmount)
+        : searched;
     const dir = filters.sortDirection === "asc" ? 1 : -1;
-    return [...searched].sort((a, b) =>
+    return [...gated].sort((a, b) =>
       filters.sortBy === "amount" ? (a.count - b.count) * dir : a.name.localeCompare(b.name) * dir,
     );
   }
 
   $: filteredResources = filterAndSortResources(resourceList, $inventoryFilters);
-  $: filteredTotalCount = filter === "resources" ? filteredResources.length : visibleItems.length;
+  $: filteredTotalCount =
+    filter === "resources"
+      ? filteredResources.length
+      : visibleItems.length + (showEverythingResources ? filteredResources.length : 0);
   function countActiveAdvancedFilters(state: SharedFiltersState): number {
     let active = 0;
     if (state.orderPlaced !== "all") active++;
@@ -370,7 +421,7 @@
     return active;
   }
   $: activeAdvancedCount = countActiveAdvancedFilters($inventoryFilters);
-  $: showDucats = filter === "all_parts" || filter === "full_sets";
+  $: showDucats = filter === "all_parts" || filter === "full_sets" || filter === "everything";
   $: metricNeeds = metricNeedsFromFilters($inventoryFilters, filter);
   $: wfmItemsLoaded = Object.keys($wfmItems).length > 0;
   $: if ($startupPriceCacheReady && wfmItemsLoaded) {
@@ -409,6 +460,27 @@
         : ''}"
     >
       <div class="min-w-0" data-tour="inventory-grid">
+        {#if filter === "everything"}
+          <div class="mb-2 flex flex-wrap items-center gap-2" data-everything-sources>
+            <span class="text-xs uppercase tracking-[0.05em] text-text-muted"
+              >{$tr("inventory.everythingInclude")}</span
+            >
+            <div class="filter-tabs">
+              {#each EVERYTHING_SOURCES as source (source)}
+                {@const sourceLabelKey = FILTERS.find((entry) => entry.key === source)?.labelKey}
+                {#if sourceLabelKey}
+                  <button
+                    class="filter-tab"
+                    class:active={enabledEverythingSources.has(source)}
+                    aria-pressed={enabledEverythingSources.has(source)}
+                    data-everything-source={source}
+                    on:click={() => toggleEverythingSource(source)}>{$tr(sourceLabelKey)}</button
+                  >
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/if}
         {#if filter === "full_sets"}
           <label
             class="mb-2 flex w-fit cursor-pointer items-center gap-2 text-xs text-text-secondary"
@@ -442,6 +514,15 @@
           on:visible={handleItemVisible}
           on:expand={handleItemExpand}
         />
+
+        {#if showEverythingResources && filteredResources.length > 0}
+          <!-- Resources have their own row shape, so Everything appends the real
+               Resources list rather than faking inventory cards for them. -->
+          <h3 class="mb-2 mt-4 font-display text-sm uppercase tracking-[0.05em] text-text-muted">
+            {$tr("nav.resources")}
+          </h3>
+          <ResourcesView resources={filteredResources} />
+        {/if}
       </div>
 
       {#if orderBookPanelOpen}

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  EVERYTHING_DEFAULT_SOURCES,
+  EVERYTHING_SOURCES,
   buildBaseInventoryItems,
   buildInventoryViewItems,
   buildOrderLookups,
@@ -747,5 +749,71 @@ describe("inventoryMarket view mapping", () => {
 
     expect(mapped.marketSlug).toBeNull();
     expect(shouldHydrateMetrics(mapped)).toBe(false);
+  });
+});
+
+describe("everything tab", () => {
+  const NEUTRAL_FILTERS = {
+    search: "",
+    primeMode: "all",
+    masteredMode: "all",
+    sortBy: "name",
+    sortDirection: "asc",
+    orderPlaced: "all",
+    mastered: "all",
+    spares: "all",
+    vaulted: "all",
+    partType: "all",
+    favorite: "all",
+    minimumPlatinum: 0,
+    minimumAmount: 0,
+    equipped: "all",
+    leveledUp: "all",
+    subsumed: "all",
+    foundryState: "all",
+  } as const;
+
+  it("collects every category in one pass", () => {
+    const mod = makeBaseItem({ internalName: "/Mods/A", inventoryGroup: "mods" });
+    const relic = makeBaseItem({
+      internalName: "/Relics/A",
+      inventoryGroup: "relics",
+      tradable: true,
+    });
+    const equipment = makeBaseItem({
+      internalName: "/Weapons/A",
+      inventoryGroup: "equipment",
+      tradable: true,
+    });
+
+    const rows = buildBaseInventoryItems([mod, relic, equipment], "everything", {}, {}, {});
+
+    expect(rows.map((row) => row.inventoryGroup).sort()).toEqual(["equipment", "mods", "relics"]);
+  });
+
+  it("leaves incomplete sets to the Full Sets toggle", () => {
+    const mod = makeBaseItem({ internalName: "/Mods/A", inventoryGroup: "mods" });
+    const partial = makeBaseItem({
+      internalName: "/Sets/Partial",
+      inventoryGroup: "incomplete_sets",
+      marketSlug: "partial_set",
+    });
+
+    const rows = buildBaseInventoryItems([mod, partial], "everything", {}, {}, {});
+
+    expect(rows.map((row) => row.internalName)).toEqual(["/Mods/A"]);
+  });
+
+  it("hydrates ducats and ranked orders because it mixes both", () => {
+    const needs = metricNeedsFromFilters({ ...NEUTRAL_FILTERS }, "everything");
+
+    expect(needs.ducats).toBe(true);
+    expect(needs.orders).toBe(true);
+  });
+
+  it("defaults to every source except generated full sets", () => {
+    expect(EVERYTHING_SOURCES).toContain("full_sets");
+    expect(EVERYTHING_DEFAULT_SOURCES).not.toContain("full_sets");
+    expect(EVERYTHING_DEFAULT_SOURCES.length).toBe(EVERYTHING_SOURCES.length - 1);
   });
 });

@@ -2,6 +2,7 @@
   import { onDestroy, onMount, tick } from "svelte";
 
   import { currentView } from "../stores/app.js";
+  import { INVENTORY_FILTERS } from "../lib/inventoryMarket.js";
   import { setMarketViewState } from "../stores/market.js";
   import { setRelicFilter } from "../stores/relics.js";
   import { hiddenTabs } from "../stores/sidebarTabs.js";
@@ -30,16 +31,7 @@
     prepare?: () => void;
   }
 
-  const INVENTORY_TAB_KEYS: readonly string[] = [
-    "all_parts",
-    "relics",
-    "mods",
-    "arcanes",
-    "full_sets",
-    "equipment",
-    "resources",
-    "misc",
-  ];
+  const INVENTORY_TAB_KEYS: readonly string[] = INVENTORY_FILTERS.map((f) => f.key);
 
   // Tab buttons expose data-tour-tab so the tour never matches translated label text.
   function selectTourTab(selector: string, tab: string): void {
