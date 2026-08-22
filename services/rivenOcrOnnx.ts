@@ -375,16 +375,86 @@ function ctcGreedyDecode(
   return { text, confidence };
 }
 
-/** Batch-recognizes crops after aspect-preserving resize, normalization, and padding. */
+// PP-OCRv3 pads every crop in a batch out to the widest one, so an 80:1 panel
+// rule beside nine text lines cost 667MB and froze the main process. Aspect
+// cannot tell a rule from text (measured: solid rules 27-37, real text to 59),
+// so crops group by width instead and only budget-busting singles are dropped.
+const REC_IMG_HEIGHT = 48;
+const REC_MAX_CHUNK = 6;
+const REC_OUTPUT_BUDGET = 48 * 1024 * 1024;
+// Padding a 691px crop out to a 3934px rule spends 5.7x the compute on zeros.
+// The stretch cap is what keeps the two apart; the budget bounds what is left.
+const REC_MAX_PAD_STRETCH = 2;
+
+function cropWidthAt48(crop: RgbCrop): number {
+  return Math.ceil(REC_IMG_HEIGHT * (crop.width / crop.height));
+}
+
+function outputBytes(count: number, imgW: number): number {
+  return count * Math.ceil(imgW / 8) * Math.max(1, _chDict.length) * 4;
+}
+
+/** Crop indices grouped by width, each group small enough to decode at once. */
+function recognitionChunks(crops: RgbCrop[]): number[][] {
+  const order = crops.map((_, index) => index);
+  order.sort((a, b) => cropWidthAt48(crops[a]) - cropWidthAt48(crops[b]));
+
+  const chunks: number[][] = [];
+  let current: number[] = [];
+  let currentW = 0;
+  for (const index of order) {
+    const width = cropWidthAt48(crops[index]);
+    // Real stat lines top out near 59:1, so a crop that busts the budget on its own
+    // is a detector artifact; padding it to 48px tall would allocate over 100MB.
+    if (outputBytes(1, width) > REC_OUTPUT_BUDGET) {
+      const crop = crops[index];
+      log.warn(`[RivenOcrOnnx] skipped ${crop.width}x${crop.height} crop over the decode budget`);
+      continue;
+    }
+    const merged = Math.max(currentW, width);
+    const narrowest = current.length > 0 ? cropWidthAt48(crops[current[0]]) : width;
+    const fits =
+      current.length < REC_MAX_CHUNK &&
+      merged <= narrowest * REC_MAX_PAD_STRETCH &&
+      outputBytes(current.length + 1, merged) <= REC_OUTPUT_BUDGET;
+    if (current.length > 0 && !fits) {
+      chunks.push(current);
+      current = [];
+      currentW = 0;
+    }
+    current.push(index);
+    currentW = Math.max(currentW, width);
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
+/** Recognizes crops in width-sorted chunks so one wide crop only pads its own kind. */
 async function recognizeCropsBatch(crops: RgbCrop[]): Promise<OcrLineResult[]> {
   if (crops.length === 0) return [];
   const session = await getChRecSession();
 
+  const results: OcrLineResult[] = crops.map(() => ({ text: "", confidence: 0 }));
+  for (const indices of recognitionChunks(crops)) {
+    const chunk = await recognizeChunk(
+      session,
+      indices.map((index) => crops[index]),
+    );
+    for (let slot = 0; slot < indices.length; slot++) results[indices[slot]] = chunk[slot];
+  }
+  return results;
+}
+
+/** Aspect-preserving resize, normalization, and padding into one batch tensor. */
+async function recognizeChunk(
+  session: OrtInferenceSession,
+  crops: RgbCrop[],
+): Promise<OcrLineResult[]> {
   const ort: typeof import("onnxruntime-node") = require("onnxruntime-node");
 
   const sharp: (typeof import("sharp"))["default"] = require("sharp");
 
-  const imgH = 48;
+  const imgH = REC_IMG_HEIGHT;
 
   // Compute max width/height ratio for uniform padding width
   const whRatios = crops.map((c) => c.width / c.height);
