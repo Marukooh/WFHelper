@@ -17,7 +17,7 @@ catalogues are supported.
 The renderer loads locale catalogues on demand. Main also bundles them for the
 overlay windows, and every added catalogue increases the installer size.
 
-## House rules
+## Rules
 
 - **Placeholders keep their names.** `{count}`, `{item}` and friends are filled
   in by the app; you may reorder them in the sentence, but not rename or drop
