@@ -5,6 +5,7 @@
   import { tr, type MessageKey, type Translator } from "../../lib/i18n.js";
   import ItemImage from "../ItemImage.svelte";
   import InventoryOrderBookSide from "./InventoryOrderBookSide.svelte";
+  import MarketStatsModal from "../market/MarketStatsModal.svelte";
   import { activeItem } from "../../stores/modals.js";
   import { itemDb, componentOwnership } from "../../stores/data.js";
   import { buildParsedItemFromDb } from "../../lib/parsedItemFromDb.js";
@@ -29,6 +30,11 @@
 
   export let item: InventoryViewItem | null = null;
   export let onClose: (() => void) | null = null;
+
+  // Captured at open time so a background reselect cannot swap the chart out
+  // from under the reader.
+  let statsSlug: string | null = null;
+  let statsTitle = "";
 
   type OrderSide = OrderType;
   type SideSort = "best" | "price_low" | "price_high" | "quantity_high" | "name_asc";
@@ -242,6 +248,16 @@
     send("open-external", `https://warframe.market/items/${currentSlug}`);
   }
 
+  function openStats(): void {
+    if (!currentSlug) return;
+    statsSlug = currentSlug;
+    statsTitle = item ? itemLabel(item) : currentSlug;
+  }
+
+  function closeStats(): void {
+    statsSlug = null;
+  }
+
   function filterStatus(entries: OrderBookEntry[], activeOnly: boolean): OrderBookEntry[] {
     if (!activeOnly) return [...entries];
     return entries.filter((entry) => isActiveOrderStatus(entry.status));
@@ -395,6 +411,9 @@
     <div class="flex gap-1.5">
       {#if currentSlug}
         <button class="btn-secondary btn-sm" on:click={refresh}>{$tr("common.refresh")}</button>
+        <button class="btn-secondary btn-sm" data-orderbook-stats on:click={openStats}
+          >{$tr("browse.tabStatistics")}</button
+        >
         <button class="btn-secondary btn-sm" on:click={openOnWarframeMarket}
           >{$tr("orderbook.openWfm")}</button
         >
@@ -590,6 +609,10 @@
     {/if}
   {/if}
 </aside>
+
+{#if statsSlug}
+  <MarketStatsModal slug={statsSlug} title={statsTitle} onClose={closeStats} />
+{/if}
 
 <style>
   .inventory-orderbook-feedback {
