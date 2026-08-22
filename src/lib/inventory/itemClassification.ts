@@ -316,11 +316,20 @@ export function canonicalBuildPartName(internalName: string, name: string): stri
   return name;
 }
 
+/** warframe.market listing a key by game reference is the only signal that it is
+ *  tradable stock; the item database flags every Types/Keys path quest-only. */
+export function isMarketListedMissionKey(internalName: string, marketListed: boolean): boolean {
+  return marketListed && /\/Types\/Keys\//i.test(internalName);
+}
+
 export function shouldHide(
   internalName: string,
   dbEntry: ItemDbEntry = {},
   resolved: ResolvedItem,
+  marketListed = false,
 ): boolean {
+  if (isMarketListedMissionKey(internalName, marketListed)) return false;
+
   if (isAuxiliaryInventoryItem(internalName, dbEntry, resolved)) return true;
   if (/\/Upgrades\/Focus\//i.test(internalName)) return true;
   if (/\/Types\/Boosters?\//i.test(internalName)) return true;

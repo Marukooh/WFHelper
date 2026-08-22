@@ -342,6 +342,13 @@ describe("shouldHide", () => {
     expect(shouldHide("/Lotus/Types/Keys/AssassinKey", {}, resolved("Assassin Key"))).toBe(true);
   });
 
+  it("keeps a mission key warframe.market lists", () => {
+    const key = "/Lotus/Types/Keys/InfestedAladVQuest/AssassinateInfestedAladVKey";
+    const name = resolved("Mutalist Alad V Assassinate");
+    expect(shouldHide(key, { category: "Quests" }, name)).toBe(true);
+    expect(shouldHide(key, { category: "Quests" }, name, true)).toBe(false);
+  });
+
   it("does NOT hide relic-like keys", () => {
     expect(
       shouldHide(

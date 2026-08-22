@@ -4,6 +4,7 @@ import { aggregateComponentOwnership } from "../../config/shared/componentOwners
 import { withoutFoundryPending } from "../../config/shared/foundryPending.js";
 import { parseInventory } from "../lib/inventory.js";
 import { parseFoundry } from "../lib/inventory/foundryResources.js";
+import { gameRefKey } from "../lib/marketNaming.js";
 import { hideFoundryClaims } from "./preferences.js";
 import type { WfmItemsLookup } from "../types/ipc.js";
 import type {
@@ -46,11 +47,46 @@ export function enrichComponents(
   });
 }
 
-export const parsedItems = derived([usableInventory, itemDb], ([$inv, $db]): ParsedItem[] => {
-  if (!$inv || !$db || typeof $db !== "object") return [];
-  if (Object.keys($db).length === 0) return [];
-  return parseInventory($inv, $db);
+let _marketRefsWfmRef: WfmItemsLookup | null = null;
+let _marketRefsCache: ReadonlySet<string> = new Set();
+
+/** Game references warframe.market lists, so the parser can spare the handful of
+ *  tradable items that sit inside an otherwise hidden class. A failed catalog
+ *  load leaves this empty and hides those keys again; the market side goes
+ *  equally quiet with no gameRef, so the two degrade together. */
+const marketGameRefs = derived(wfmItems, ($wfm): ReadonlySet<string> => {
+  if ($wfm === _marketRefsWfmRef) return _marketRefsCache;
+  const refs = new Set<string>();
+  for (const item of Object.values($wfm)) {
+    const key = gameRefKey(item.gameRef);
+    if (key) refs.add(key);
+  }
+  _marketRefsWfmRef = $wfm;
+  _marketRefsCache = refs;
+  return refs;
 });
+
+// Same one-second parse as foundryData below, and a catalog write re-emits every
+// input, so this caches by input identity too.
+let _parsedCache: ParsedItem[] = [];
+let _parsedInvRef: RawInventoryData | null = null;
+let _parsedDbRef: Record<string, ItemDbEntry> | null = null;
+let _parsedRefsRef: ReadonlySet<string> | null = null;
+
+export const parsedItems = derived(
+  [usableInventory, itemDb, marketGameRefs],
+  ([$inv, $db, $marketGameRefs]): ParsedItem[] => {
+    if ($inv === _parsedInvRef && $db === _parsedDbRef && $marketGameRefs === _parsedRefsRef) {
+      return _parsedCache;
+    }
+    _parsedInvRef = $inv;
+    _parsedDbRef = $db;
+    _parsedRefsRef = $marketGameRefs;
+    const parsable = $inv && $db && typeof $db === "object" && Object.keys($db).length > 0;
+    _parsedCache = parsable ? parseInventory($inv, $db, $marketGameRefs) : [];
+    return _parsedCache;
+  },
+);
 
 // Parsing the full itemDb costs about one second on large accounts, so cache by
 // input identity.

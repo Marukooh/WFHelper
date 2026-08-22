@@ -14,6 +14,7 @@ import {
   deriveGroup,
   inferCategory,
   isFocusUpgrade,
+  isMarketListedMissionKey,
   canonicalBuildPartName,
   isResourceItem,
 } from "./inventory/itemClassification.js";
@@ -34,11 +35,16 @@ import {
 
 import { buildFullSetItems } from "./inventory/fullSets.js";
 
+import { gameRefKey } from "./marketNaming.js";
+
 export { parseFoundry, parseResources } from "./inventory/foundryResources.js";
 
 export function parseInventory(
   data: RawInventoryData,
   itemDb: Record<string, ItemDbEntry>,
+  // Holds gameRefKey-folded references: warframe.market does not promise DE's
+  // casing on gameRef, so the lookup below folds its side too.
+  marketGameRefs: ReadonlySet<string> = new Set(),
 ): ParsedItem[] {
   const itemMap = new Map<string, ParsedItem>();
   const sellableEquipmentCounts = new Map<string, number>();
@@ -69,7 +75,8 @@ export function parseInventory(
     const resolved = resolveItem(internalName, itemDb);
     const dbEntry = itemDb[internalName] || {};
 
-    if (shouldHide(internalName, dbEntry, resolved)) return;
+    const marketListed = marketGameRefs.has(gameRefKey(internalName));
+    if (shouldHide(internalName, dbEntry, resolved, marketListed)) return;
     if (isResourceItem(internalName, dbEntry, resolved)) return;
 
     const group = deriveGroup(sourceKey, internalName, dbEntry, resolved);
@@ -85,6 +92,15 @@ export function parseInventory(
     } else if (group === "relics") {
       finalCat = "relics";
       finalLabel = "Relic";
+    } else if (
+      group === "misc" &&
+      (sourceKey === "LevelKeys" || isMarketListedMissionKey(internalName, marketListed))
+    ) {
+      // LevelKeys defaults to the relic label because that is most of what it
+      // holds; market-listed mission keys can also arrive from other
+      // collections and are keys all the same.
+      finalCat = "misc";
+      finalLabel = "Key";
     } else if (group === "misc" && (sourceKey === "Upgrades" || sourceKey === "RawUpgrades")) {
       finalCat = "misc";
       finalLabel = "Misc";
@@ -143,7 +159,9 @@ export function parseInventory(
       partType: resolved.isPrime ? "prime" : "normal",
       masteryReq: resolved.masteryReq ?? 0,
       vaulted: resolved.vaulted ?? false,
-      tradable: dbEntry.tradable ?? resolved.isPrime ?? false,
+      tradable:
+        isMarketListedMissionKey(internalName, marketListed) ||
+        (dbEntry.tradable ?? resolved.isPrime ?? false),
       amount,
       inventoryGroup: group,
       leveledUp: rank > 0 || leveledSignal,

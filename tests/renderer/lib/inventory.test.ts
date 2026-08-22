@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { withoutFoundryPending } from "../../../config/shared/foundryPending.js";
 import { parseFoundry, parseInventory, parseResources } from "../../../src/lib/inventory.js";
 import { buildFullSetItems } from "../../../src/lib/inventory/fullSets.js";
+import { shouldHydrateMetrics } from "../../../src/lib/inventoryMarket.js";
+import { gameRefKey } from "../../../src/lib/marketNaming.js";
 import type {
   ItemDbEntry,
   RawInventoryData,
@@ -1137,6 +1139,35 @@ describe("inventory parsing", () => {
           item.internalName === "/Lotus/Types/Game/Projections/T2VoidProjectionXakuPrimeDBronze",
       )?.inventoryGroup,
     ).toBe("relics");
+  });
+
+  it("shows a mission key warframe.market lists", () => {
+    const key = "/Lotus/Types/Keys/InfestedAladVQuest/AssassinateInfestedAladVKey";
+    const db: Record<string, ItemDbEntry> = {
+      [key]: { name: "Mutalist Alad V Assassinate", category: "Quests", type: "Key" },
+    };
+    const data: RawInventoryData = { LevelKeys: [{ ItemType: key, ItemCount: 8 }] };
+
+    expect(parseInventory(data, db).find((item) => item.internalName === key)).toBeUndefined();
+
+    const listed = parseInventory(data, db, new Set([gameRefKey(key)])).find(
+      (item) => item.internalName === key,
+    );
+    expect(listed).toMatchObject({
+      inventoryGroup: "misc",
+      categoryLabel: "Key",
+      amount: 8,
+      tradable: true,
+    });
+    expect(shouldHydrateMetrics(listed!)).toBe(true);
+
+    // The label follows the key, not the collection it arrived from.
+    const fromMisc = parseInventory(
+      { MiscItems: [{ ItemType: key, ItemCount: 1 }] },
+      db,
+      new Set([gameRefKey(key)]),
+    ).find((item) => item.internalName === key);
+    expect(fromMisc?.categoryLabel).toBe("Key");
   });
 
   it("ignores noisy auxiliary inventory collections", () => {
