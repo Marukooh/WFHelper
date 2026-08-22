@@ -45,6 +45,21 @@ describe("applyOverlayZOrder", () => {
     expect(win.moveTop).toHaveBeenCalledTimes(1);
   });
 
+  // Re-applying the taskbar flag is what re-activated the window and stole focus
+  // from the game, so no branch may touch it.
+  it("never touches the taskbar flag on any branch", () => {
+    for (const [alreadyOnTop, focused] of [
+      [false, true],
+      [true, true],
+      [false, false],
+      [true, false],
+    ] as Array<[boolean, boolean]>) {
+      const win = fakeWindow(alreadyOnTop);
+      apply(win, focused);
+      expect(win.setSkipTaskbar).not.toHaveBeenCalled();
+    }
+  });
+
   // moveTop() on an already-raised window pulls it into the foreground, which
   // unfocuses the game and flips the next poll - the loop that fed itself.
   it("does not re-raise on every poll while the game stays focused", () => {

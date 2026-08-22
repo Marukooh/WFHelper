@@ -21,7 +21,9 @@ let lastFocused: boolean | null = null;
 export function applyOverlayZOrder(win: OverlayWindow, warframeFocused: boolean): void {
   if (warframeFocused) {
     if (warframeStatus.isWindowTopmost(win.getNativeWindowHandle()) ?? win.isAlwaysOnTop()) return;
-    win.setSkipTaskbar(true);
+    // Taskbar state is set when the window is shown and survives a focus flip.
+    // Every window call on this path is another chance for an injected hook to
+    // be on the stack, so it re-asserts stacking only and nothing else.
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     win.setAlwaysOnTop(true, "screen-saver");
     win.moveTop();

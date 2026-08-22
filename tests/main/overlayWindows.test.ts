@@ -1042,3 +1042,65 @@ describe("overlay resize", () => {
     expect(probe.saves).toHaveLength(0);
   });
 });
+
+describe("overlayHideDueIn", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function controllerWithWindow() {
+    const overlayWindow = {
+      isDestroyed: () => false,
+      isVisible: () => true,
+      hide: () => {},
+    };
+    const display = { id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1080 } };
+
+    return createOverlayWindowsController({
+      app: { getAppPath: () => "D:\\app" } as unknown as typeof import("electron").app,
+      BrowserWindow: class {} as unknown as typeof import("electron").BrowserWindow,
+      screen: {
+        getPrimaryDisplay: () => display,
+        getAllDisplays: () => [display],
+        getCursorScreenPoint: () => ({ x: 960, y: 540 }),
+        getDisplayNearestPoint: () => display,
+      } as unknown as typeof import("electron").screen,
+      ctx: {
+        overlayWindow: null,
+        overlaySettings: {} as OverlaySettings,
+        overlayInteractiveMode: false,
+      },
+      log: { warn: () => {} },
+      hardenBrowserWindowNavigation: () => {},
+      overlayWindowFile: "D:\\app\\renderer\\overlay.html",
+      windowStateKey: "reward",
+      getOverlayWindow: () =>
+        overlayWindow as unknown as InstanceType<typeof import("electron").BrowserWindow>,
+    });
+  }
+
+  it("reports nothing while no hide is queued", () => {
+    expect(controllerWithWindow().overlayHideDueIn()).toBeNull();
+  });
+
+  it("counts down instead of flagging the overlay's whole life", () => {
+    vi.useFakeTimers();
+    const controller = controllerWithWindow();
+
+    controller.scheduleOverlayAutoHide(120_000);
+    expect(controller.overlayHideDueIn()).toBeGreaterThan(100_000);
+
+    vi.advanceTimersByTime(119_000);
+    expect(controller.overlayHideDueIn()).toBeLessThanOrEqual(1_000);
+  });
+
+  it("clears once the hide has fired", () => {
+    vi.useFakeTimers();
+    const controller = controllerWithWindow();
+
+    controller.scheduleOverlayAutoHide(2_500);
+    vi.advanceTimersByTime(3_000);
+
+    expect(controller.overlayHideDueIn()).toBeNull();
+  });
+});

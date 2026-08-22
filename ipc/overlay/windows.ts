@@ -167,6 +167,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
 
   let lastOverlayAnchorMeta: OverlayAnchorMeta | null = null;
   let overlayAutoHideTimer: ReturnType<typeof setTimeout> | null = null;
+  let overlayAutoHideAt = 0;
   let suppressMoveSave = false;
   // Windows delivers resize events after setBounds returns, so a timer-based
   // suppression races them. Remember the size we asked for instead.
@@ -739,6 +740,14 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     onWindowCreated?.(createdWindow);
   }
 
+  /** Milliseconds until the queued hide, null when none is queued. Callers mean
+   *  "about to vanish": the planner arms its hide two minutes ahead and needs
+   *  its stacking maintained for all of it. */
+  function overlayHideDueIn(): number | null {
+    if (overlayAutoHideTimer === null) return null;
+    return Math.max(0, overlayAutoHideAt - Date.now());
+  }
+
   function clearOverlayAutoHideTimer(): void {
     if (!overlayAutoHideTimer) return;
     clearTimeout(overlayAutoHideTimer);
@@ -753,6 +762,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     const overlayWindow = readOverlayWindow();
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
 
+    overlayAutoHideAt = Date.now() + delay;
     overlayAutoHideTimer = setTimeout(() => {
       overlayAutoHideTimer = null;
       if (isOverlayWindowVisible()) {
@@ -891,6 +901,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     createOverlayWindow,
     clearOverlayAutoHideTimer,
     scheduleOverlayAutoHide,
+    overlayHideDueIn,
     sendOverlayEvent,
     markRendererReady,
     setAnchorMeta,
