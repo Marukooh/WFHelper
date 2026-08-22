@@ -8,7 +8,8 @@ type TradeInvokeKey =
   | "wfmSetVisible"
   | "wfmSetStatus"
   | "createRivenAuction"
-  | "updateRivenAuction";
+  | "updateRivenAuction"
+  | "deleteRivenAuction";
 type ReadOnlyInvokeKey = Exclude<InvokeKey, TradeInvokeKey>;
 type EventChannel = keyof IpcEventMap;
 type SendChannel = keyof IpcSendMap;

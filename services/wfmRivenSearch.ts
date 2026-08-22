@@ -195,10 +195,11 @@ interface CreateAuctionOpts {
 interface UpdateAuctionOpts {
   auctionId: string;
   buyoutPrice: number | null;
-  startingPrice: number;
+  startingPrice: number | null;
   minReputation: number;
-  isPrivate: boolean;
+  isPrivate?: boolean;
   description: string;
+  visible?: boolean;
 }
 
 /** Create an authenticated WFM riven auction. */
@@ -245,15 +246,36 @@ export async function createRivenAuction(
   }
 }
 
+export async function deleteRivenAuction(
+  auctionId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    log.info(`[WfmRivenSearch] Deleting auction ${auctionId}`);
+    await wfmClient.request("DELETE", `/auctions/entry/${encodeURIComponent(auctionId)}`);
+    return { ok: true };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log.warn(`[WfmRivenSearch] Delete auction failed for ${auctionId}:`, msg);
+    return { ok: false, error: msg };
+  }
+}
+
 export async function updateRivenAuction(
   opts: UpdateAuctionOpts,
 ): Promise<{ ok: boolean; auctionId?: string; error?: string }> {
   const body: Record<string, unknown> = {
-    starting_price: opts.startingPrice,
     minimal_reputation: opts.minReputation,
-    visible: !opts.isPrivate,
+    // Hiding a listing is not the same as marking it private, so an explicit
+    // visible wins over the private flag when the caller sets one.
+    visible: opts.visible ?? opts.isPrivate !== true,
     note: opts.description.trim(),
   };
+
+  // A direct sell has no opening bid. Sending the buyout in its place is what
+  // WFM reads as converting the listing into a priced auction, so leave it out.
+  if (opts.startingPrice != null) {
+    body.starting_price = opts.startingPrice;
+  }
 
   if (opts.buyoutPrice != null && opts.buyoutPrice > 0) {
     body.buyout_price = opts.buyoutPrice;

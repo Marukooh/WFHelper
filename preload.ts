@@ -80,6 +80,7 @@ import {
   RIVENS_GET_BEST_ATTRIBUTES,
   RIVENS_CREATE_AUCTION,
   RIVENS_UPDATE_AUCTION,
+  RIVENS_DELETE_AUCTION,
   WORLD_STATE_FETCH_ERROR,
   ARBI_GET_RUNS,
   ARBI_SET_VITUS,
@@ -245,6 +246,7 @@ try {
     wfmSetStatus: (status): Ret<"wfmSetStatus"> => ipcRenderer.invoke(WFM_SET_STATUS, { status }),
     createRivenAuction: inv<"createRivenAuction">(RIVENS_CREATE_AUCTION),
     updateRivenAuction: inv<"updateRivenAuction">(RIVENS_UPDATE_AUCTION),
+    deleteRivenAuction: inv<"deleteRivenAuction">(RIVENS_DELETE_AUCTION),
   } satisfies TradePreloadAPI);
 } catch (err) {
   console.error("[Preload] FATAL: contextBridge.exposeInMainWorld failed:", err);

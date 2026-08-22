@@ -15,6 +15,7 @@ import {
   RIVENS_GET_BEST_ATTRIBUTES,
   RIVENS_CREATE_AUCTION,
   RIVENS_UPDATE_AUCTION,
+  RIVENS_DELETE_AUCTION,
 } from "../config/shared/ipcChannels";
 
 /** Map game polarity internal names to WFM API names. */
@@ -187,15 +188,28 @@ function register(): void {
     assertMainRendererSender,
     async (_event, payload: unknown) => {
       if (!isObject(payload)) return { ok: false, error: "Invalid payload" };
-      const { auctionId, buyoutPrice, startingPrice, minReputation, isPrivate, description } =
-        payload;
+      const {
+        auctionId,
+        buyoutPrice,
+        startingPrice,
+        minReputation,
+        isPrivate,
+        description,
+        visible,
+      } = payload;
       const id = toNonEmptyString(auctionId, 64);
       if (!id || !/^[a-zA-Z0-9]+$/.test(id)) {
         return { ok: false, error: "Invalid auction id" };
       }
-      const price = boundedInt(startingPrice, 1, 10_000_000);
-      if (price == null) {
+      // Null is a direct sell, which never had an opening bid; only a present
+      // but unusable value is an error.
+      const price = startingPrice == null ? null : boundedInt(startingPrice, 1, 10_000_000);
+      if (startingPrice != null && price == null) {
         return { ok: false, error: "Invalid price" };
+      }
+      // With neither flag the service would default a hidden listing to visible.
+      if (typeof visible !== "boolean" && typeof isPrivate !== "boolean") {
+        return { ok: false, error: "Invalid visibility" };
       }
       const buyout = buyoutPrice == null ? null : boundedInt(buyoutPrice, 1, 10_000_000);
       if (buyoutPrice != null && buyout == null) {
@@ -211,9 +225,23 @@ function register(): void {
         buyoutPrice: buyout,
         startingPrice: price,
         minReputation: reputation,
-        isPrivate: isPrivate === true,
         description: descriptionValue,
+        ...(typeof isPrivate === "boolean" ? { isPrivate } : {}),
+        ...(typeof visible === "boolean" ? { visible } : {}),
       });
+    },
+  );
+
+  handleAuthorized(
+    RIVENS_DELETE_AUCTION,
+    assertMainRendererSender,
+    async (_event, payload: unknown) => {
+      if (!isObject(payload)) return { ok: false, error: "Invalid payload" };
+      const id = toNonEmptyString(payload.auctionId, 64);
+      if (!id || !/^[a-zA-Z0-9]+$/.test(id)) {
+        return { ok: false, error: "Invalid auction id" };
+      }
+      return wfmRivenSearch.deleteRivenAuction(id);
     },
   );
 }

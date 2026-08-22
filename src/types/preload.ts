@@ -189,4 +189,7 @@ export interface TradePreloadAPI {
   updateRivenAuction: (
     payload: UpdateRivenAuctionPayload,
   ) => Promise<IpcInvokeMap["updateRivenAuction"]["return"]>;
+  deleteRivenAuction: (payload: {
+    auctionId: string;
+  }) => Promise<IpcInvokeMap["deleteRivenAuction"]["return"]>;
 }

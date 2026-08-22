@@ -65,8 +65,11 @@ export interface CreateRivenAuctionPayload {
 export interface UpdateRivenAuctionPayload {
   auctionId: string;
   buyoutPrice: number | null;
-  startingPrice: number;
+  /** Null on a direct sell, which has no opening bid to resend. */
+  startingPrice: number | null;
   minReputation: number;
-  isPrivate: boolean;
+  isPrivate?: boolean;
   description: string;
+  /** Omitted keeps the private flag in charge of visibility. */
+  visible?: boolean;
 }

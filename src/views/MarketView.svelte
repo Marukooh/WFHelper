@@ -201,6 +201,7 @@
   let selectedOrderItemKey: string | null = null;
   let orderBookPanelOpen = false;
   let selectedContract: { contract: WfmContract; riven: DecodedRiven } | null = null;
+  let contractBusyIds: string[] = [];
   let ordersUiGeneration = 0;
   let contractsRequestGeneration = 0;
 
@@ -458,6 +459,54 @@
       }
     } finally {
       if (requestGeneration === contractsRequestGeneration) contractsLoading = false;
+    }
+  }
+
+  async function removeContract(contract: WfmContract): Promise<void> {
+    if (!confirm($tr("market.riven.confirmRemove"))) return;
+    contractBusyIds = [...contractBusyIds, contract.id];
+    try {
+      const result = await tradeInvoke("deleteRivenAuction", { auctionId: contract.id });
+      if (!result.ok) {
+        alert($tr("market.riven.removeFailed", { error: result.error ?? "" }));
+        return;
+      }
+      marketContracts.update((state) => ({
+        ...state,
+        contracts: state.contracts.filter((entry) => entry.id !== contract.id),
+      }));
+    } finally {
+      contractBusyIds = contractBusyIds.filter((id) => id !== contract.id);
+    }
+  }
+
+  async function toggleContractVisible(contract: WfmContract): Promise<void> {
+    const nextVisible = !contract.visible;
+    contractBusyIds = [...contractBusyIds, contract.id];
+    try {
+      // PUT replaces the entry, so reputation and note have to be resent. A
+      // direct sell has no opening bid: sending its buyout as one would reprice
+      // the listing, so it goes as null and WFM keeps what it holds.
+      const result = await tradeInvoke("updateRivenAuction", {
+        auctionId: contract.id,
+        buyoutPrice: contract.buyoutPlatinum,
+        startingPrice: contract.isDirectSell ? null : (contract.startingPlatinum ?? null),
+        minReputation: contract.minimalReputation ?? 0,
+        description: contract.note ?? "",
+        visible: nextVisible,
+      });
+      if (!result.ok) {
+        alert($tr("market.riven.visibilityFailed", { error: result.error ?? "" }));
+        return;
+      }
+      marketContracts.update((state) => ({
+        ...state,
+        contracts: state.contracts.map((entry) =>
+          entry.id === contract.id ? { ...entry, visible: nextVisible } : entry,
+        ),
+      }));
+    } finally {
+      contractBusyIds = contractBusyIds.filter((id) => id !== contract.id);
     }
   }
 
@@ -901,8 +950,11 @@
                 <MarketContractRow
                   {contract}
                   compact={$marketDensity === "compact"}
+                  busy={contractBusyIds.includes(contract.id)}
                   onOpen={openContractListing}
                   onEdit={editContractListing}
+                  onRemove={removeContract}
+                  onToggleVisible={toggleContractVisible}
                 />
               {/each}
 

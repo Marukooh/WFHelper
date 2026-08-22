@@ -377,6 +377,10 @@ export interface IpcInvokeMap {
     args: [payload: CreateRivenAuctionPayload];
     return: { ok: boolean; auctionId?: string; error?: string };
   };
+  deleteRivenAuction: {
+    args: [payload: { auctionId: string }];
+    return: { ok: boolean; error?: string };
+  };
   updateRivenAuction: {
     args: [payload: UpdateRivenAuctionPayload];
     return: { ok: boolean; auctionId?: string; error?: string };

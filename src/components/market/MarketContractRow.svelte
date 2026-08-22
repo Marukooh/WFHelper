@@ -10,6 +10,9 @@
   export let compact = false;
   export let onEdit: (contract: WfmContract) => void;
   export let onOpen: (contract: WfmContract) => void;
+  export let onRemove: (contract: WfmContract) => void;
+  export let onToggleVisible: (contract: WfmContract) => void;
+  export let busy = false;
 
   function contractStatsPreview(contractRow: WfmContract): string[] {
     if (!Array.isArray(contractRow.stats) || contractRow.stats.length === 0) return [];
@@ -40,6 +43,35 @@
     ...(contract.rerolls != null ? [`RR${contract.rerolls}`] : []),
   ];
 </script>
+
+{#snippet contractActions()}
+  <div class="grid shrink-0 gap-1">
+    <button
+      class="btn-sm btn-secondary px-2 py-1 text-xs"
+      on:click|stopPropagation={() => onEdit(contract)}>{$tr("market.edit")}</button
+    >
+    <button
+      class="btn-sm btn-secondary px-2 py-1 text-xs"
+      on:click|stopPropagation={() => onOpen(contract)}>{$tr("market.open")}</button
+    >
+    <button
+      class="btn-sm btn-secondary px-2 py-1 text-xs"
+      disabled={busy}
+      data-contract-visible
+      on:click|stopPropagation={() => onToggleVisible(contract)}
+      >{contract.visible
+        ? $tr("market.riven.hideListing")
+        : $tr("market.riven.showListing")}</button
+    >
+    <button
+      class="btn-sm btn-danger px-2 py-1 text-xs"
+      disabled={busy}
+      data-contract-remove
+      on:click|stopPropagation={() => onRemove(contract)}
+      >{$tr("market.riven.removeListing")}</button
+    >
+  </div>
+{/snippet}
 
 {#if compact}
   <MarketRowBase
@@ -78,16 +110,7 @@
       </div>
     </svelte:fragment>
     <svelte:fragment slot="compactActions">
-      <div class="grid shrink-0 gap-1">
-        <button
-          class="btn-sm btn-secondary px-2 py-1 text-xs"
-          on:click|stopPropagation={() => onEdit(contract)}>{$tr("market.edit")}</button
-        >
-        <button
-          class="btn-sm btn-secondary px-2 py-1 text-xs"
-          on:click|stopPropagation={() => onOpen(contract)}>{$tr("market.open")}</button
-        >
-      </div>
+      {@render contractActions()}
     </svelte:fragment>
   </MarketRowBase>
 {:else}
@@ -130,16 +153,7 @@
           {badge}
         </span>
       </div>
-      <div class="grid shrink-0 gap-1">
-        <button
-          class="btn-sm btn-secondary px-2 py-1 text-xs"
-          on:click|stopPropagation={() => onEdit(contract)}>{$tr("market.edit")}</button
-        >
-        <button
-          class="btn-sm btn-secondary px-2 py-1 text-xs"
-          on:click|stopPropagation={() => onOpen(contract)}>{$tr("market.open")}</button
-        >
-      </div>
+      {@render contractActions()}
     </svelte:fragment>
   </MarketRowBase>
 {/if}
