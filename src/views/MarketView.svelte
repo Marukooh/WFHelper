@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
-  import { parsedItems, wfmItems } from "../stores/data.js";
+  import { itemDb, parsedItems, wfmItems } from "../stores/data.js";
   import {
     clearMarketAccountState,
     marketContracts,
@@ -18,7 +18,7 @@
   import MarketBrowseView from "../components/market/MarketBrowseView.svelte";
   import MarketContractRow from "../components/market/MarketContractRow.svelte";
   import MarketOrderRow from "../components/market/MarketOrderRow.svelte";
-  import { attributeKeyword } from "../lib/marketContract.js";
+  import { attributeKeyword, contractInventoryMatch } from "../lib/marketContract.js";
   import { isIpcError as hasError } from "../lib/ipcGuards.js";
   import InventoryOrderBookPanel from "../components/inventory/InventoryOrderBookPanel.svelte";
   import RivenDetailModal from "../modals/RivenDetailModal.svelte";
@@ -33,6 +33,7 @@
   import { buildInventoryViewItems } from "../lib/inventoryMarket.js";
   import {
     buildMarketOrderInventoryItem,
+    orderInventoryMatch,
     ownedCountForMarketOrder,
   } from "../lib/marketOrderInventory.js";
   import { invalidateMarketOrdersRefresh, refreshMarketOrders } from "../lib/marketOrdersSync.js";
@@ -201,6 +202,8 @@
   let selectedOrderItemKey: string | null = null;
   let orderBookPanelOpen = false;
   let selectedContract: { contract: WfmContract; riven: DecodedRiven } | null = null;
+  let ownedRivens: DecodedRiven[] = [];
+  let ownedRivensLoaded = false;
   let contractBusyIds: string[] = [];
   let ordersUiGeneration = 0;
   let contractsRequestGeneration = 0;
@@ -425,6 +428,9 @@
       session.userName === $marketSession.userName &&
       session.platform === $marketSession.platform;
 
+    // Paired with the contract fetch so the markers refresh on the same beat.
+    void loadOwnedRivens();
+
     try {
       const result = await invoke("wfmGetContracts", { page, limit: CONTRACTS_PAGE_SIZE });
       if (!isCurrent()) return;
@@ -459,6 +465,18 @@
       }
     } finally {
       if (requestGeneration === contractsRequestGeneration) contractsLoading = false;
+    }
+  }
+
+  async function loadOwnedRivens(): Promise<void> {
+    try {
+      const result = await invoke("getRivens");
+      ownedRivens = result.unveiled ?? [];
+      ownedRivensLoaded = true;
+    } catch {
+      // A failed read must not paint every listing as missing.
+      ownedRivens = [];
+      ownedRivensLoaded = false;
     }
   }
 
@@ -641,9 +659,30 @@
   }
 
   $: isRivensTab = $marketViewState.typeTab === "rivens";
+  // A decoded riven list is the proof a listing is dead, the same rule the order
+  // rows follow below: until one loads the map stays empty, so contracts get no
+  // markers at all rather than a wall of them.
+  $: contractMatchById = new Map(
+    ownedRivensLoaded && ownedRivens.length > 0
+      ? $marketContracts.contracts.map((contract) => [
+          contract.id,
+          contractInventoryMatch(contract, ownedRivens),
+        ])
+      : [],
+  );
   $: activeOrders = isOrdersTab($marketViewState.typeTab)
     ? $marketOrders[$marketViewState.typeTab] || []
     : [];
+  // A parsed inventory is the proof a listing is dead, so an account that has
+  // not loaded one yet gets no markers at all rather than a wall of them.
+  $: orderMatchById = new Map(
+    $parsedItems.length > 0
+      ? activeOrders.map((order) => [
+          order.id,
+          orderInventoryMatch(order, $parsedItems, $wfmItems, $itemDb),
+        ])
+      : [],
+  );
   $: filteredOrderRows = applySharedFiltersAndSort(
     activeOrders.map((order) => normalizeOrderForFilter(order, $parsedItems, $wfmItems)),
     $marketFilters,
@@ -778,7 +817,9 @@
   {:else}
     <div>
       <div class="view-header">
-        <h2>{isRivensTab ? $tr("market.myRivens") : $tr("market.myOrders")}</h2>
+        <h2 data-market-orders-heading={isRivensTab ? "rivens" : "orders"}>
+          {isRivensTab ? $tr("market.myRivens") : $tr("market.myOrders")}
+        </h2>
         <div class="view-controls gap-2">
           {#if $marketSession.userName}
             <span
@@ -950,6 +991,7 @@
                 <MarketContractRow
                   {contract}
                   compact={$marketDensity === "compact"}
+                  inventoryMatch={contractMatchById.get(contract.id) ?? null}
                   busy={contractBusyIds.includes(contract.id)}
                   onOpen={openContractListing}
                   onEdit={editContractListing}
@@ -1007,6 +1049,7 @@
                 onEdit={editOrder}
                 onDelete={deleteOrder}
                 onInlineSave={inlineUpdateOrder}
+                inventoryMatch={orderMatchById.get(order.id) ?? null}
               />
             {/each}
           {/if}

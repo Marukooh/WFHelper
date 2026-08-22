@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { ownedCountForMarketOrder } from "../../../src/lib/marketOrderInventory.js";
+import {
+  orderInventoryMatch,
+  ownedCountForMarketOrder,
+} from "../../../src/lib/marketOrderInventory.js";
 import { applySharedFiltersAndSort } from "../../../src/lib/filters.js";
 import type { SharedFiltersState } from "../../../src/types/filters.js";
-import type { ParsedItem } from "../../../src/types/inventory.js";
+import type { ItemDbEntry, ParsedItem } from "../../../src/types/inventory.js";
+import type { WfmItemsLookup } from "../../../src/types/ipc.js";
 import type { WfmOrder } from "../../../src/types/market.js";
 
 const BASE_FILTERS: SharedFiltersState = {
@@ -110,5 +114,102 @@ describe("market order Owned sort", () => {
       sortDirection: "asc",
     });
     expect(sorted.map((row) => row.name)).toEqual(["B", "C", "A"]);
+  });
+});
+
+const PART_REF = "/Lotus/Types/Recipes/Weapons/RubicoPrimeBlueprint";
+const SCENE_REF = "/Lotus/Types/Items/MiscItems/PhotoboothTileSyndicateSimarisDerelictHub";
+const GEM_REF = "/Lotus/Types/Items/Gems/Eidolon/RareGemACutAItem";
+
+function catalog(gameRef: string, urlName = "trinity_prime_chassis"): WfmItemsLookup {
+  return { [urlName]: { url_name: urlName, gameRef } };
+}
+
+function mod(name: string, rank: number): ParsedItem {
+  return parsedItem({ name, rank, amount: 1, inventoryGroup: "mods" });
+}
+
+describe("orderInventoryMatch", () => {
+  it("stays quiet while the inventory still backs the listing", () => {
+    const match = orderInventoryMatch(order({}), [parsedItem({})], catalog(PART_REF), {});
+    expect(match).toEqual({ state: "match" });
+  });
+
+  it("flags a sell order for something the inventory no longer holds", () => {
+    expect(orderInventoryMatch(order({}), [], catalog(PART_REF), {})).toEqual({ state: "missing" });
+  });
+
+  it("treats a row that resolves to zero owned as missing", () => {
+    const inventory = [parsedItem({ amount: 0 })];
+    expect(orderInventoryMatch(order({}), inventory, catalog(PART_REF), {})).toEqual({
+      state: "missing",
+    });
+  });
+
+  it("never flags a buy order, which needs no stock", () => {
+    const buy = order({ orderType: "buy" });
+    expect(orderInventoryMatch(buy, [], catalog(PART_REF), {})).toEqual({ state: "match" });
+  });
+
+  it("never flags a captura scene, which the parser drops from inventory", () => {
+    expect(orderInventoryMatch(order({}), [], catalog(SCENE_REF), {})).toEqual({ state: "match" });
+  });
+
+  it("never flags a resource, which the parser also drops", () => {
+    const db: Record<string, ItemDbEntry> = { [GEM_REF]: { category: "Resource" } };
+    expect(orderInventoryMatch(order({}), [], catalog(GEM_REF), db)).toEqual({ state: "match" });
+  });
+
+  it("stays quiet when the catalog cannot identify the listing at all", () => {
+    expect(orderInventoryMatch(order({}), [], {}, {})).toEqual({ state: "match" });
+  });
+
+  it("flags a listing the inventory only partly backs", () => {
+    const listing = order({ quantity: 10 });
+    expect(
+      orderInventoryMatch(listing, [parsedItem({ amount: 1 })], catalog(PART_REF), {}),
+    ).toEqual({ state: "partial", owned: 1, listed: 10 });
+  });
+
+  it("sums the rows that back one listing before calling it short", () => {
+    const listing = order({ quantity: 4 });
+    const inventory = [parsedItem({ amount: 3 }), parsedItem({ amount: 1 })];
+    expect(orderInventoryMatch(listing, inventory, catalog(PART_REF), {})).toEqual({
+      state: "match",
+    });
+  });
+
+  it("counts only the copies at the listed rank towards a ranked listing", () => {
+    const listing = order({ itemName: "Serration", modRank: 10, quantity: 3 });
+    const inventory = [mod("Serration", 0), mod("Serration", 10)];
+    expect(orderInventoryMatch(listing, inventory, catalog(PART_REF), {})).toEqual({
+      state: "partial",
+      owned: 1,
+      listed: 3,
+    });
+  });
+
+  it("accepts a ranked listing backed by a copy at that rank", () => {
+    const listing = order({ itemName: "Serration", modRank: 10 });
+    const inventory = [mod("Serration", 0), mod("Serration", 10)];
+    expect(orderInventoryMatch(listing, inventory, catalog(PART_REF), {})).toEqual({
+      state: "match",
+    });
+  });
+
+  it("reports the owned rank when no copy sits at the listed rank", () => {
+    const listing = order({ itemName: "Serration", modRank: 10 });
+    expect(orderInventoryMatch(listing, [mod("Serration", 5)], catalog(PART_REF), {})).toEqual({
+      state: "rank-mismatch",
+      ownedRank: 5,
+    });
+  });
+
+  it("ignores rank for a group that does not carry one", () => {
+    const listing = order({ modRank: 3 });
+    const inventory = [parsedItem({ inventoryGroup: "all_parts", rank: 0 })];
+    expect(orderInventoryMatch(listing, inventory, catalog(PART_REF), {})).toEqual({
+      state: "match",
+    });
   });
 });

@@ -1,7 +1,8 @@
 import { isRankedGroup, toFinitePositiveInt } from "../../config/shared/numeric.js";
+import { isResourceItem, resolveItem, shouldHide } from "./inventory/itemClassification.js";
 import { normalizeMarketName, toMarketSlug } from "./marketNaming.js";
 import { type InventoryBaseItem } from "./inventoryMarket.js";
-import type { InventoryGroup, ParsedItem } from "../types/inventory.js";
+import type { InventoryGroup, ItemDbEntry, ParsedItem } from "../types/inventory.js";
 import type { WfmItemsLookup } from "../types/ipc.js";
 import type { WfmOrder } from "../types/market.js";
 
@@ -31,24 +32,36 @@ function catalogEntryForOrder(order: WfmOrder, wfmItems: WfmItemsLookup): WfmCat
   return catalogBySlug(wfmItems).get(slug) ?? null;
 }
 
-function parsedItemForOrder(
+/** Every inventory row the order could be about, best join first. A mod is one
+ *  row per rank, so the caller needs all of them to judge a ranked listing. */
+function matchingParsedItems(
   order: WfmOrder,
   parsedItems: ParsedItem[],
   wfmItems: WfmItemsLookup,
-): ParsedItem | null {
+): ParsedItem[] {
   const orderName = normalizeMarketName(order.itemName);
   const orderSlug = toMarketSlug(order.itemUrlName || order.itemName);
   // warframe.market renames a handful of items to keep them apart, so the game
   // reference is the only join that survives "Mutalist Alad V Assassinate (Key)".
   const gameRef = normalizeMarketName(catalogEntryForOrder(order, wfmItems)?.gameRef || "");
-  return (
-    parsedItems.find((item) => normalizeMarketName(item.name) === orderName) ||
-    parsedItems.find((item) => toMarketSlug(item.name) === orderSlug) ||
-    (gameRef
-      ? parsedItems.find((item) => normalizeMarketName(item.internalName) === gameRef)
-      : undefined) ||
-    null
-  );
+  const matches: ParsedItem[] = [];
+  const push = (predicate: (item: ParsedItem) => boolean): void => {
+    for (const item of parsedItems) {
+      if (predicate(item) && !matches.includes(item)) matches.push(item);
+    }
+  };
+  push((item) => normalizeMarketName(item.name) === orderName);
+  push((item) => toMarketSlug(item.name) === orderSlug);
+  if (gameRef) push((item) => normalizeMarketName(item.internalName) === gameRef);
+  return matches;
+}
+
+function parsedItemForOrder(
+  order: WfmOrder,
+  parsedItems: ParsedItem[],
+  wfmItems: WfmItemsLookup,
+): ParsedItem | null {
+  return matchingParsedItems(order, parsedItems, wfmItems)[0] ?? null;
 }
 
 function lookupMaxRank(order: WfmOrder, wfmItems: WfmItemsLookup): number | null {
@@ -75,6 +88,67 @@ export function ownedCountForMarketOrder(
   wfmItems: WfmItemsLookup = {},
 ): number {
   return ownedCountForOrder(parsedItemForOrder(order, parsedItems, wfmItems));
+}
+
+export type OrderInventoryMatch =
+  | { state: "match" }
+  | { state: "missing" }
+  | { state: "partial"; owned: number; listed: number }
+  | { state: "rank-mismatch"; ownedRank: number };
+
+// Mirrors the two early returns in parseInventory. An item the parser never
+// keeps can never be proven owned, so resources, gems and captura scenes must
+// stay unflagged however empty the inventory looks.
+function inventoryCouldHoldOrder(
+  order: WfmOrder,
+  wfmItems: WfmItemsLookup,
+  itemDb: Record<string, ItemDbEntry>,
+): boolean {
+  const gameRef = catalogEntryForOrder(order, wfmItems)?.gameRef;
+  if (!gameRef) return false;
+  const dbEntry = itemDb[gameRef] || {};
+  const resolved = resolveItem(gameRef, itemDb);
+  if (shouldHide(gameRef, dbEntry, resolved, true)) return false;
+  return !isResourceItem(gameRef, dbEntry, resolved);
+}
+
+/** Whether a live sell order is still backed by the inventory. "match" doubles
+ *  as "no opinion" so an unprovable listing is never accused of being dead. */
+export function orderInventoryMatch(
+  order: WfmOrder,
+  parsedItems: ParsedItem[],
+  wfmItems: WfmItemsLookup,
+  itemDb: Record<string, ItemDbEntry>,
+): OrderInventoryMatch {
+  if (order.orderType !== "sell") return { state: "match" };
+
+  const owned = matchingParsedItems(order, parsedItems, wfmItems).filter(
+    (item) => ownedCountForOrder(item) > 0,
+  );
+  if (owned.length === 0) {
+    return inventoryCouldHoldOrder(order, wfmItems, itemDb)
+      ? { state: "missing" }
+      : { state: "match" };
+  }
+
+  const listed = toFinitePositiveInt(order.quantity) ?? 1;
+  // A stack split across rank rows still backs one listing, so the rows that
+  // survive the rank check are summed rather than read one at a time.
+  const backing = (rows: ParsedItem[]): OrderInventoryMatch => {
+    const total = rows.reduce((sum, item) => sum + ownedCountForOrder(item), 0);
+    return total < listed ? { state: "partial", owned: total, listed } : { state: "match" };
+  };
+
+  if (order.modRank == null) return backing(owned);
+  // A rank the inventory did not carry would reach the badge as "Rank NaN".
+  const ranked = owned.filter(
+    (item) => isRankedGroup(item.inventoryGroup) && Number.isFinite(item.rank),
+  );
+  if (ranked.length === 0) return backing(owned);
+  const listedRank = Math.max(0, Math.floor(order.modRank));
+  const atRank = ranked.filter((item) => Math.floor(item.rank) === listedRank);
+  if (atRank.length > 0) return backing(atRank);
+  return { state: "rank-mismatch", ownedRank: Math.floor(ranked[0].rank) };
 }
 
 export function buildMarketOrderInventoryItem(

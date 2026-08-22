@@ -623,6 +623,20 @@
     border: 1px solid rgba(248, 113, 113, 0.35);
   }
 
+  /* Shared by riven contracts and item orders: the listing outruns the inventory
+     behind it - nothing owned, fewer owned than listed, or the wrong rank. */
+  .listing-warning {
+    width: fit-content;
+    border: 1px solid color-mix(in oklab, var(--danger) 55%, transparent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--danger) 16%, transparent);
+    color: var(--danger);
+    padding: 0.05rem 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
   /* cross-component pills / icons / tier colours */
   .order-vis {
     display: inline-flex;

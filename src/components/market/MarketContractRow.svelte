@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PLATINUM_ICON_URL, RIVEN_TEMPLATE_URL } from "../../lib/assetUrls.js";
-  import { attributeKeyword } from "../../lib/marketContract.js";
+  import { attributeKeyword, type ContractInventoryMatch } from "../../lib/marketContract.js";
   import MarketRowBase from "./MarketRowBase.svelte";
   import RivenPolarityIcon from "../RivenPolarityIcon.svelte";
   import { tr, type MessageKey } from "../../lib/i18n.js";
@@ -12,6 +12,8 @@
   export let onOpen: (contract: WfmContract) => void;
   export let onRemove: (contract: WfmContract) => void;
   export let onToggleVisible: (contract: WfmContract) => void;
+  /** Null while the riven list has not loaded; nothing is flagged until it has. */
+  export let inventoryMatch: ContractInventoryMatch | null = null;
   export let busy = false;
 
   function contractStatsPreview(contractRow: WfmContract): string[] {
@@ -38,6 +40,21 @@
     : "bg-sky-500/20 text-sky-300";
   $: masteryLabel = contract.masteryLevel != null ? `MR${contract.masteryLevel}` : "MR-";
   $: thumb = contract.itemThumb || RIVEN_TEMPLATE_URL;
+  $: warning =
+    inventoryMatch == null || inventoryMatch.state === "match"
+      ? null
+      : inventoryMatch.state === "missing"
+        ? {
+            label: $tr("market.listing.missingFromInventory"),
+            title: $tr("market.listing.missingTitle"),
+          }
+        : {
+            label: $tr("market.listing.rankMismatch", { owned: inventoryMatch.ownedRank }),
+            title: $tr("market.listing.rankMismatchTitle", {
+              listed: contract.modRank ?? 0,
+              owned: inventoryMatch.ownedRank,
+            }),
+          };
   $: rankBadges = [
     ...(contract.modRank != null ? [`R${contract.modRank}`] : []),
     ...(contract.rerolls != null ? [`RR${contract.rerolls}`] : []),
@@ -87,6 +104,11 @@
   >
     <svelte:fragment slot="compactBody">
       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+        {#if warning}
+          <span class="listing-warning" data-contract-warning title={warning.title}
+            >{warning.label}</span
+          >
+        {/if}
         <div class="flex items-center gap-3">
           <span class="flex items-center gap-1 font-display" title={$tr("common.platinum")}>
             <img src={PLATINUM_ICON_URL} alt="" width="16" height="16" class="shrink-0" />
@@ -125,6 +147,11 @@
       <span class="h-[15px] w-[15px] shrink-0" aria-hidden="true"></span>
     </svelte:fragment>
     <svelte:fragment slot="fullBody">
+      {#if warning}
+        <span class="listing-warning" data-contract-warning title={warning.title}
+          >{warning.label}</span
+        >
+      {/if}
       {#if statsPreview.length > 0}
         <div class="grid gap-0.5">
           {#each statsPreview as stat}
