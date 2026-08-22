@@ -39,6 +39,7 @@
   type ContentView = "orders" | "stats";
   type StatusFilter = "all" | "onsite" | "ingame";
   type RankFilter = "all" | "maxed";
+  const SUGGESTION_LIST_ID = "browse-suggestion-list";
   const AUTO_REFRESH_MS = 45_000;
   const FEEDBACK_TTL_MS = 2_500;
   const MAX_SUGGESTIONS = 8;
@@ -46,6 +47,8 @@
 
   let query = "";
   let showSuggestions = false;
+  let activeSuggestion = 0;
+  let suggestionEls: HTMLElement[] = [];
   let searchEl: HTMLInputElement | null = null;
   let selected: BrowseItem | null = null;
   let rowLimit = MAX_ROWS;
@@ -112,6 +115,9 @@
   }
 
   $: suggestions = buildSuggestions(catalog, query);
+  $: suggestionsOpen = showSuggestions && suggestions.length > 0;
+  // A fresh list starts on its top hit, so Tab/Enter always have a target.
+  $: if (suggestions) activeSuggestion = 0;
 
   function buildSuggestions(items: BrowseItem[], rawQuery: string): BrowseItem[] {
     const needle = rawQuery.trim().toLowerCase();
@@ -126,10 +132,38 @@
     return [...starts, ...contains].slice(0, MAX_SUGGESTIONS);
   }
 
+  function moveSuggestion(delta: number): void {
+    if (suggestions.length === 0) return;
+    showSuggestions = true;
+    const next = (activeSuggestion + delta + suggestions.length) % suggestions.length;
+    activeSuggestion = next;
+    suggestionEls[next]?.scrollIntoView({ block: "nearest" });
+  }
+
   function onSearchKeydown(event: KeyboardEvent): void {
-    if (event.key === "Enter" && suggestions.length > 0) {
+    // While an IME composes, these keys belong to the candidate window.
+    if (event.isComposing) return;
+    if (event.key === "ArrowDown") {
       event.preventDefault();
-      pick(suggestions[0]);
+      moveSuggestion(1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveSuggestion(-1);
+      return;
+    }
+    // warframe.market opens the highlighted row on Tab; only steal the key
+    // while the list is actually offering something, and leave Shift+Tab to
+    // normal backwards focus traversal.
+    const opensSuggestion = event.key === "Enter" || (event.key === "Tab" && !event.shiftKey);
+    if (opensSuggestion && showSuggestions && suggestions.length > 0) {
+      const target = suggestions[activeSuggestion] ?? suggestions[0];
+      if (target) {
+        event.preventDefault();
+        pick(target);
+      }
+      return;
     }
     if (event.key === "Escape") showSuggestions = false;
   }
@@ -495,6 +529,12 @@
           on:focus={() => (showSuggestions = true)}
           on:keydown={onSearchKeydown}
           on:blur={onSearchBlur}
+          role="combobox"
+          aria-expanded={suggestionsOpen}
+          aria-controls={SUGGESTION_LIST_ID}
+          aria-activedescendant={suggestionsOpen
+            ? `${SUGGESTION_LIST_ID}-${activeSuggestion}`
+            : undefined}
           data-search-focus
         />
         {#if query}
@@ -518,14 +558,22 @@
           </svg>
         </div>
       </div>
-      {#if showSuggestions && suggestions.length > 0}
+      {#if suggestionsOpen}
         <div
-          class="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-border bg-bg-raised"
+          class="absolute inset-x-0 top-full z-30 mt-1 max-h-[22rem] overflow-y-auto rounded-lg border border-border bg-bg-raised"
+          role="listbox"
+          id={SUGGESTION_LIST_ID}
         >
-          {#each suggestions as suggestion (suggestion.slug)}
+          {#each suggestions as suggestion, suggestionIndex (suggestion.slug)}
             <button
               type="button"
               class="flex w-full items-center gap-2.5 border-0 bg-transparent px-3 py-2 text-left text-sm text-text-primary hover:bg-white/[0.06]"
+              class:is-active={suggestionIndex === activeSuggestion}
+              bind:this={suggestionEls[suggestionIndex]}
+              role="option"
+              id={`${SUGGESTION_LIST_ID}-${suggestionIndex}`}
+              aria-selected={suggestionIndex === activeSuggestion}
+              on:mouseenter={() => (activeSuggestion = suggestionIndex)}
               on:mousedown|preventDefault={() => pick(suggestion)}
             >
               <span
@@ -930,5 +978,8 @@
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 30%, transparent);
+  }
+  .is-active {
+    background: color-mix(in oklab, var(--accent) 16%, transparent);
   }
 </style>
