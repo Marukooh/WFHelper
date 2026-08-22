@@ -35,7 +35,11 @@
     type GameLanguageChoice,
   } from "../lib/gameLanguage.js";
   import ThemedSelect from "../components/ThemedSelect.svelte";
-  import { hideFoundryClaims, hideFounderMasteryItems } from "../stores/preferences.js";
+  import {
+    autoFocusSearch,
+    hideFoundryClaims,
+    hideFounderMasteryItems,
+  } from "../stores/preferences.js";
   import { TOGGLEABLE_TABS, tabVisibility } from "../stores/sidebarTabs.js";
   import type { ToggleableView } from "../types/views.js";
   import { startTour } from "../stores/tour.js";
@@ -493,6 +497,14 @@
           </SettingsRow>
           <SettingsRow label={$tr("settings.hideFoundryPending")}>
             <input type="checkbox" bind:checked={$hideFoundryClaims} class="accent-accent" />
+          </SettingsRow>
+          <SettingsRow label={$tr("settings.autoFocusSearch")}>
+            <input
+              type="checkbox"
+              bind:checked={$autoFocusSearch}
+              data-setting-auto-focus-search
+              class="accent-accent"
+            />
           </SettingsRow>
         </div>
       </SettingsSection>

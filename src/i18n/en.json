@@ -950,6 +950,7 @@
   "settings.helperSourceOnly": "Helper source only",
   "settings.hideFounderItems": "Hide Founder items",
   "settings.hideFoundryPending": "Hide blueprints waiting in the foundry",
+  "settings.autoFocusSearch": "Focus the search field when a tab opens",
   "settings.inGameMessageNotifications": "In-game message notifications",
   "settings.inventoryDesc": "Blueprints remain in inventory data until their Foundry build is claimed. Automatic sync only runs when your source is warframe-api-helper; imported files are never overwritten.",
   "settings.inventorySourceChangeFailed": "Could not change the inventory source.",

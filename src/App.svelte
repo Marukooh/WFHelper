@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import type { Component } from "svelte";
 
   import Titlebar from "./components/Titlebar.svelte";
@@ -27,6 +27,7 @@
   import { currentView, SETUP_COMPLETED_KEY, statusText } from "./stores/app.js";
   import { parsedItems } from "./stores/data.js";
   import { tourActive } from "./stores/tour.js";
+  import { autoFocusSearch } from "./stores/preferences.js";
   import { activeItem, activeComponent, activeRelic } from "./stores/modals.js";
   import { setInventoryStatus } from "./lib/actions.js";
   import { initStartup } from "./lib/startupLoader.js";
@@ -96,6 +97,7 @@
     lazyViewComponent = null;
     lazyViewLoading = false;
     lazyViewError = "";
+    void autoFocusViewSearch();
   }
 
   async function loadLazyView(view: LazyViewName): Promise<void> {
@@ -116,6 +118,7 @@
 
       lazyViewComponent = component;
       lazyViewLoading = false;
+      void autoFocusViewSearch();
     } catch (err) {
       if (requestToken !== lazyRequestToken || $currentView !== view) {
         return;
@@ -147,13 +150,30 @@
     }
   }
 
+  function findSearchTarget(): HTMLInputElement | null {
+    // With a modal open, only its own search may take focus.
+    const scope = document.querySelector('[role="dialog"]') ?? document;
+    return (
+      [...scope.querySelectorAll<HTMLInputElement>("[data-search-focus]")].find(
+        (el) => el.offsetParent !== null && !el.disabled,
+      ) ?? null
+    );
+  }
+
+  async function autoFocusViewSearch(): Promise<void> {
+    // The tour switches tabs itself, and its root is not a [role="dialog"] the
+    // scoping below would catch, so focusing would steal it from every step.
+    if (!$autoFocusSearch || $tourActive) return;
+    await tick();
+    const target = findSearchTarget();
+    if (!target || target === document.activeElement) return;
+    target.focus();
+    target.select();
+  }
+
   function onKeyDown(e: KeyboardEvent): void {
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "f") {
-      // With a modal open, only its own search may take focus.
-      const scope = document.querySelector('[role="dialog"]') ?? document;
-      const target = [...scope.querySelectorAll<HTMLInputElement>("[data-search-focus]")].find(
-        (el) => el.offsetParent !== null && !el.disabled,
-      );
+      const target = findSearchTarget();
       if (target) {
         e.preventDefault();
         target.focus();

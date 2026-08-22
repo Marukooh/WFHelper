@@ -262,8 +262,12 @@
     writeStorage(SETUP_COMPLETED_KEY, "1");
     // legacy key: a downgrade to a pre-v2 build must not re-run setup either
     writeStorage("setup-completed", "1");
+    // Arm the tour before navigating: currentView subscribers run synchronously,
+    // and the auto-focus-search guard checks tourActive, so navigating first lets
+    // it steal focus into the search box as the tour paints its first step.
+    const autoStart = shouldAutoStartTour();
+    if (autoStart) startTour();
     currentView.set(nextView);
-    if (shouldAutoStartTour()) startTour();
   }
 
   async function continueFromConfigure(): Promise<void> {
