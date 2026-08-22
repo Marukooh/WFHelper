@@ -53,7 +53,7 @@ test.describe("Inventory Everything tab", () => {
 
   test("source chips drop a category from the list and put it back", async () => {
     const page = harness!.page;
-    const modsChip = page.locator('[data-everything-source="mods"]');
+    const modsChip = page.locator('[data-chip="mods"]');
     await expect(modsChip).toHaveAttribute("aria-pressed", "true");
 
     await modsChip.click();
@@ -73,16 +73,13 @@ test.describe("Inventory Everything tab", () => {
 
   test("the source choice survives a reload", async () => {
     const page = harness!.page;
-    await page.locator('[data-everything-source="arcanes"]').click();
+    await page.locator('[data-chip="arcanes"]').click();
     await page.reload();
     await expect(page.locator("#sidebar")).toBeVisible({ timeout: 90_000 });
     await page.locator('#sidebar [data-view="inventory"]').click();
 
-    await expect(page.locator('[data-everything-source="arcanes"]')).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    await page.locator('[data-everything-source="arcanes"]').click();
+    await expect(page.locator('[data-chip="arcanes"]')).toHaveAttribute("aria-pressed", "false");
+    await page.locator('[data-chip="arcanes"]').click();
   });
 
   test("the order book panel opens warframe.market statistics in a modal", async () => {

@@ -648,7 +648,7 @@
   "mastery.roadmap.buyableDesc": "{count} recommendations with snapshot prices",
   "mastery.roadmap.buyableMastery": "Buyable mastery",
   "mastery.roadmap.categoryAccessLine": "{category} · {access}",
-  "mastery.roadmap.categoryLabel": "Category",
+  "common.category": "Category",
   "mastery.roadmap.chanceWithOneRelic": "{prob} chance with {count} owned relic",
   "mastery.roadmap.chanceWithRelics": "{prob} chance with {count} owned relics",
   "mastery.roadmap.easy": "Easy",

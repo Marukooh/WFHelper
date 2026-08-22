@@ -847,7 +847,7 @@
   "mastery.roadmap.buyableDesc": "{count} Empfehlungen mit Snapshot-Preisen",
   "mastery.roadmap.buyableMastery": "Kaufbare Meisterschaft",
   "mastery.roadmap.categoryAccessLine": "{category} · {access}",
-  "mastery.roadmap.categoryLabel": "Kategorie",
+  "common.category": "Kategorie",
   "mastery.roadmap.chanceWithOneRelic": "{prob} Chance mit {count} eigenen Relikt",
   "mastery.roadmap.chanceWithRelics": "{prob} Chance mit {count} eigenen Relikten",
   "mastery.roadmap.easy": "Einfach",

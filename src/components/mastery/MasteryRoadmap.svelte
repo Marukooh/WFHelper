@@ -165,7 +165,7 @@
       <div class="ml-auto flex flex-wrap items-center justify-end gap-2 pb-2">
         <SearchBox value={search} onValueChange={(value) => (search = value)} />
         <label class="shared-filter-sort">
-          <span>{$tr("mastery.roadmap.categoryLabel")}</span>
+          <span>{$tr("common.category")}</span>
           <select class="shared-filter-select" bind:value={category}>
             <option value="all">{$tr("common.all")}</option>
             {#each categories as option}

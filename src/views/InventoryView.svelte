@@ -13,7 +13,12 @@
   import InventoryOrderBookPanel from "../components/inventory/InventoryOrderBookPanel.svelte";
   import SharedFilterBar from "../components/SharedFilterBar.svelte";
   import ResourcesView from "./ResourcesView.svelte";
+  import ChipToggleRow from "../components/inventory/ChipToggleRow.svelte";
   import { parseResources } from "../lib/inventory.js";
+  import {
+    EQUIPMENT_CATEGORY_ORDER,
+    classifyForFoundry,
+  } from "../lib/inventory/foundryResources.js";
   import { applySharedFiltersAndSort } from "../lib/filters.js";
   import {
     EVERYTHING_DEFAULT_SOURCES,
@@ -53,6 +58,8 @@
 
   const FILTER_TAB_KEY = "wf_inventory_tab";
   const EVERYTHING_SOURCES_KEY = "wf_inventory_everything_sources";
+  // Stored as the hidden set so a category the game adds later shows up by default.
+  const FULL_SETS_HIDDEN_KEY = "wf_inventory_full_sets_hidden_categories";
 
   function restoreFilterTab(): InventoryFilterTab {
     const raw = readStorage(FILTER_TAB_KEY);
@@ -101,6 +108,9 @@
 
   let filter: InventoryFilterTab = restoreFilterTab();
   let everythingSources: InventoryFilterTab[] = restoreEverythingSources();
+  let hiddenSetCategories: string[] = (readStorage(FULL_SETS_HIDDEN_KEY) ?? "")
+    .split(",")
+    .filter((entry) => entry.length > 0);
   let missingIconsOnly = false;
   let showFilterPanel = false;
   // Full Sets lists sellable spares; this folds in the sets still missing parts.
@@ -267,10 +277,28 @@
     }, HOTSET_REFRESH_DELAY_MS);
   }
 
+  /** Sets carry "Full Set" as their label, so bucket them by the root item instead. */
+  function setCategoryFor(item: InventoryBaseItem, db: typeof $itemDb): string {
+    const root = item.internalName.replace(/#set$/, "");
+    return classifyForFoundry(root, root, db);
+  }
+
+  function orderedSetCategories(items: InventoryBaseItem[], db: typeof $itemDb): string[] {
+    const present = new Set(items.map((item) => setCategoryFor(item, db)));
+    return EQUIPMENT_CATEGORY_ORDER.filter((category) => present.has(category));
+  }
+
+  function toggleSetCategory(category: string): void {
+    hiddenSetCategories = hiddenSetCategories.includes(category)
+      ? hiddenSetCategories.filter((entry) => entry !== category)
+      : [...hiddenSetCategories, category];
+    writeStorage(FULL_SETS_HIDDEN_KEY, hiddenSetCategories.join(","));
+  }
+
   function limitToEnabledSources(
     items: InventoryBaseItem[],
     tab: InventoryFilterTab,
-    enabled: Set<InventoryFilterTab>,
+    enabled: ReadonlySet<string>,
   ): InventoryBaseItem[] {
     if (tab !== "everything") return items;
     return items.filter((item) => enabled.has(item.inventoryGroup));
@@ -311,7 +339,21 @@
           $relicDb,
         )
       : [];
-  $: enabledEverythingSources = new Set(everythingSources);
+  $: everythingSourceOptions = EVERYTHING_SOURCES.flatMap((source) => {
+    const labelKey = FILTERS.find((entry) => entry.key === source)?.labelKey;
+    return labelKey ? [{ key: source as string, label: $tr(labelKey) }] : [];
+  });
+  $: enabledEverythingSources = new Set<string>(everythingSources);
+  // Categories are data values, not UI copy, so they stay untranslated here too.
+  $: fullSetCategoryOptions =
+    filter === "full_sets"
+      ? orderedSetCategories(tabBaseItems, $itemDb).map((key) => ({ key, label: key }))
+      : [];
+  $: enabledSetCategories = new Set<string>(
+    fullSetCategoryOptions
+      .map((option) => option.key)
+      .filter((key) => !hiddenSetCategories.includes(key)),
+  );
   $: showEverythingResources = filter === "everything" && enabledEverythingSources.has("resources");
   $: tabBaseItems = limitToEnabledSources(
     [
@@ -365,7 +407,11 @@
     : null;
   $: partMastery = buildPartMasteryResolver($itemDb, $masteryData);
   $: masteredTabItems = attachPartMasteryFlags(searchableTabItems, partMastery);
-  $: filtered = applySharedFiltersAndSort(masteredTabItems, $inventoryFilters);
+  $: sortedTabItems = applySharedFiltersAndSort(masteredTabItems, $inventoryFilters);
+  $: filtered =
+    filter === "full_sets" && hiddenSetCategories.length > 0
+      ? sortedTabItems.filter((item) => enabledSetCategories.has(setCategoryFor(item, $itemDb)))
+      : sortedTabItems;
   $: visibleItems =
     $devMode && missingIconsOnly
       ? filtered.filter(
@@ -461,25 +507,22 @@
     >
       <div class="min-w-0" data-tour="inventory-grid">
         {#if filter === "everything"}
-          <div class="mb-2 flex flex-wrap items-center gap-2" data-everything-sources>
-            <span class="text-xs uppercase tracking-[0.05em] text-text-muted"
-              >{$tr("inventory.everythingInclude")}</span
-            >
-            <div class="filter-tabs">
-              {#each EVERYTHING_SOURCES as source (source)}
-                {@const sourceLabelKey = FILTERS.find((entry) => entry.key === source)?.labelKey}
-                {#if sourceLabelKey}
-                  <button
-                    class="filter-tab"
-                    class:active={enabledEverythingSources.has(source)}
-                    aria-pressed={enabledEverythingSources.has(source)}
-                    data-everything-source={source}
-                    on:click={() => toggleEverythingSource(source)}>{$tr(sourceLabelKey)}</button
-                  >
-                {/if}
-              {/each}
-            </div>
-          </div>
+          <ChipToggleRow
+            rowName="everything-sources"
+            label={$tr("inventory.everythingInclude")}
+            options={everythingSourceOptions}
+            enabled={enabledEverythingSources}
+            onToggle={(key) => toggleEverythingSource(key as InventoryFilterTab)}
+          />
+        {/if}
+        {#if filter === "full_sets"}
+          <ChipToggleRow
+            rowName="full-set-categories"
+            label={$tr("common.category")}
+            options={fullSetCategoryOptions}
+            enabled={enabledSetCategories}
+            onToggle={toggleSetCategory}
+          />
         {/if}
         {#if filter === "full_sets"}
           <label

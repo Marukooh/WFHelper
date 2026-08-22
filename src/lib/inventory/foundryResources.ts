@@ -41,9 +41,10 @@ export const EQUIPMENT_CATEGORY_ORDER = [
   "Misc",
 ];
 
-// Prefer productCategory, raw category, then path fallbacks. Component blueprints
+// Exported because the Full Sets category chips bucket sets the same way.
+// Prefers productCategory, raw category, then path fallbacks; component blueprints
 // inherit their parent's category because their raw category is Resource.
-function classifyForFoundry(
+export function classifyForFoundry(
   productUn: string | null,
   blueprintUn: string,
   itemDb: Record<string, ItemDbEntry>,
