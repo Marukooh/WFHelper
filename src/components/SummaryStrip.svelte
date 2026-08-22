@@ -30,13 +30,17 @@
 
 <ThemedPanel
   className={variant === "mastery"
-    ? "inline-flex min-w-0 flex-wrap items-stretch px-7 py-5"
+    ? "flex w-full min-w-0 flex-wrap items-stretch px-7 py-5"
     : variant === "grid"
       ? "grid [grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))] gap-x-8 gap-y-4 px-6 py-4"
       : "flex flex-wrap items-stretch gap-y-2 px-4 py-3"}
 >
+  {#if $$slots.leading && variant !== "grid"}
+    <div class="flex shrink-0 items-center pr-6"><slot name="leading" /></div>
+  {/if}
+
   {#each items as item, index (item.key)}
-    {#if index > 0 && variant !== "grid"}
+    {#if (index > 0 || $$slots.leading) && variant !== "grid"}
       <span class="self-stretch w-px bg-[color:var(--ui-panel-border)]" aria-hidden="true"></span>
     {/if}
 
