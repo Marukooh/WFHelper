@@ -515,6 +515,7 @@
   "filters.amountHint": "Owned amount: hide single copies so you don't sell your only one",
   "filters.any": "Any",
   "filters.claimLabel": "Claim",
+  "filters.buildableSets": "Can build (full set)",
   "filters.claimTitle": "Not Ready hides everything you could claim or build right now",
   "filters.completeSets": "Complete (Sets)",
   "filters.customMinPlatinum": "Custom minimum platinum",

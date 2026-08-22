@@ -231,6 +231,33 @@ describe("mastery filters", () => {
     expect(filtered.map((row) => row.name)).toEqual(["Claimable Build"]);
   });
 
+  it("full-set mode keeps buildable parents and drops their part blueprints", () => {
+    const withParts = [
+      ...foundryItems,
+      { name: "Rhino Prime Systems", foundryState: "buildable" as const, looseComponent: true },
+      { name: "Missing Part Component", foundryState: "missing" as const, looseComponent: true },
+    ];
+    const filtered = applySharedFiltersAndSort(withParts, {
+      ...defaultFilters(),
+      foundryState: "buildable_sets",
+    });
+
+    expect(filtered.map((row) => row.name)).toEqual(["All Parts Owned"]);
+  });
+
+  it("plain buildable still lists the part blueprints alongside the parent", () => {
+    const withParts = [
+      ...foundryItems,
+      { name: "Rhino Prime Systems", foundryState: "buildable" as const, looseComponent: true },
+    ];
+    const filtered = applySharedFiltersAndSort(withParts, {
+      ...defaultFilters(),
+      foundryState: "buildable",
+    });
+
+    expect(filtered.map((row) => row.name)).toEqual(["All Parts Owned", "Rhino Prime Systems"]);
+  });
+
   it("not-ready drops claimable and ready-to-build rows and nothing else", () => {
     const filtered = applySharedFiltersAndSort(foundryItems, {
       ...defaultFilters(),

@@ -27,6 +27,20 @@ function parseCompletionDate(value: unknown): Date | null {
   return null;
 }
 
+/** Canonical display order, shared by the Foundry tabs and the Full Sets chips. */
+export const EQUIPMENT_CATEGORY_ORDER = [
+  "Warframe",
+  "Primary",
+  "Secondary",
+  "Melee",
+  "Archwing",
+  "Companion",
+  "Appearance",
+  "Gear",
+  "Modular",
+  "Misc",
+];
+
 // Prefer productCategory, raw category, then path fallbacks. Component blueprints
 // inherit their parent's category because their raw category is Resource.
 function classifyForFoundry(

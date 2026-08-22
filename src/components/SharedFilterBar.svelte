@@ -24,6 +24,7 @@
   export let showSubsumed = false;
   export let showVaulted = false;
   export let showFoundryState = false;
+  export let showBuildableSets = false;
 
   $: PRIME_OPTIONS = [
     ["all", $tr("common.all")],
@@ -42,7 +43,24 @@
     ["claimable", $tr("common.ready")],
     ["not_ready", $tr("filters.notReady")],
     ["buildable", $tr("common.canBuild")],
+    ...(showBuildableSets
+      ? ([["buildable_sets", $tr("filters.buildableSets")]] as Array<
+          [FoundryStateFilterMode, string]
+        >)
+      : []),
   ] as Array<[FoundryStateFilterMode, string]>;
+
+  $: VAULTED_OPTIONS = [
+    ["all", $tr("common.all")],
+    ["yes", $tr("common.vaulted")],
+    ["no", $tr("common.unvaulted")],
+  ] as Array<[YesNoFilterMode, string]>;
+
+  $: SUBSUMED_OPTIONS = [
+    ["all", $tr("common.all")],
+    ["yes", $tr("common.subsumed")],
+    ["no", $tr("filters.notSubsumed")],
+  ] as Array<[YesNoFilterMode, string]>;
 
   $: DEFAULT_SORT_OPTIONS = [
     ["name", $tr("common.name")],
@@ -164,6 +182,7 @@
             <span class="shared-chip-label">{$tr("filters.claimLabel")}</span>
             <select
               class="shared-filter-select"
+              data-foundry-state
               title={$tr("filters.claimTitle")}
               value={state.foundryState}
               on:change={(event) =>
@@ -179,32 +198,36 @@
         {/if}
 
         {#if showVaulted}
-          <div class="filter-tabs" title={$tr("filters.vaultedTitle")}>
-            <button
-              class="filter-tab"
-              class:active={state.vaulted === "yes"}
-              on:click={() => setYesNoFilter("vaulted", "yes")}>{$tr("common.vaulted")}</button
+          <div class="shared-select-group">
+            <span class="shared-chip-label">{$tr("common.vaulted")}</span>
+            <select
+              class="shared-filter-select"
+              title={$tr("filters.vaultedTitle")}
+              value={state.vaulted}
+              on:change={(event) =>
+                updateSharedFilters(scope, { vaulted: selectedValue(event) as YesNoFilterMode })}
             >
-            <button
-              class="filter-tab"
-              class:active={state.vaulted === "no"}
-              on:click={() => setYesNoFilter("vaulted", "no")}>{$tr("common.unvaulted")}</button
-            >
+              {#each VAULTED_OPTIONS as [mode, label] (mode)}
+                <option value={mode}>{label}</option>
+              {/each}
+            </select>
           </div>
         {/if}
 
         {#if showSubsumed}
-          <div class="filter-tabs" title={$tr("filters.subsumedTitle")}>
-            <button
-              class="filter-tab"
-              class:active={state.subsumed === "yes"}
-              on:click={() => setYesNoFilter("subsumed", "yes")}>{$tr("common.subsumed")}</button
+          <div class="shared-select-group">
+            <span class="shared-chip-label">{$tr("common.subsumed")}</span>
+            <select
+              class="shared-filter-select"
+              title={$tr("filters.subsumedTitle")}
+              value={state.subsumed}
+              on:change={(event) =>
+                updateSharedFilters(scope, { subsumed: selectedValue(event) as YesNoFilterMode })}
             >
-            <button
-              class="filter-tab"
-              class:active={state.subsumed === "no"}
-              on:click={() => setYesNoFilter("subsumed", "no")}>{$tr("filters.notSubsumed")}</button
-            >
+              {#each SUBSUMED_OPTIONS as [mode, label] (mode)}
+                <option value={mode}>{label}</option>
+              {/each}
+            </select>
           </div>
         {/if}
       {/if}

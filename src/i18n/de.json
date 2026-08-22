@@ -718,6 +718,7 @@
   "filters.amountHint": "Besitzanzahl: blende Einzelstücke aus, damit du dein einziges nicht verkaufst",
   "filters.any": "Beliebig",
   "filters.claimLabel": "Abholen",
+  "filters.buildableSets": "Baubereit (ganzes Set)",
   "filters.claimTitle": "Nicht bereit blendet alles aus, was du jetzt abholen oder bauen könntest",
   "filters.completeSets": "Vollständig (Sets)",
   "filters.customMinPlatinum": "Eigenes Platinum-Minimum",

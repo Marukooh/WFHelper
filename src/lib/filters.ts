@@ -65,6 +65,8 @@ interface FilterableItem {
   masteryXpRemaining?: number | null;
   /** Undefined when no foundry state applies (already owned and mastered). */
   foundryState?: FoundryState | undefined;
+  /** A blueprint for a part of something bigger, rather than the thing itself. */
+  looseComponent?: boolean;
 }
 
 const GRADE_ORDER: Record<string, number> = {
@@ -203,6 +205,14 @@ export function matchesSharedFilters(item: FilterableItem, filters: SharedFilter
   // claim and a blueprint whose parts are all owned - and leaves the rest.
   if (filters.foundryState === "claimable" && item.foundryState !== "claimable") return false;
   if (filters.foundryState === "buildable" && item.foundryState !== "buildable") return false;
+  // A whole set you can start now: the parent blueprint is buildable and the
+  // part blueprints that make it up are hidden rather than listed alongside.
+  if (
+    filters.foundryState === "buildable_sets" &&
+    (item.foundryState !== "buildable" || item.looseComponent === true)
+  ) {
+    return false;
+  }
   if (
     filters.foundryState === "not_ready" &&
     (item.foundryState === "claimable" || item.foundryState === "buildable")

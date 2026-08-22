@@ -1,4 +1,15 @@
-﻿<script lang="ts">
+﻿<script context="module" lang="ts">
+  // This view is destroyed on every tab switch, so the retired-tab migration
+  // needs module scope to fire once a launch instead of once a visit.
+  let readyTabMigrated = false;
+  function claimReadyTabMigration(): boolean {
+    if (readyTabMigrated) return false;
+    readyTabMigrated = true;
+    return true;
+  }
+</script>
+
+<script lang="ts">
   import { itemLabel } from "../lib/itemLabel.js";
   import { SvelteMap } from "svelte/reactivity";
   import {
@@ -23,8 +34,9 @@
   import { buildParsedItemFromDb } from "../lib/parsedItemFromDb.js";
   import { CREDITS_ICON_URL } from "../lib/assetUrls.js";
   import { clockStore } from "../lib/timers.js";
-  import { persistedString } from "../lib/persistence.js";
-  import { sharedFilters } from "../stores/filters.js";
+  import { persistedString, readStorage, writeStorage } from "../lib/persistence.js";
+  import { EQUIPMENT_CATEGORY_ORDER } from "../lib/inventory/foundryResources.js";
+  import { sharedFilters, updateSharedFilters } from "../stores/filters.js";
   import { tr } from "../lib/i18n.js";
   import type { MessageKey } from "../lib/i18n.js";
   import ItemImage from "../components/ItemImage.svelte";
@@ -77,36 +89,33 @@
 
   $: foundry = $foundryData;
 
-  /** Canonical display order for the category chips in the single filter row. */
-  const CATEGORY_ORDER = [
-    "Warframe",
-    "Primary",
-    "Secondary",
-    "Melee",
-    "Archwing",
-    "Companion",
-    "Appearance",
-    "Gear",
-    "Modular",
-    "Misc",
-  ];
-
   const STATUS_FILTERS: Array<{ key: FilterKey; labelKey: MessageKey }> = [
     { key: "all", labelKey: "common.all" },
     { key: "status:in-progress", labelKey: "common.inProgress" },
-    { key: "status:ready", labelKey: "foundry.status.readyToBuild" },
   ];
   // Categories are data values, not UI copy, so they stay untranslated.
-  const CATEGORY_FILTERS = CATEGORY_ORDER.map((cat) => ({
+  const CATEGORY_FILTERS = EQUIPMENT_CATEGORY_ORDER.map((cat) => ({
     key: `cat:${cat}` as FilterKey,
     label: cat,
   }));
+  // persistedString drops the retired Ready-to-build key from the store without
+  // writing, so raw storage is the only trace of that preference left. Read it
+  // before persistedString below, which is why this line comes first.
+  const retiredReadyTab = readStorage(FILTER_KEY) === "status:ready" && claimReadyTabMigration();
   // persistedString reads at init, so its key list must not wait on the translator.
   const activeFilter = persistedString<FilterKey>(
     FILTER_KEY,
     [...STATUS_FILTERS.map((tab) => tab.key), ...CATEGORY_FILTERS.map((tab) => tab.key)],
     "all",
   );
+  // Ready-to-build now lives in the Claim dropdown, as "buildable" not
+  // "buildable_sets": the retired tab counted loose component blueprints too.
+  // Consume the marker once honoured, or every launch would re-override
+  // whatever the user picks in that dropdown afterwards.
+  if (retiredReadyTab) {
+    updateSharedFilters("foundry", { foundryState: "buildable" });
+    writeStorage(FILTER_KEY, "all");
+  }
   $: foundryFilterTabs = [
     ...STATUS_FILTERS.map(({ key, labelKey }) => ({ key, label: $tr(labelKey) })),
     ...CATEGORY_FILTERS,
@@ -273,6 +282,7 @@
     status: MasteryStatus | "unknown";
     vaulted: boolean;
     foundryState: FoundryState;
+    looseComponent: boolean;
     subsumed: boolean | undefined;
   } {
     const db = row.e.productUniqueName ? $itemDb[row.e.productUniqueName] : null;
@@ -290,6 +300,9 @@
       status: masteryStateFor(row.e),
       vaulted: db?.vaulted === true,
       foundryState: FOUNDRY_STATE_BY_STATUS[row.status],
+      // A part blueprint is a piece of something bigger, so the full-set view
+      // hides it rather than listing it beside the parent it belongs to.
+      looseComponent: Boolean(db?.componentOf),
       subsumed:
         row.e.category === "Warframe" && isSubsumableFrame(row.e.name)
           ? isFrameSubsumed(row.e.name, subsumedFamilies)
@@ -297,16 +310,17 @@
     };
   }
 
-  function passesActiveFilter(e: FoundryEntry, s: ItemStatus): boolean {
-    if ($activeFilter === "all") return true;
-    if ($activeFilter === "status:in-progress") return s === "in-progress" || s === "claimable";
-    if ($activeFilter === "status:ready") return s === "ready-to-build";
-    if ($activeFilter.startsWith("cat:")) return e.category === $activeFilter.slice(4);
+  // activeKey is passed in: a $: statement tracks only what it names textually,
+  // so reading the store inside here would leave the list stale on every change.
+  function passesActiveFilter(e: FoundryEntry, s: ItemStatus, activeKey: FilterKey): boolean {
+    if (activeKey === "all") return true;
+    if (activeKey === "status:in-progress") return s === "in-progress" || s === "claimable";
+    if (activeKey.startsWith("cat:")) return e.category === activeKey.slice(4);
     return true;
   }
 
   $: filtered = decorated.filter(({ e, status }) => {
-    if (!passesActiveFilter(e, status)) return false;
+    if (!passesActiveFilter(e, status, $activeFilter)) return false;
     return matchesSharedFilters(filterableFoundryEntry({ e, status }), $foundryFilters);
   });
 
@@ -393,9 +407,10 @@
       showSubsumed
       showVaulted
       showFoundryState
+      showBuildableSets
     />
 
-    <div class="flex items-end border-b border-white/[0.09]">
+    <div class="flex flex-wrap items-end gap-y-2 border-b border-white/[0.09]">
       <HeaderTabs
         options={foundryFilterTabs}
         activeKey={$activeFilter}
