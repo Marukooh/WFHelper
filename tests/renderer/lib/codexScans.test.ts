@@ -342,6 +342,19 @@ describe("wiki entries whose InternalName is not the scanned path", () => {
   });
 });
 
+describe("entries that span two factions", () => {
+  // ArchonBorealAvatar is Sentient and ArchonBorealAvatarPNW is Narmer, but the
+  // codex lists one Archon Boreal.
+  it("lists one row and files it under the faction most of its paths name", () => {
+    const rows = buildCodexRows([]);
+    const boreal = rows.filter((row) => row.name === "Archon Boreal");
+    expect(boreal).toHaveLength(1);
+    const targets = rows.filter((row) => row.name === "Corpus Target");
+    expect(targets).toHaveLength(1);
+    expect(targets[0].faction).toBe("corpus");
+  });
+});
+
 describe("scan requirements", () => {
   // Verified in-game 2026-08-23: the wiki is right wherever the export says 5,
   // which is the value DE writes when an avatar states no requirement.

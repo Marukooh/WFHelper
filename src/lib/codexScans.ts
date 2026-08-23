@@ -187,7 +187,8 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
 
   // Male, female and base avatars are three keys for one codex entry, so extras
   // collapse by display name; only same-requirement forms fold (Mytocardia
-  // Sac's large and small containers share a name).
+  // Sac's large and small containers share a name). Faction stays out of the
+  // key because one entry can span two (Archon Boreal is Sentient and Narmer).
   interface ExtraGroup {
     type: string;
     name: string;
@@ -195,6 +196,7 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
     leaderScanned: number | null;
     eximusScans: number | null;
     icon: string | null;
+    factions: Map<string, number>;
   }
   const extrasCovered = new Set<string>();
   const groups = new Map<string, ExtraGroup>();
@@ -206,7 +208,7 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
     const name = extra.name || fallbackName(type);
     const scanned = looseScanned.get(key) ?? 0;
     const leaderScanned = looseScanned.get(key + LEADER_SUFFIX) ?? null;
-    const groupKey = `${extra.faction}|${name}|${extra.scans ?? ""}`;
+    const groupKey = `${name}|${extra.scans ?? ""}`;
     const merged = groups.get(groupKey);
     if (!merged) {
       groups.set(groupKey, {
@@ -216,6 +218,7 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
         leaderScanned,
         eximusScans: extra.eximusScans ?? null,
         icon: extra.icon ?? null,
+        factions: new Map([[extra.faction, 1]]),
       });
     } else {
       merged.scanned = Math.max(merged.scanned, scanned);
@@ -226,12 +229,28 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
       // so the group takes whichever member names one first.
       merged.eximusScans ??= extra.eximusScans ?? null;
       merged.icon ??= extra.icon ?? null;
+      merged.factions.set(extra.faction, (merged.factions.get(extra.faction) ?? 0) + 1);
     }
   }
-  for (const { type, name, scanned, leaderScanned, eximusScans, icon } of groups.values()) {
-    const extra = CODEX_EXTRA_INFO[type];
-    const required = extra.scans ?? (extra.faction === "wildlife" ? WILDLIFE_REQUIRED_SCANS : null);
-    rows.push(makeRow(type, name, scanned, required, extra.faction, icon));
+  for (const {
+    type,
+    name,
+    scanned,
+    leaderScanned,
+    eximusScans,
+    icon,
+    factions,
+  } of groups.values()) {
+    // The tab the merged entry belongs under is the one most of its paths name.
+    const faction = [...factions.entries()].reduce((best, entry) =>
+      entry[1] > best[1] ? entry : best,
+    )[0];
+    // The base requirement is part of the group key, so any member states it;
+    // its wildlife fallback keys off the merged faction to stay consistent with
+    // the row (no current group's members disagree, so nothing moves today).
+    const required =
+      CODEX_EXTRA_INFO[type].scans ?? (faction === "wildlife" ? WILDLIFE_REQUIRED_SCANS : null);
+    rows.push(makeRow(type, name, scanned, required, faction, icon));
     if (leaderScanned !== null || eximusScans) {
       rows.push(
         makeRow(
@@ -239,7 +258,7 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
           `${name} Eximus`,
           leaderScanned ?? 0,
           eximusScans,
-          extra.faction,
+          faction,
           icon,
         ),
       );
