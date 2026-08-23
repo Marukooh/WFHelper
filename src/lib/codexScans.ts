@@ -73,6 +73,20 @@ const KEY_LEVELS: Array<(type: string) => string> = [
 /** Leader avatars are the Eximus spawns, which the codex counts separately. */
 const isLeaderType = (type: string): boolean => /AvatarLeader$/i.test(type);
 
+// The wiki's InternalName is frequently not the path DE records a scan against,
+// but its artwork filename usually is (Corrupted Heavy Gunner is
+// OrokinMinigunBombard on the wiki and OrokinHeavyFemaleAvatar in a profile).
+const artworkKeys = (value: string): Set<string> => {
+  const base = value.replace(/\.png$/i, "");
+  return new Set([base.toLowerCase(), base.replace(SUFFIX_RE, "").toLowerCase()].filter(Boolean));
+};
+
+const scanArtworkKeys = (scanType: string): string[] => {
+  const base = isLeaderType(scanType) ? scanType.replace(/Leader$/i, "") : scanType;
+  const segment = base.split("/").filter(Boolean).pop() || "";
+  return [segment.toLowerCase(), segment.replace(SUFFIX_RE, "").toLowerCase()];
+};
+
 const LEADER_SUFFIX = "#leader";
 
 function fallbackName(type: string): string {
@@ -122,14 +136,45 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
 
   const wikiScanned = new Map<string, number>();
   const wikiLeaderScanned = new Map<string, number>();
+  const credit = (target: string, entry: CodexScanEntry): void => {
+    const counts = isLeaderType(entry.type) ? wikiLeaderScanned : wikiScanned;
+    counts.set(target, Math.max(counts.get(target) ?? 0, entry.count));
+  };
+
+  const pending: CodexScanEntry[] = [];
+  for (const entry of scans) {
+    const target = resolveWikiType(entry.type);
+    if (target) credit(target, entry);
+    else pending.push(entry);
+  }
+
+  // Artwork is only a fallback, and only for entries the paths left unclaimed,
+  // so a filename two enemies share cannot take a count off the one that
+  // already matched. Still ambiguous after that means unusable, as elsewhere.
+  const claimedTypes = new Set([...wikiScanned.keys(), ...wikiLeaderScanned.keys()]);
+  const wikiByArtwork = new Map<string, string | null>();
+  for (const [type, requirement] of Object.entries(CODEX_SCAN_REQUIREMENTS)) {
+    if (claimedTypes.has(type) || !requirement.image) continue;
+    for (const key of artworkKeys(requirement.image)) {
+      const seen = wikiByArtwork.get(key);
+      wikiByArtwork.set(key, seen === undefined || seen === type ? type : null);
+    }
+  }
+  const resolveByArtwork = (scanType: string): string | null => {
+    for (const key of scanArtworkKeys(scanType)) {
+      const hit = wikiByArtwork.get(key);
+      if (hit) return hit;
+    }
+    return null;
+  };
+
   const looseScanned = new Map<string, number>();
   const unresolved: CodexScanEntry[] = [];
-  for (const entry of scans) {
+  for (const entry of pending) {
     const leader = isLeaderType(entry.type);
-    const target = resolveWikiType(entry.type);
+    const target = resolveByArtwork(entry.type);
     if (target) {
-      const counts = leader ? wikiLeaderScanned : wikiScanned;
-      counts.set(target, Math.max(counts.get(target) ?? 0, entry.count));
+      credit(target, entry);
       continue;
     }
     const key = canonicalKey(entry.type) + (leader ? LEADER_SUFFIX : "");

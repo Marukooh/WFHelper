@@ -303,3 +303,31 @@ describe("plants", () => {
     }
   });
 });
+
+describe("wiki entries whose InternalName is not the scanned path", () => {
+  const HEAVY_GUNNER_SCAN = "/Lotus/Types/Enemies/Orokin/OrokinHeavyFemaleAvatar";
+  const WARDEN_SCAN = "/Lotus/Types/Enemies/Orokin/Gamemodes/CorruptedWardenAvatar";
+
+  it("credits a scan the wiki only matches by its artwork filename", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/CrawlerAvatar", count: 35 },
+    ]);
+    expect(rows.find((row) => row.name === "Crawler")).toMatchObject({ scanned: 35 });
+  });
+
+  // Corrupted Warden and Corrupted Heavy Gunner both cite OrokinHeavyFemaleAvatar.png.
+  it("gives artwork to the entry left over once the rival matched by path", () => {
+    const rows = buildCodexRows([
+      { type: WARDEN_SCAN, count: 3 },
+      { type: HEAVY_GUNNER_SCAN, count: 464 },
+    ]);
+    expect(rows.find((row) => row.name === "Corrupted Warden")?.scanned).toBe(3);
+    expect(rows.find((row) => row.name === "Corrupted Heavy Gunner")?.scanned).toBe(464);
+  });
+
+  it("credits neither while both artwork claimants are still unmatched", () => {
+    const rows = buildCodexRows([{ type: HEAVY_GUNNER_SCAN, count: 464 }]);
+    expect(rows.find((row) => row.name === "Corrupted Heavy Gunner")?.scanned).toBe(0);
+    expect(rows.find((row) => row.name === "Corrupted Warden")?.scanned).toBe(0);
+  });
+});
