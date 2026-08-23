@@ -1,9 +1,14 @@
 <script lang="ts" context="module">
-  import { SvelteSet } from "svelte/reactivity";
-
   // Survives tab switches so failed loads and the audit toggle are not
-  // forgotten every time the panel remounts.
-  const brokenImages = new SvelteSet<string>();
+  // forgotten every time the panel remounts. See markBroken for why a
+  // SvelteSet would publish nothing to this component's markup.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const brokenImages = new Set<string>();
+  // Only a load event proves an icon exists, so the audit filter hides a row
+  // on this set rather than on brokenImages: an unprobed row must stay listed
+  // long enough for its <img> to mount and report.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const loadedImages = new Set<string>();
   let missingIconsDefault = false;
 </script>
 
@@ -50,7 +55,7 @@
         fetchedAt = result.fetchedAt;
         rows = buildCodexRows(result.scans);
         // A refresh can carry icons that were still missing when a URL last 404'd.
-        if (refresh) brokenImages.clear();
+        if (refresh) resetImageProbes();
       }
     } catch {
       error = "fetch-failed";
@@ -63,8 +68,38 @@
     void load();
   });
 
+  // This component is legacy mode, where only an instance-level assignment
+  // invalidates the markup, so the module-scoped Sets have to publish a tick
+  // that every reader takes as an argument. Naming it textually is the whole
+  // point: a reader that drops it silently stops reacting to probes.
+  let brokenTick = 0;
+
+  function resetImageProbes(): void {
+    brokenImages.clear();
+    loadedImages.clear();
+    brokenTick += 1;
+  }
+
   function markBroken(type: string): void {
+    if (brokenImages.has(type)) return;
     brokenImages.add(type);
+    brokenTick += 1;
+  }
+
+  function markLoaded(type: string): void {
+    if (loadedImages.has(type)) return;
+    loadedImages.add(type);
+    // Nothing but the audit filter reads this set, so skip re-filtering every
+    // row for each of the ~1500 icons that load with the filter off.
+    if (missingIconsOnly) brokenTick += 1;
+  }
+
+  function imageFor(row: CodexRow, _tick: number): string | null {
+    return brokenImages.has(row.type) ? null : enemyImageUrl(row.image);
+  }
+
+  function imageProbedOk(type: string, _tick: number): boolean {
+    return loadedImages.has(type);
   }
 
   $: shownFactions = CODEX_FACTIONS.filter((faction) =>
@@ -75,9 +110,7 @@
     rows.filter((row) => {
       if (factionFilter !== "all" && row.faction !== factionFilter) return false;
       if (incompleteOnly && row.complete !== false) return false;
-      if (missingIconsOnly && enemyImageUrl(row.image) !== null && !brokenImages.has(row.type)) {
-        return false;
-      }
+      if (missingIconsOnly && imageProbedOk(row.type, brokenTick)) return false;
       if (query && !row.name.toLowerCase().includes(query)) return false;
       return true;
     }),
@@ -163,7 +196,7 @@
       data-tour="mastery-codex-list"
     >
       {#each filtered as row (row.type)}
-        {@const imageUrl = brokenImages.has(row.type) ? null : enemyImageUrl(row.image)}
+        {@const imageUrl = imageFor(row, brokenTick)}
         <div class="overflow-hidden rounded border border-border bg-bg-surface" title={row.type}>
           <div class="relative flex h-28 items-center justify-center bg-bg-raised">
             {#if imageUrl}
@@ -172,6 +205,7 @@
                 src={imageUrl}
                 alt=""
                 loading="lazy"
+                on:load={() => markLoaded(row.type)}
                 on:error={() => markBroken(row.type)}
               />
             {:else}
