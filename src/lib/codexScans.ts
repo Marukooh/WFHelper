@@ -45,7 +45,7 @@ export function enemyImageUrl(image: string | null): string | null {
   return `${ENEMY_IMAGE_BASE}${encodeURIComponent(image)}`;
 }
 
-const SUFFIX_RE = /(AvatarLeader|Avatar|Agent)$/i;
+const SUFFIX_RE = /(AvatarLeader|LeaderAvatar|Avatar|Agent)$/i;
 
 // A scan lands on the world prop, which is the catalog path plus "Deco" for
 // lore fragments. Ayatan is worse: DE keys the codex entry by the inventory
@@ -70,8 +70,12 @@ const KEY_LEVELS: Array<(type: string) => string> = [
   canonicalKey,
 ];
 
-/** Leader avatars are the Eximus spawns, which the codex counts separately. */
-const isLeaderType = (type: string): boolean => /AvatarLeader$/i.test(type);
+/** Leader avatars are the Eximus spawns, which the codex counts separately. DE
+ *  spells them both ways round, so both have to read as the same enemy. */
+const isLeaderType = (type: string): boolean => /(AvatarLeader|LeaderAvatar)$/i.test(type);
+
+const withoutLeader = (type: string): string =>
+  type.replace(/AvatarLeader$/i, "Avatar").replace(/LeaderAvatar$/i, "Avatar");
 
 // The wiki's InternalName is frequently not the path DE records a scan against,
 // but its artwork filename usually is (Corrupted Heavy Gunner is
@@ -82,8 +86,7 @@ const artworkKeys = (value: string): Set<string> => {
 };
 
 const scanArtworkKeys = (scanType: string): string[] => {
-  const base = isLeaderType(scanType) ? scanType.replace(/Leader$/i, "") : scanType;
-  const segment = base.split("/").filter(Boolean).pop() || "";
+  const segment = withoutLeader(scanType).split("/").filter(Boolean).pop() || "";
   return [segment.toLowerCase(), segment.replace(SUFFIX_RE, "").toLowerCase()];
 };
 
@@ -91,7 +94,9 @@ const LEADER_SUFFIX = "#leader";
 
 function fallbackName(type: string): string {
   const tail = type.split("/").filter(Boolean).pop() || type;
-  return tail.replace(/(AvatarLeader|Avatar|Agent)$/i, "").replace(/([a-z])([A-Z])/g, "$1 $2");
+  return tail
+    .replace(/(AvatarLeader|LeaderAvatar|Avatar|Agent)$/i, "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2");
 }
 
 function makeRow(
@@ -126,7 +131,7 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
     return map;
   });
   const resolveWikiType = (scanType: string): string | null => {
-    const base = isLeaderType(scanType) ? scanType.replace(/Leader$/i, "") : scanType;
+    const base = withoutLeader(scanType);
     for (const [index, level] of KEY_LEVELS.entries()) {
       const hit = wikiByLevel[index].get(level(base));
       if (hit) return hit;
@@ -177,7 +182,7 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
       credit(target, entry);
       continue;
     }
-    const key = canonicalKey(entry.type) + (leader ? LEADER_SUFFIX : "");
+    const key = canonicalKey(withoutLeader(entry.type)) + (leader ? LEADER_SUFFIX : "");
     looseScanned.set(key, Math.max(looseScanned.get(key) ?? 0, entry.count));
     unresolved.push(entry);
   }
@@ -253,7 +258,9 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
   const seen = new Set<string>();
   for (const entry of unresolved) {
     const leader = isLeaderType(entry.type);
-    const key = canonicalKey(entry.type) + (leader ? LEADER_SUFFIX : "");
+    // Same key shape as the looseScanned write, or a LeaderAvatar path would
+    // miss extrasCovered and duplicate an Eximus row the extras loop emitted.
+    const key = canonicalKey(withoutLeader(entry.type)) + (leader ? LEADER_SUFFIX : "");
     if (extrasCovered.has(key) || seen.has(key)) continue;
     seen.add(key);
     const name = fallbackName(entry.type) + (leader ? " Eximus" : "");

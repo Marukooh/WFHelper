@@ -10,6 +10,9 @@ const TERRA_ELITE_CREWMAN_SCAN =
   "/Lotus/Types/Enemies/Corpus/Venus/Avatars/VenusHeavyEliteSpacemanAvatar";
 const ROGUE_CONDROC =
   "/Lotus/Types/NeutralCreatures/Conservation/BirdOfPrey/UncommonBirdOfPreyAvatar";
+// Extras-only, unmapped by CODEX_SCAN_AVATARS, and merged with a PNW twin.
+const SCORPION_LEADER_SCAN =
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerMacheteWomanLeaderAvatar";
 
 describe("buildCodexRows", () => {
   it("ships a populated requirements table", () => {
@@ -329,5 +332,33 @@ describe("wiki entries whose InternalName is not the scanned path", () => {
     const rows = buildCodexRows([{ type: HEAVY_GUNNER_SCAN, count: 464 }]);
     expect(rows.find((row) => row.name === "Corrupted Heavy Gunner")?.scanned).toBe(0);
     expect(rows.find((row) => row.name === "Corrupted Warden")?.scanned).toBe(0);
+  });
+});
+
+describe("Eximus spellings", () => {
+  // DE writes the Eximus spawn as both XAvatarLeader and XLeaderAvatar.
+  it("reads both leader spellings as the same enemy's Eximus row", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Types/Enemies/Orokin/RifleLancerAvatar", count: 9803 },
+      { type: "/Lotus/Types/Enemies/Orokin/RifleLancerLeaderAvatar", count: 362 },
+    ]);
+    expect(rows.find((row) => row.name === "Corrupted Lancer")?.scanned).toBe(9803);
+    expect(rows.find((row) => row.name === "Corrupted Lancer Eximus")?.scanned).toBe(362);
+  });
+
+  it("still reads the AvatarLeader spelling", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Types/Enemies/Orokin/OrokinBladeSawmanAvatar", count: 6379 },
+      { type: "/Lotus/Types/Enemies/Orokin/OrokinBladeSawmanAvatarLeader", count: 153 },
+    ]);
+    expect(rows.find((row) => row.name === "Corrupted Butcher")?.scanned).toBe(6379);
+    expect(rows.find((row) => row.name === "Corrupted Butcher Eximus")?.scanned).toBe(153);
+  });
+
+  it("does not duplicate the Eximus row of an extras-only LeaderAvatar scan", () => {
+    const rows = buildCodexRows([{ type: SCORPION_LEADER_SCAN, count: 7 }]);
+    const eximus = rows.filter((row) => row.scanned === 7 && row.name.endsWith("Eximus"));
+    expect(eximus).toHaveLength(1);
+    expect(eximus[0].name).toBe("Narmer Scorpion Eximus");
   });
 });
