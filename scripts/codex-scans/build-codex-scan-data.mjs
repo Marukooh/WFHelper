@@ -79,6 +79,67 @@ for (const entry of all.values()) {
 const pepDir = path.join(process.cwd(), "node_modules", "warframe-public-export-plus");
 const readPep = (file) => JSON.parse(fs.readFileSync(path.join(pepDir, file), "utf-8"));
 const dictEn = readPep("dict.en.json");
+
+// DE's own agent-to-avatar mapping. A wiki InternalName is an Agent path but a
+// profile records scans against Avatar paths, and guessing the pairing by suffix
+// merged distinct enemies (Corrupted Heavy Gunner is OrokinMinigunBombard on the
+// wiki and OrokinHeavyFemaleAvatar in a profile).
+const enemies = readPep("ExportEnemies.json");
+
+const LEADER_PATH_RE = /(AvatarLeader|LeaderAvatar|Leader)$/i;
+const baseAvatarPath = (avatarPath) =>
+  avatarPath.replace(/AvatarLeader$/i, "Avatar").replace(/LeaderAvatar$/i, "Avatar");
+
+// null marks a path two entries claim, which is unusable rather than a coin flip.
+const avatarOwners = new Map();
+function claimAvatar(avatarPath, internal, eximus) {
+  const key = avatarPath.toLowerCase();
+  const seen = avatarOwners.get(key);
+  if (seen === undefined) avatarOwners.set(key, { internal, eximus });
+  else if (seen && seen.internal !== internal) avatarOwners.set(key, null);
+}
+for (const internal of all.keys()) {
+  const types = enemies.agents[internal]?.avatarTypes;
+  if (!types) {
+    if (enemies.avatars[internal]) claimAvatar(internal, internal, false);
+    continue;
+  }
+  for (const [kind, avatarPath] of Object.entries(types)) {
+    // RARE is a spawn variant rather than its own codex entry, so its own path
+    // decides which of the two rows it feeds.
+    const eximus = kind === "EXIMUS" || (kind === "RARE" && /Leader/i.test(avatarPath));
+    claimAvatar(avatarPath, internal, eximus);
+  }
+}
+
+// DE writes 5 when an avatar states no requirement: a non-5 value agrees with the
+// wiki 153 times against 7, while 5 agrees 303 and contradicts 297. Both in-game
+// checks of a 5 (Rana Del, Terra Elite Embattor MOA) read 3.
+const PLACEHOLDER_SCANS = 5;
+function statedScans(avatarPath) {
+  const req = enemies.avatars[avatarPath]?.codexScansRequired;
+  return Number.isFinite(req) && req > 0 && req !== PLACEHOLDER_SCANS ? req : null;
+}
+// The wiki lists no Eximus entries at all, and they do not inherit the base count
+// (Arid Butcher needs 20 scans, its Eximus 3), so only the export can state them.
+for (const entry of all.values()) {
+  const eximusPath = enemies.agents[entry.internal]?.avatarTypes?.EXIMUS;
+  if (eximusPath) entry.eximusScans = statedScans(eximusPath);
+}
+
+const EE_FACTION_KEYS = {
+  anarch: "anarchs",
+  infested: "infestation",
+  mitw: "themurmur",
+  narmerveil: "narmer",
+  "orokin empire": "orokin",
+  orokinempire: "orokin",
+};
+function factionKey(faction) {
+  const raw = String(faction || "").toLowerCase();
+  const mapped = EE_FACTION_KEYS[raw] || raw;
+  return FACTIONS.includes(mapped) ? mapped : "unaffiliated";
+}
 const MIRROR_BASE = "https://assets.wfhelper.com";
 
 // Matches services/itemDatabase.ts toIconMirrorUrl: same source URL, same hash.
@@ -159,12 +220,16 @@ const extras = new Map();
 const codexIconSources = new Set();
 const fragmentImagesUsed = new Set();
 function resolveName(rawName) {
+  // Some dict entries wrap onto two lines (kuva lich names carry a CRLF).
   return typeof rawName === "string" && rawName.startsWith("/")
-    ? (dictEn[rawName] || "").replace(/<[^>]+>/g, "").trim() || null
+    ? (dictEn[rawName] || "")
+        .replace(/<[^>]+>/g, "")
+        .replace(/\s+/g, " ")
+        .trim() || null
     : rawName || null;
 }
 
-function addExtra(key, rawName, icon, faction, reqScans, wikiImage = null) {
+function addExtra(key, rawName, icon, faction, reqScans, wikiImage = null, eximusScans = null) {
   if (all.has(key) || extras.has(key)) return;
   const name = resolveName(rawName);
   const resolved = icon ? deIconMirror(icon) : null;
@@ -176,6 +241,7 @@ function addExtra(key, rawName, icon, faction, reqScans, wikiImage = null) {
     icon: resolved ? resolved.mirrorUrl : wikiImage,
     faction,
     scans: Number.isFinite(reqScans) && reqScans > 0 ? reqScans : null,
+    eximusScans: Number.isFinite(eximusScans) && eximusScans > 0 ? eximusScans : null,
   });
 }
 
@@ -232,12 +298,68 @@ for (const [scanName, itemName] of Object.entries(PLANT_ITEM_BY_SCAN_NAME)) {
   addExtra(`/Lotus/Types/Items/Plants/${scanName}`, item.name, item.icon, "objects", null);
 }
 
+// Enemy avatars no wiki entry reaches. One whose display name belongs to exactly
+// one wiki row is that row under another path (an ally, decoy, Shadow or Narmer
+// variant); the rest are entries the wiki modules never covered.
+const wikiByName = new Map();
+for (const entry of all.values()) {
+  const key = entry.name.toLowerCase();
+  wikiByName.set(key, wikiByName.has(key) ? null : entry.internal);
+}
+let bridgedByName = 0;
+const orphans = [];
+for (const [avatarPath, avatar] of Object.entries(enemies.avatars)) {
+  if (avatarOwners.has(avatarPath.toLowerCase())) continue;
+  const name = resolveName(avatar.name);
+  if (!name) continue;
+  const twin = wikiByName.get(name.toLowerCase());
+  if (twin) {
+    claimAvatar(avatarPath, twin, LEADER_PATH_RE.test(avatarPath));
+    bridgedByName += 1;
+    continue;
+  }
+  orphans.push([avatarPath, avatar]);
+}
+
+// An Eximus avatar is not its own codex entry, so it contributes a count to the
+// base rather than a second row under the same display name.
+const orphanEximus = new Map();
+for (const [avatarPath] of orphans) {
+  if (!LEADER_PATH_RE.test(avatarPath)) continue;
+  orphanEximus.set(baseAvatarPath(avatarPath).toLowerCase(), avatarPath);
+}
+let orphanEnemies = 0;
+for (const [avatarPath, avatar] of orphans) {
+  const leader = LEADER_PATH_RE.test(avatarPath);
+  // An Eximus-only orphan still needs the base row its scans hang from.
+  const key = leader ? baseAvatarPath(avatarPath) : avatarPath;
+  if (leader && enemies.avatars[key]) continue;
+  // The in-game codex draws every entry, so an avatar with no art is a spawn
+  // helper rather than something the codex lists.
+  if (!avatar.icon) continue;
+  const eximusPath = leader ? avatarPath : orphanEximus.get(avatarPath.toLowerCase());
+  addExtra(
+    key,
+    avatar.name,
+    avatar.icon,
+    factionKey(avatar.faction),
+    leader ? null : statedScans(avatarPath),
+    null,
+    eximusPath ? statedScans(eximusPath) : null,
+  );
+  orphanEnemies += 1;
+}
+console.log(
+  `enemy avatars: ${avatarOwners.size} mapped (${bridgedByName} by name), ${orphanEnemies} new entries`,
+);
+
 const sorted = [...all.values()].sort((a, b) => a.internal.localeCompare(b.internal));
 const lines = sorted.map((e) => {
   const image = e.image ? `, image: ${JSON.stringify(e.image)}` : "";
+  const eximus = e.eximusScans ? `, eximusScans: ${e.eximusScans}` : "";
   return (
     `  ${JSON.stringify(e.internal)}: { name: ${JSON.stringify(e.name)}, ` +
-    `scans: ${e.scans}, faction: ${JSON.stringify(e.faction)}${image} },`
+    `scans: ${e.scans}, faction: ${JSON.stringify(e.faction)}${image}${eximus} },`
   );
 });
 const banner =
@@ -251,21 +373,36 @@ const extraLines = [...extras.entries()]
       extra.icon ? `icon: ${JSON.stringify(extra.icon)}` : null,
       `faction: ${JSON.stringify(extra.faction)}`,
       extra.scans ? `scans: ${extra.scans}` : null,
+      extra.eximusScans ? `eximusScans: ${extra.eximusScans}` : null,
     ].filter(Boolean);
     return `  ${JSON.stringify(key)}: { ${fields.join(", ")} },`;
+  });
+
+const avatarLines = [...avatarOwners.entries()]
+  .filter(([, owner]) => owner !== null)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([avatarPath, owner]) => {
+    const eximus = owner.eximus ? ", eximus: true" : "";
+    return `  ${JSON.stringify(avatarPath)}: { key: ${JSON.stringify(owner.internal)}${eximus} },`;
   });
 
 const body =
   `export const CODEX_SCAN_REQUIREMENTS: Record<\n` +
   `  string,\n` +
-  `  { name: string; scans: number; faction: string; image?: string }\n` +
+  `  { name: string; scans: number; faction: string; image?: string; eximusScans?: number }\n` +
   `> = {\n` +
   lines.join("\n") +
+  `\n};\n\n` +
+  `// Lowercased avatar paths a profile records scans against, mapped to the entry\n` +
+  `// they credit: ExportEnemies agents[].avatarTypes, agents that are their own\n` +
+  `// avatar, and leftover avatars bridged to a wiki row by display name.\n` +
+  `export const CODEX_SCAN_AVATARS: Record<string, { key: string; eximus?: true }> = {\n` +
+  avatarLines.join("\n") +
   `\n};\n\n` +
   `// Profile-only scans from DE PublicExport, with mirrored DE or wiki art.\n` +
   `export const CODEX_EXTRA_INFO: Record<\n` +
   `  string,\n` +
-  `  { name?: string; icon?: string; faction: string; scans?: number }\n` +
+  `  { name?: string; icon?: string; faction: string; scans?: number; eximusScans?: number }\n` +
   `> = {\n` +
   extraLines.join("\n") +
   `\n};\n`;
@@ -283,5 +420,6 @@ const CODEX_ICONS_FILE = path.join(process.cwd(), "scripts", "icon-mirror", "cod
 fs.writeFileSync(CODEX_ICONS_FILE, JSON.stringify([...codexIconSources].sort(), null, 2) + "\n");
 console.log(
   `wrote ${OUT_FILE} with ${sorted.length} enemies + ${extras.size} extras, ` +
-    `${images.length} wiki images, ${codexIconSources.size} DE icon sources`,
+    `${avatarLines.length} avatar paths, ${images.length} wiki images, ` +
+    `${codexIconSources.size} DE icon sources`,
 );

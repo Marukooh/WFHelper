@@ -3,7 +3,7 @@
 
 export const CODEX_SCAN_REQUIREMENTS: Record<
   string,
-  { name: string; scans: number; faction: string; image?: string }
+  { name: string; scans: number; faction: string; image?: string; eximusScans?: number }
 > = {
   "/Lotus/Language/Railjack/CorpusFighterPlutoLaserName": {
     name: "Vorac Harpi",
@@ -88,12 +88,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "AmalgamKucumatz.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusPilotAgent": {
     name: "Amalgam Machinist",
     scans: 3,
     faction: "corpus",
     image: "AmalgamMachinist.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusPilotBossAgent": {
     name: "Demolyst Machinist",
@@ -106,12 +108,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "AmalgamAlkonost.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusSniperAgent": {
     name: "Amalgam Heqet",
     scans: 3,
     faction: "corpus",
     image: "AmalgamHeqet.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusSniperBossAgent": {
     name: "Demolyst Heqet",
@@ -124,6 +128,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "AmalgamMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaBossAgent": {
     name: "Demolyst MOA",
@@ -136,6 +141,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "AmalgamSatyr.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaSatyrBossAgent": {
     name: "Demolyst Satyr",
@@ -148,6 +154,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "AmalgamOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamOspreyBossAgent": {
     name: "Demolyst Osprey",
@@ -214,18 +221,21 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "corpus",
     image: "MOADE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/LaserDiscBipedAgent": {
     name: "Anti MOA",
     scans: 5,
     faction: "corpus",
     image: "DEAntiMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/RailgunBipedAgent": {
     name: "Railgun MOA",
     scans: 10,
     faction: "corpus",
     image: "MoaRailgun.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/RiotBipedControlAgent": {
     name: "Drover Bursa",
@@ -250,102 +260,119 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "MoaShockwave.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/SuperMoaBipedAgent": {
     name: "Fusion MOA",
     scans: 5,
     faction: "corpus",
     image: "MoaFusion.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaDetectorAgent": {
     name: "Juno Fog Comba",
     scans: 3,
     faction: "corpus",
     image: "JunoFogComba.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaLaserAgent": {
     name: "Juno Sap Comba",
     scans: 3,
     faction: "corpus",
     image: "JunoSapComba.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaShieldAgent": {
     name: "Juno Nul Comba",
     scans: 3,
     faction: "corpus",
     image: "JunoNulComba.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaTeslaAgent": {
     name: "Juno Slo Comba",
     scans: 3,
     faction: "corpus",
     image: "JunoSloComba.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanAgent": {
     name: "Juno Crewman",
     scans: 20,
     faction: "corpus",
     image: "JunoCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanEliteAgent": {
     name: "Juno Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "JunoEliteCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanNullifierAgent": {
     name: "Juno Nullifier Crewman",
     scans: 5,
     faction: "corpus",
     image: "JunoNullifierCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanSniperAgent": {
     name: "Juno Sniper Crewman",
     scans: 5,
     faction: "corpus",
     image: "JunoSniperCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanTechAgent": {
     name: "Juno Tech",
     scans: 5,
     faction: "corpus",
     image: "JunoTech.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMachinistHammerAgent": {
     name: "Juno Malleus Machinist",
     scans: 5,
     faction: "corpus",
     image: "JunoMalleusMachinist.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDeraAgent": {
     name: "Juno Dera MOA",
     scans: 20,
     faction: "corpus",
     image: "JunoDeraMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDiscAgent": {
     name: "Juno Disc MOA",
     scans: 5,
     faction: "corpus",
     image: "JunoDiscMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDualCannonAgent": {
     name: "Juno Geminex MOA",
     scans: 5,
     faction: "corpus",
     image: "JunoGeminexMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaGlaxionAgent": {
     name: "Juno Glaxion MOA",
     scans: 5,
     faction: "corpus",
     image: "JunoGlaxionMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyMineAgent": {
     name: "Juno Jactus Osprey",
     scans: 5,
     faction: "corpus",
     image: "JunoJactusOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyOxiumAgent": {
     name: "Juno Oxium Osprey",
@@ -358,6 +385,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "corpus",
     image: "JunoShieldOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionCarrusPilotAgent": {
     name: "Demolisher Machinist",
@@ -388,24 +416,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "DiscOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/LeechDroneAgent": {
     name: "Leech Osprey",
     scans: 10,
     faction: "corpus",
     image: "LeechOspreyDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/MineDroneAgent": {
     name: "Mine Osprey",
     scans: 10,
     faction: "corpus",
     image: "MineOspreyDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/ShieldDroneAgent": {
     name: "Shield Osprey",
     scans: 20,
     faction: "corpus",
     image: "ShieldOspreyDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/SuicideDroneAgent": {
     name: "Oxium Osprey",
@@ -418,12 +450,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "corpus",
     image: "ScavangerOspreyDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Drones/DroneAttackAgent": {
     name: "Attack Drone",
     scans: 5,
     faction: "corpus",
     image: "FusionDroneDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Drones/Vip/RaptorPack": {
     name: "The Raptor",
@@ -502,6 +536,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "DECorpusWarden.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Gamemodes/PurgatoryGhost": {
     name: "Specter Particles",
@@ -520,90 +555,105 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "VaposTech.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasDiscDroneAgent": {
     name: "Vapos Sapping Osprey",
     scans: 5,
     faction: "corpus",
     image: "VaposSappingOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasEliteSpacemanAgent": {
     name: "Vapos Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "VaposEliteCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingDeployableSpacemanAgent": {
     name: "Vapos Tech Ranger",
     scans: 5,
     faction: "corpus",
     image: "VaposTechRanger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingEliteSpacemanAgent": {
     name: "Vapos Elite Ranger",
     scans: 5,
     faction: "corpus",
     image: "VaposEliteRanger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingNullifierSpacemanAgent": {
     name: "Vapos Nullifier Ranger",
     scans: 5,
     faction: "corpus",
     image: "VaposNullifierRanger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingShotgunSpacemanAgent": {
     name: "Vapos Detron Ranger",
     scans: 5,
     faction: "corpus",
     image: "VaposDetronRanger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingSniperSpacemanAgent": {
     name: "Vapos Sniper Ranger",
     scans: 5,
     faction: "corpus",
     image: "VaposSniperRanger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingSpacemanAgent": {
     name: "Vapos Ranger",
     scans: 5,
     faction: "corpus",
     image: "VaposRanger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasLaserCannonBipedAgent": {
     name: "Vapos MOA",
     scans: 5,
     faction: "corpus",
     image: "VaposMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasLaserDiscBipedAgent": {
     name: "Vapos Anti MOA",
     scans: 5,
     faction: "corpus",
     image: "VaposFusionMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasMeleeSpacemanAgent": {
     name: "Vapos Prod Crewman",
     scans: 5,
     faction: "corpus",
     image: "VaposProdCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasNullifySpacemanAgent": {
     name: "Vapos Nullifier",
     scans: 5,
     faction: "corpus",
     image: "VaposNullifier.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasRailgunBipedAgent": {
     name: "Vapos Railgun MOA",
     scans: 5,
     faction: "corpus",
     image: "VaposRailgunMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasRifleSpacemanAgent": {
     name: "Vapos Crewman",
     scans: 5,
     faction: "corpus",
     image: "VaposCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasScientistAgent": {
     name: "Vapos Bioengineer",
@@ -616,24 +666,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "VaposShieldOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasShockwaveBipedAgent": {
     name: "Vapos Shockwave MOA",
     scans: 5,
     faction: "corpus",
     image: "VaposShockwaveMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasShotgunSpacemanAgent": {
     name: "Vapos Detron Crewman",
     scans: 5,
     faction: "corpus",
     image: "VaposDetronCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasSniperSpacemanAgent": {
     name: "Vapos Sniper Crewman",
     scans: 5,
     faction: "corpus",
     image: "VaposSniperCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/GasCity/GasSuicideDroneAgent": {
     name: "Vapos Oxium Osprey",
@@ -646,6 +700,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "VaposFusionMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerRifleSpacemanAvatar": {
     name: "Narmer Crewman",
@@ -670,12 +725,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "narmer",
     image: "NarmerCorpusDiscDrone.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerShipMoaDeraAgent": {
     name: "Narmer Dera MOA",
     scans: 20,
     faction: "narmer",
     image: "NarmerCorpusDeraMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/QuadRobot/MicroHyenaAgent": {
     name: "Ratel",
@@ -712,66 +769,77 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "AxioZerca.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/BoardingRifleSpacemanAgent": {
     name: "Taro Vambac",
     scans: 5,
     faction: "corpus",
     image: "TaroVambac.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/BoardingShotgunSpacemanAgent": {
     name: "Taro Numon",
     scans: 5,
     faction: "corpus",
     image: "TaroNumon.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CorpusRailjackFlyingSpacemanAgent": {
     name: "Taro Ranger Crewman",
     scans: 5,
     faction: "corpus",
     image: "TaroRangerCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpAdmiralFlyingAgent": {
     name: "Optio",
     scans: 3,
     faction: "corpus",
     image: "Optio.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewCannonBipedAgent": {
     name: "Taro MOA",
     scans: 5,
     faction: "corpus",
     image: "TaroMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewDiscBipedAgent": {
     name: "Taro Disc MOA",
     scans: 5,
     faction: "corpus",
     image: "TaroDiscMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewEliteAgent": {
     name: "Taro Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "TaroEliteCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewmanTechDeployableAgent": {
     name: "Taro Tech",
     scans: 5,
     faction: "corpus",
     image: "TaroTech.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewNullifierAgent": {
     name: "Taro Nullifier Crewman",
     scans: 5,
     faction: "corpus",
     image: "TaroNullifierCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewRifleAgent": {
     name: "Taro Crewman",
     scans: 5,
     faction: "corpus",
     image: "TaroCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewRJRailgunAgent": {
     name: "Taro Railgun MOA",
@@ -784,114 +852,133 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "corpus",
     image: "TaroShieldOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewshipCaptain": {
     name: "Taro Pilot",
     scans: 5,
     faction: "corpus",
     image: "TaroPilot.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewShotgunAgent": {
     name: "Taro Detron Crewman",
     scans: 5,
     faction: "corpus",
     image: "TaroDetronCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpRailjackShockwaveBipedAgent": {
     name: "Taro Shockwave MOA",
     scans: 5,
     faction: "corpus",
     image: "TaroShockwaveMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsMinigunAgent": {
     name: "Aurax Vertec",
     scans: 3,
     faction: "corpus",
     image: "AuraxVertec.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsRiotBipedControlAgent": {
     name: "Tarask Bursa",
     scans: 3,
     faction: "corpus",
     image: "TaraskBursa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsShockerAgent": {
     name: "Aurax Actinic",
     scans: 3,
     faction: "corpus",
     image: "AuraxActinic.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/CrpTechEngineerAgent": {
     name: "Taro Engineer",
     scans: 5,
     faction: "corpus",
     image: "TaroEngineer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingMeleeSpacemanAgent": {
     name: "Orm Zerca",
     scans: 5,
     faction: "corpus",
     image: "AxioZerca.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingRifleSpacemanAgent": {
     name: "Orm Vambac",
     scans: 5,
     faction: "corpus",
     image: "OrmVambac.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingShotgunSpacemanAgent": {
     name: "Orm Numon",
     scans: 5,
     faction: "corpus",
     image: "OrmNumon.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCorpusRailjackFlyingSpacemanAgent": {
     name: "Orm Ranger Crewman",
     scans: 5,
     faction: "corpus",
     image: "OrmRangerCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewCannonBipedAgent": {
     name: "Orm MOA",
     scans: 5,
     faction: "corpus",
     image: "OrmMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewDiscBipedAgent": {
     name: "Orm Disc MOA",
     scans: 5,
     faction: "corpus",
     image: "OrmDiscMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewEliteAgent": {
     name: "Orm Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "OrmEliteCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewmanTechDeployableAgent": {
     name: "Orm Tech",
     scans: 5,
     faction: "corpus",
     image: "OrmTech.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewMeleeAgent": {
     name: "Orm Stropha Crewman",
     scans: 5,
     faction: "corpus",
     image: "OrmStrophaCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewNullifierAgent": {
     name: "Orm Nullifier Crewman",
     scans: 5,
     faction: "corpus",
     image: "OrmNullifierCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewRifleAgent": {
     name: "Orm Crewman",
     scans: 5,
     faction: "corpus",
     image: "OrmCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewRJRailgunAgent": {
     name: "Orm Railgun MOA",
@@ -904,96 +991,112 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "corpus",
     image: "OrmShieldOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewshipCaptain": {
     name: "Orm Pilot",
     scans: 5,
     faction: "corpus",
     image: "OrmPilot.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewShotgunAgent": {
     name: "Orm Detron Crewman",
     scans: 5,
     faction: "corpus",
     image: "OrmDetronCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpRailjackShockwaveBipedAgent": {
     name: "Orm Shockwave MOA",
     scans: 5,
     faction: "corpus",
     image: "OrmShockwaveMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpTechEngineerAgent": {
     name: "Orm Engineer",
     scans: 5,
     faction: "corpus",
     image: "OrmEngineer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingMeleeSpacemanAgent": {
     name: "Axio Zerca",
     scans: 5,
     faction: "corpus",
     image: "AxioZerca.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingRifleSpacemanAgent": {
     name: "Axio Vambac",
     scans: 5,
     faction: "corpus",
     image: "AxioVambac.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingShotgunSpacemanAgent": {
     name: "Axio Numon",
     scans: 5,
     faction: "corpus",
     image: "AxioNumon.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCorpusRailjackFlyingSpacemanAgent": {
     name: "Axio Ranger Crewman",
     scans: 5,
     faction: "corpus",
     image: "AxioRangerCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewCannonBipedAgent": {
     name: "Axio MOA",
     scans: 5,
     faction: "corpus",
     image: "AxioMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewDiscBipedAgent": {
     name: "Axio Disc MOA",
     scans: 5,
     faction: "corpus",
     image: "AxioDiscMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewEliteAgent": {
     name: "Axio Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "AxioEliteCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewmanTechDeployableAgent": {
     name: "Axio Tech",
     scans: 5,
     faction: "corpus",
     image: "AxioTech.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewMeleeAgent": {
     name: "Axio Stropha Crewman",
     scans: 5,
     faction: "corpus",
     image: "AxioStrophaCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewNullifierAgent": {
     name: "Axio Nullifier Crewman",
     scans: 5,
     faction: "corpus",
     image: "AxioNullifierCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewRifleAgent": {
     name: "Axio Crewman",
     scans: 5,
     faction: "corpus",
     image: "AxioCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewRJRailgunAgent": {
     name: "Axio Railgun MOA",
@@ -1006,30 +1109,35 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "corpus",
     image: "AxioShieldOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewshipCaptain": {
     name: "Axio Pilot",
     scans: 5,
     faction: "corpus",
     image: "AxioPilot.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewShotgunAgent": {
     name: "Axio Detron Crewman",
     scans: 5,
     faction: "corpus",
     image: "AxioDetronCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpRailjackShockwaveBipedAgent": {
     name: "Axio Shockwave MOA",
     scans: 5,
     faction: "corpus",
     image: "AxioShockwaveMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpTechEngineerAgent": {
     name: "Axio Engineer",
     scans: 5,
     faction: "corpus",
     image: "AxioEngineer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/OverrideJammingDroneAgent": {
     name: "Taro Secura Osprey",
@@ -1042,66 +1150,77 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "AxioZerca.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingRifleSpacemanAgent": {
     name: "Vorac Vambac",
     scans: 5,
     faction: "corpus",
     image: "VoracVambac.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingShotgunSpacemanAgent": {
     name: "Vorac Numon",
     scans: 5,
     faction: "corpus",
     image: "VoracNumon.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCorpusRailjackFlyingSpacemanAgent": {
     name: "Vorac Ranger Crewman",
     scans: 5,
     faction: "corpus",
     image: "VoracRangerCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewCannonBipedAgent": {
     name: "Vorac MOA",
     scans: 5,
     faction: "corpus",
     image: "VoracMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewDiscBipedAgent": {
     name: "Vorac Disc MOA",
     scans: 5,
     faction: "corpus",
     image: "VoracDiscMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewEliteAgent": {
     name: "Vorac Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "VoracEliteCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewmanTechDeployableAgent": {
     name: "Vorac Tech",
     scans: 5,
     faction: "corpus",
     image: "VoracTech.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewMeleeAgent": {
     name: "Vorac Stropha Crewman",
     scans: 5,
     faction: "corpus",
     image: "VoracStrophaCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewNullifierAgent": {
     name: "Vorac Nullifier Crewman",
     scans: 5,
     faction: "corpus",
     image: "VoracNullifierCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewRifleAgent": {
     name: "Vorac Crewman",
     scans: 5,
     faction: "corpus",
     image: "VoracCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewRJRailgunAgent": {
     name: "Vorac Railgun MOA",
@@ -1114,54 +1233,63 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "corpus",
     image: "VoracShieldOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewshipCaptain": {
     name: "Vorac Pilot",
     scans: 5,
     faction: "corpus",
     image: "VoracPilot.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewShotgunAgent": {
     name: "Vorac Detron Crewman",
     scans: 5,
     faction: "corpus",
     image: "VoracDetronCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpRailjackShockwaveBipedAgent": {
     name: "Vorac Shockwave MOA",
     scans: 5,
     faction: "corpus",
     image: "VoracShockwaveMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpTechEngineerAgent": {
     name: "Vorac Engineer",
     scans: 5,
     faction: "corpus",
     image: "VoracEngineer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsArachnoidAgent": {
     name: "Aurax Atloc Raknoid",
     scans: 3,
     faction: "corpus",
     image: "AuraxAtlocRaknoid.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsFireMoaAgent": {
     name: "Aurax Culveri MOA",
     scans: 3,
     faction: "corpus",
     image: "AuraxCulveriMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsIceMoaAgent": {
     name: "Aurax Polaris MOA",
     scans: 3,
     faction: "corpus",
     image: "AuraxPolarisMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsStaffAgent": {
     name: "Aurax Baculus",
     scans: 3,
     faction: "corpus",
     image: "AuraxBaculus.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/CarrierSpacemanAgent": {
     name: "Corpus Power Carrier",
@@ -1174,42 +1302,49 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "CrewmanTech.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/MeleeSpacemanAgent": {
     name: "Prod Crewman",
     scans: 20,
     faction: "corpus",
     image: "CrewmanProd.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/NullifySpacemanAgent": {
     name: "Nullifier Crewman",
     scans: 5,
     faction: "corpus",
     image: "CrpNullRanger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanAgent": {
     name: "Crewman",
     scans: 20,
     faction: "corpus",
     image: "CrewmanNormal.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/ShotgunSpacemanAgent": {
     name: "Detron Crewman",
     scans: 20,
     faction: "corpus",
     image: "CrewmanShotgun.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/SniperSpacemanAgent": {
     name: "Sniper Crewman",
     scans: 5,
     faction: "corpus",
     image: "CrewmanSniper.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/EliteSpacemanAgent": {
     name: "Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "CrewmanElite.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentSkatingDetector": {
     name: "Fog Scrambus",
@@ -1360,36 +1495,42 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "TerraJackal.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusCombatSpacemanAgent": {
     name: "Terra Manker",
     scans: 3,
     faction: "corpus",
     image: "TerraManker.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusFlyingEliteSpacemanAgent": {
     name: "Terra Elite Provisor",
     scans: 5,
     faction: "corpus",
     image: "TerraEliteProvisor.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusFlyingSpacemanAgent": {
     name: "Terra Provisor",
     scans: 5,
     faction: "corpus",
     image: "TerraProvisor.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGrenadierEliteSpacemanAgent": {
     name: "Terra Elite Overtaker",
     scans: 5,
     faction: "corpus",
     image: "TerraEliteOvertaker.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGrenadierSpacemanAgent": {
     name: "Terra Overtaker",
     scans: 5,
     faction: "corpus",
     image: "TerraOvertaker.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGuardSpacemanAgent": {
     name: "Terra Jailer",
@@ -1414,24 +1555,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "TerraEliteTrencher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusHeavyMeleeSpacemanAgent": {
     name: "Terra Trencher",
     scans: 3,
     faction: "corpus",
     image: "TerraTrencher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusIcewaveBipedAgent": {
     name: "Terra Embattor MOA",
     scans: 3,
     faction: "corpus",
     image: "TerraEmbattorMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusIcewaveEliteBipedAgent": {
     name: "Terra Elite Embattor MOA",
     scans: 3,
     faction: "corpus",
     image: "TerraEliteEmbattorMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusAutoTurretAgent": {
     name: "Terra Auto Turret",
@@ -1455,54 +1600,63 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "corpus",
     image: "TerraAttackDrones.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusEliteSpacemanAgent": {
     name: "Terra Crewman",
     scans: 5,
     faction: "corpus",
     image: "TerraCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusHeavyEliteSpacemanAgent": {
     name: "Terra Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "TerraEliteCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusLaserCannonBipedAgent": {
     name: "Terra MOA",
     scans: 10,
     faction: "corpus",
     image: "TerraMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusLaserDiscBipedAgent": {
     name: "Terra Anti MOA",
     scans: 5,
     faction: "corpus",
     image: "TerraAntiMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusShieldDroneAgent": {
     name: "Terra Shield Osprey",
     scans: 5,
     faction: "corpus",
     image: "TerraShieldOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusShockwaveBipedAgent": {
     name: "Terra Shockwave MOA",
     scans: 5,
     faction: "corpus",
     image: "TerraShockwaveMOA.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusShotgunSpacemanAgent": {
     name: "Terra Plasmor Crewman",
     scans: 5,
     faction: "corpus",
     image: "TerraPlasmorCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusSniperSpacemanAgent": {
     name: "Terra Sniper Crewman",
     scans: 5,
     faction: "corpus",
     image: "TerraSniperCrewman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/VenusSpacemanCarrierAgent": {
     name: "Corpus Power Carrier (Orb Vallis)",
@@ -1515,6 +1669,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "corpus",
     image: "TerraOxiumOsprey.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Corpus/Venus/Vip/VenusVipDualPistolSpacemanAgent": {
     name: "Corpus Cestra Target",
@@ -1785,6 +1940,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "grineer",
     image: "ButcherDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/BlowtorchSawman": {
     name: "Flameblade",
@@ -1797,6 +1953,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "orokin",
     image: "OrokinShieldDroneAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/CarrierJetpack": {
     name: "Hellion Power Carrier",
@@ -1833,48 +1990,56 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "grineer",
     image: "EliteRifleLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/EliteShieldLancer": {
     name: "Elite Shield Lancer",
     scans: 3,
     faction: "grineer",
     image: "EliteShieldLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/EviseratorLancer": {
     name: "Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "EliteShotgunLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/FlameLancer": {
     name: "Scorch",
     scans: 3,
     faction: "grineer",
     image: "FlameLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerCharger": {
     name: "Bailiff",
     scans: 3,
     faction: "grineer",
     image: "GrineerCrusher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerFemale": {
     name: "Ballista",
     scans: 5,
     faction: "grineer",
     image: "BallistaDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerMeleeStaffAgent": {
     name: "Guardsman",
     scans: 10,
     faction: "grineer",
     image: "GrineerProsecutor.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerRollingDrone": {
     name: "Roller",
     scans: 10,
     faction: "grineer",
     image: "RollingDroneAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerWorker": {
     name: "Drudge Foreman",
@@ -1893,12 +2058,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "grineer",
     image: "IncendiaryBombardAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackHeavyMarine": {
     name: "Nightwatch Reaver",
     scans: 5,
     faction: "grineer",
     image: "NightwatchReaver.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackMarine": {
     name: "Hellion",
@@ -1929,6 +2096,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "grineer",
     image: "ScorpionDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/ManicGrineer": {
     name: "Grineer Manic",
@@ -1941,12 +2109,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "grineer",
     image: "GrineerManicBombard.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/MinigunBombard": {
     name: "Heavy Gunner",
     scans: 3,
     faction: "grineer",
     image: "HeavyGunnerDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchCatMaster": {
     name: "Nightwatch Hyekka Master",
@@ -1989,6 +2159,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "grineer",
     image: "NightwatchPowerclaw.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchRifleLancer": {
     name: "Nightwatch Lancer",
@@ -2001,24 +2172,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "grineer",
     image: "NightwatchBruntLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/PistonSawman": {
     name: "Powerfist",
     scans: 10,
     faction: "grineer",
     image: "PowerfistDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer": {
     name: "Lancer",
     scans: 20,
     faction: "grineer",
     image: "LancerDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/RocketBombard": {
     name: "Bombard",
     scans: 3,
     faction: "grineer",
     image: "BombardDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/RollerAutoTurret": {
     name: "Roller Sentry",
@@ -2031,24 +2206,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "grineer",
     image: "ShieldLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/ShotgunLancer": {
     name: "Trooper",
     scans: 10,
     faction: "grineer",
     image: "ShotgunLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/AIWeek/StickyRollingDrone": {
     name: "Latcher",
     scans: 10,
     faction: "grineer",
     image: "LatcherDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/ChemStrike/ChemStrikeNoxAgent": {
     name: "Nox",
     scans: 3,
     faction: "grineer",
     image: "Nox.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/DeathSquad/DeathSquadA": {
     name: "Vem Tabook",
@@ -2073,24 +2252,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "grineer",
     image: "DesertBladeSawmanAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Desert/EliteRifleLancer": {
     name: "Elite Arid Lancer",
     scans: 5,
     faction: "grineer",
     image: "DesertEliteRifleLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Desert/EvisceratorLancer": {
     name: "Arid Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "DesertEvisceratorLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Desert/GrineerMarinePistol": {
     name: "Arid Seeker",
     scans: 5,
     faction: "grineer",
     image: "DesertGrineerMarinePistolAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Desert/JetpackMarine": {
     name: "Arid Hellion",
@@ -2103,18 +2286,21 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "grineer",
     image: "DesertHeavyFemaleGrineerAvatarDesert.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Desert/RifleLancer": {
     name: "Arid Lancer",
     scans: 20,
     faction: "grineer",
     image: "DesertRifleLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Desert/ShotgunLancer": {
     name: "Arid Trooper",
     scans: 10,
     faction: "grineer",
     image: "DesertShotgunLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Disruption/DemoDevourerAgent": {
     name: "Demolisher Devourer",
@@ -2175,54 +2361,63 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "grineer",
     image: "EidolonBladeSawman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonBlowtorchSawman": {
     name: "Tusk Flameblade",
     scans: 10,
     faction: "grineer",
     image: "EidolonBlowtorchSawman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonEliteRifleLancer": {
     name: "Tusk Elite Lancer",
     scans: 5,
     faction: "grineer",
     image: "EidolonEliteRifleLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonEviseratorLancer": {
     name: "Tusk Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "EidolonEvisceratorLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerFemale": {
     name: "Tusk Ballista",
     scans: 5,
     faction: "grineer",
     image: "EidolonGrineerFemale.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerMarinePistol": {
     name: "Tusk Seeker",
     scans: 5,
     faction: "grineer",
     image: "EidolonGrineerMarinePistol.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerRollingDrone": {
     name: "Tusk Roller",
     scans: 10,
     faction: "grineer",
     image: "EidolonRollingDrone.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonIncendiaryBombard": {
     name: "Tusk Napalm",
     scans: 3,
     faction: "grineer",
     image: "EidolonIncendiaryBombard.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonJetpackMarine": {
     name: "Tusk Hellion",
     scans: 5,
     faction: "grineer",
     image: "EidolonJetpackMarine.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonJetpackMelee": {
     name: "Tusk Reaver",
@@ -2235,6 +2430,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "grineer",
     image: "EidolonMinigunBombard.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonMortarBombard": {
     name: "Tusk Mortar Bombard",
@@ -2247,30 +2443,35 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "grineer",
     image: "EidolonPredator.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonRifleLancer": {
     name: "Tusk Lancer",
     scans: 20,
     faction: "grineer",
     image: "EidolonRifleLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonRocketBombard": {
     name: "Tusk Bombard",
     scans: 3,
     faction: "grineer",
     image: "Tusk Bombard.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonShieldLancer": {
     name: "Tusk Shield Lancer",
     scans: 20,
     faction: "grineer",
     image: "EidolonShieldLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonShotgunLancer": {
     name: "Tusk Trooper",
     scans: 10,
     faction: "grineer",
     image: "EidolonShotgunLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonSkiffPilotAgent": {
     name: "Dargyn Pilot",
@@ -2349,54 +2550,63 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "grineer",
     image: "ForestButcher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/EliteRifleLancer": {
     name: "Elite Frontier Lancer",
     scans: 5,
     faction: "grineer",
     image: "ForestEliteLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/EvisceratorLancer": {
     name: "Frontier Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "ForestEviscerator.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/GrineerCharger": {
     name: "Frontier Bailiff",
     scans: 3,
     faction: "grineer",
     image: "FrontierBailiff.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/GrineerMarinePistol": {
     name: "Frontier Seeker",
     scans: 5,
     faction: "grineer",
     image: "ForestSeeker.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/JetpackMarine": {
     name: "Frontier Hellion",
     scans: 5,
     faction: "grineer",
     image: "ForestHellion.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/MinigunBombard": {
     name: "Frontier Heavy Gunner",
     scans: 3,
     faction: "grineer",
     image: "ForestHeavyGunner.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/RifleLancer": {
     name: "Frontier Lancer",
     scans: 20,
     faction: "grineer",
     image: "ForestLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Forest/ShotgunLancer": {
     name: "Frontier Trooper",
     scans: 10,
     faction: "grineer",
     image: "Frontier Trooper.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/Avatars/FortressSkiff": {
     name: "Kuva Dargyn",
@@ -2415,12 +2625,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "grineer",
     image: "FortressBladeSawman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressBlowtorchSawman": {
     name: "Kuva Flameblade",
     scans: 10,
     faction: "grineer",
     image: "FortressBlowtorchSawman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressCatMaster": {
     name: "Kuva Hyekka Master",
@@ -2445,96 +2657,112 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "grineer",
     image: "FortressEliteRifleLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressEviseratorLancer": {
     name: "Kuva Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "FortressEviseratorLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressFlameLancer": {
     name: "Kuva Scorch",
     scans: 3,
     faction: "grineer",
     image: "FortressFlameLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerCharger": {
     name: "Bailiff",
     scans: 3,
     faction: "grineer",
     image: "KuvaBailiff.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerFemale": {
     name: "Kuva Ballista",
     scans: 5,
     faction: "grineer",
     image: "FortressGrineerFemale.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerMarinePistol": {
     name: "Kuva Seeker",
     scans: 5,
     faction: "grineer",
     image: "FortressGrineerMarinePistol.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerRollingDrone": {
     name: "Kuva Roller",
     scans: 10,
     faction: "grineer",
     image: "RollingDroneAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressIncendiaryBombard": {
     name: "Kuva Napalm",
     scans: 3,
     faction: "grineer",
     image: "FortressIncendiaryBombard.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressJetpackMarine": {
     name: "Kuva Hellion",
     scans: 5,
     faction: "grineer",
     image: "FortressJetpackMarine.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressMacheteWoman": {
     name: "Kuva Scorpion",
     scans: 10,
     faction: "grineer",
     image: "FortressMacheteWoman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressMinigunBombard": {
     name: "Kuva Heavy Gunner",
     scans: 3,
     faction: "grineer",
     image: "FortressMinigunBombard.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressPistonSawman": {
     name: "Kuva Powerclaw",
     scans: 10,
     faction: "grineer",
     image: "FortressPistonSawman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressRifleLancer": {
     name: "Kuva Lancer",
     scans: 20,
     faction: "grineer",
     image: "FortressRifleLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressRocketBombard": {
     name: "Kuva Bombard",
     scans: 3,
     faction: "grineer",
     image: "FortressRocketBombard.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressShieldLancer": {
     name: "Kuva Shield Lancer",
     scans: 20,
     faction: "grineer",
     image: "FortressShieldLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Fortress/FortressShotgunLancer": {
     name: "Kuva Trooper",
     scans: 10,
     faction: "grineer",
     image: "FortressShotgunLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/Ghouls/GhoulDevourerAgent": {
     name: "Ghoul Devourer",
@@ -2589,6 +2817,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "grineer",
     image: "SeekerDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/InfestedMicroPlanet/GrineerShotgunSurvivorAgent": {
     name: "Lancer Survivor",
@@ -2643,120 +2872,140 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "grineer",
     image: "ExoRaider.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingMeleeAgent": {
     name: "Exo Raider Carver",
     scans: 5,
     faction: "grineer",
     image: "ExoRaiderCarver.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingShotgunAgent": {
     name: "Exo Raider Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "ExoRaiderEviscerator.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCaptainHeavyAgent": {
     name: "Exo Gokstad Officer",
     scans: 3,
     faction: "grineer",
     image: "ExoGokstadOfficer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCaptainRollerTurretAgent": {
     name: "Exo Roller Sentry",
     scans: 20,
     faction: "grineer",
     image: "ExoRollerSentry.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewBladeAgent": {
     name: "Exo Butcher",
     scans: 20,
     faction: "grineer",
     image: "ExoButcher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewEliteRifleAgent": {
     name: "Exo Elite Lancer",
     scans: 5,
     faction: "grineer",
     image: "ExoEliteLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewEvisceratorAgent": {
     name: "Exo Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "ExoEviscerator.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewFlameAgent": {
     name: "Exo Supressor",
     scans: 5,
     faction: "grineer",
     image: "ExoSupressor.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSPilotAgent": {
     name: "Exo Gokstad Pilot",
     scans: 20,
     faction: "grineer",
     image: "ExoGokstadPilot.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingDemoAgent": {
     name: "Gyre Raider",
     scans: 5,
     faction: "grineer",
     image: "GyreRaider.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingMeleeAgent": {
     name: "Gyre Raider Carver",
     scans: 5,
     faction: "grineer",
     image: "GyreRaiderCarver.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingShotgunAgent": {
     name: "Gyre Raider Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "GyreRaiderEviscerator.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnCaptainHeavyAgent": {
     name: "Kosma Gokstad Officer",
     scans: 3,
     faction: "grineer",
     image: "KosmaGokstadOfficer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnCaptainRollerTurretAgent": {
     name: "Kosma Roller Sentry",
     scans: 20,
     faction: "grineer",
     image: "KosmaRoller.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewBladeAgent": {
     name: "Kosma Butcher",
     scans: 20,
     faction: "grineer",
     image: "KosmaButcher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewEliteRifleAgent": {
     name: "Kosma Elite Lancer",
     scans: 5,
     faction: "grineer",
     image: "KosmaEliteLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewEvisceratorAgent": {
     name: "Kosma Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "KosmaEviscerator.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewFlameAgent": {
     name: "Kosma Supressor",
     scans: 5,
     faction: "grineer",
     image: "KosmaSupressor.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/GrnPilotAgent": {
     name: "Kosma Gokstad Pilot",
     scans: 20,
     faction: "grineer",
     image: "KosmaGokstadPilot.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnBoardingShotgunAgent": {
     name: "Gyre Eviscerator",
@@ -2769,90 +3018,105 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "grineer",
     image: "GyreGokstadOfficer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCaptainRollerTurretAgent": {
     name: "Gyre Roller Sentry",
     scans: 20,
     faction: "grineer",
     image: "GyreRollerSentry.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewBladeAgent": {
     name: "Gyre Butcher",
     scans: 20,
     faction: "grineer",
     image: "GyreButcher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewEliteRifleAgent": {
     name: "Gyre Elite Lancer",
     scans: 5,
     faction: "grineer",
     image: "GyreEliteLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewFlameAgent": {
     name: "Gyre Supressor",
     scans: 5,
     faction: "grineer",
     image: "GyreSupressor.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnPilotAgent": {
     name: "Gyre Gokstad Pilot",
     scans: 20,
     faction: "grineer",
     image: "GyreGokstadPilot.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/BladeSawman": {
     name: "Drekar Butcher",
     scans: 20,
     faction: "grineer",
     image: "SeaLabButcher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/EliteRifleLancer": {
     name: "Drekar Elite Lancer",
     scans: 5,
     faction: "grineer",
     image: "SeaLabEliteLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/EvisceratorLancer": {
     name: "Drekar Eviscerator",
     scans: 5,
     faction: "grineer",
     image: "SeaLabEviscerator.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleHeavy": {
     name: "Drekar Heavy Gunner",
     scans: 3,
     faction: "grineer",
     image: "SeaLabHeavyGunner.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleMachete": {
     name: "Drekar Scorpion",
     scans: 10,
     faction: "grineer",
     image: "SeaLabScorpion.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleSniper": {
     name: "Drekar Ballista",
     scans: 5,
     faction: "grineer",
     image: "SeaLabBallista.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerMarinePistol": {
     name: "Drekar Seeker",
     scans: 5,
     faction: "grineer",
     image: "SeaLabHeavySeeker.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/JetpackMarine": {
     name: "Drekar Hellion",
     scans: 5,
     faction: "grineer",
     image: "SeaLabHellion.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/RifleLancer": {
     name: "Drekar Lancer",
     scans: 20,
     faction: "grineer",
     image: "SeaLabLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SeaLab/SeaLabManicGrineer": {
     name: "Drekar Manic",
@@ -2871,6 +3135,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "grineer",
     image: "SeaLabTrooper.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Grineer/SpecialEvents/GrineerArtificer": {
     name: "Artificer",
@@ -3045,24 +3310,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "DiseasedAncient.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/HealingAncient": {
     name: "Ancient Healer",
     scans: 5,
     faction: "infestation",
     image: "HealerAncientDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/ProtectorAncient": {
     name: "Ancient Protector",
     scans: 5,
     faction: "infestation",
     image: "AncientProtector.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/SpawningAncient": {
     name: "Boiler",
     scans: 5,
     faction: "infestation",
     image: "PussAncient.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/SpawningAncientMiniboss": {
     name: "Arcane Boiler",
@@ -3075,36 +3344,42 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "infestation",
     image: "ToxicAncient2DE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/GraspingCrawler": {
     name: "Nauseous Crawler",
     scans: 20,
     faction: "infestation",
     image: "NauseousCrawlerDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/GrenadeCrawler": {
     name: "Lobber Crawler",
     scans: 30,
     faction: "infestation",
     image: "GrenadeAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/LightningCrawler": {
     name: "Electric Crawler",
     scans: 20,
     faction: "infestation",
     image: "DEElectricCrawler.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/MeleeCrawler": {
     name: "Crawler",
     scans: 30,
     faction: "infestation",
     image: "CrawlerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/NoxiousCrawler": {
     name: "Toxic Crawler",
     scans: 20,
     faction: "infestation",
     image: "ToxicCrawlerDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Emissary/AncientShellAgent": {
     name: "Deimos Therid",
@@ -3129,12 +3404,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "BoneBladeAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/GreyStrain/Femur/InfestedFemurAgent": {
     name: "Deimos Saxum",
     scans: 3,
     faction: "infestation",
     image: "InfestedFemurAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/InfestedDrones/CellCarrierDroneAgent": {
     name: "Mutalist Osprey Carrier",
@@ -3159,12 +3436,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "NaniteInfestedMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/InfestedMoas/SlowBombBipedAgent": {
     name: "Tar Mutalist MOA",
     scans: 5,
     faction: "infestation",
     image: "SlowInfestedMoa.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/Juggernaut": {
     name: "Juggernaut",
@@ -3183,12 +3462,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "infestation",
     image: "QuadrupedAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/QuadrupedColonist": {
     name: "Carrion Charger",
     scans: 3,
     faction: "infestation",
     image: "CarrionCharger.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/RusherAgent": {
     name: "Maggot",
@@ -3201,6 +3482,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 30,
     faction: "infestation",
     image: "LeaperDE.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/AiWeek/Runners/MeleeRunner": {
     name: "Runner",
@@ -3261,12 +3543,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "AncientTankMicroPlanetAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Ashen/AshenAgent": {
     name: "Deimos Carnis",
     scans: 30,
     faction: "infestation",
     image: "AshenAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Ashen/AshenBigAgent": {
     name: "Deimos Carnis Rex",
@@ -3291,6 +3575,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "DiseasedAncient.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Drones/Tendril/InfestedTendrilDroneAgent": {
     name: "Deimos Tendril Drone",
@@ -3315,18 +3600,21 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "HealingAncientMicroPlanetAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/InfestedAttackDroneMicroPlanet": {
     name: "Deimos Venin Mutalist",
     scans: 10,
     faction: "infestation",
     image: "InfestedAttackDroneMicroPlanetAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/JuggernautMicroPlanetCasual": {
     name: "Deimos Juggernaut",
     scans: 3,
     faction: "infestation",
     image: "JuggernautMicroPlanetCasualAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/JuggernautMicroPlanetEscort": {
     name: "Polyp-Hog Juggernaut",
@@ -3345,12 +3633,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 30,
     faction: "infestation",
     image: "RunnerMicroPlanetAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/NaniteCloudBipedMicroPlanet": {
     name: "Deimos Swarm Mutalist MOA",
     scans: 5,
     faction: "infestation",
     image: "NaniteCloudBipedMicroPlanetAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Oni/InfestedJetpackMicroPlanetOni": {
     name: "Deimos Undying Flyer",
@@ -3363,12 +3653,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "infestation",
     image: "QuadrupedMicroPlanetAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterAgent": {
     name: "Mitosid",
     scans: 1,
     faction: "infestation",
     image: "Mitosid.png",
+    eximusScans: 1,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterAgentVIP": {
     name: "Mitosid Rex",
@@ -3381,6 +3673,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "BasalDiploid.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterSplitAgentVIP": {
     name: "Basal Diploid Rex",
@@ -3393,6 +3686,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "infestation",
     image: "FeralDiploid.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterTopSplitAgentVIP": {
     name: "Feral Diploid Rex",
@@ -3453,12 +3747,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "themurmur",
     image: "TheAnatomizer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/Murmur/MITWMurmurAgent": {
     name: "The Unseeing Herald",
     scans: 3,
     faction: "themurmur",
     image: "TheUnseeingHerald.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechBonewindow/CoHNecramechBonewidowAgent": {
     name: "Rogue Bonewidow (Descendia)",
@@ -3471,36 +3767,42 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "themurmur",
     image: "Bonewidow.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechBonewindow/NecramechBonewidowDisruptionAgent": {
     name: "Demolisher Bonewidow",
     scans: 3,
     faction: "themurmur",
     image: "Bonewidow.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechMelee/AlchemyNecramechMeleeAgent": {
     name: "Elementa Arcocanid",
     scans: 20,
     faction: "themurmur",
     image: "RogueArcocanid.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechMelee/NecramechMeleeAgent": {
     name: "Rogue Arcocanid",
     scans: 20,
     faction: "themurmur",
     image: "RogueArcocanid.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechRanged/AlchemyNecramechRangedAgent": {
     name: "Elementa Culverin",
     scans: 20,
     faction: "themurmur",
     image: "RogueCulverin.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechRanged/NecramechRangedAgent": {
     name: "Rogue Culverin",
     scans: 20,
     faction: "themurmur",
     image: "RogueCulverin.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechVoidRig/CoHNecramechVoidRigAgent": {
     name: "Rogue Voidrig (Descendia)",
@@ -3513,6 +3815,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "themurmur",
     image: "Voidrig.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/NecramechVoidRig/NecramechVoidRigDisruptionAgent": {
     name: "Demolisher Voidrig",
@@ -3537,6 +3840,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 40,
     faction: "themurmur",
     image: "ShufflingFragment.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/Octopede/Leg/BipedalLegs/MITWOctopedeBipedalLegsAgent": {
     name: "Lumbering Fragment",
@@ -3555,18 +3859,21 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "themurmur",
     image: "TheHollowVein.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent": {
     name: "Gruzzling",
     scans: 3,
     faction: "themurmur",
     image: "Gruzzling.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/Triangle/MITWSupportTriangleAgent": {
     name: "The Severed Warden",
     scans: 3,
     faction: "themurmur",
     image: "TheSeveredWarden.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/ManInTheWall/VialCarryDrone/VialDroneAgent": {
     name: "Vitriol Necramite",
@@ -3579,54 +3886,63 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "corpus",
     image: "NokkoBaseHeavyBiped.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoEliteSpacemanAgent": {
     name: "Scrofa Crewman",
     scans: 5,
     faction: "corpus",
     image: "NokkoEliteSpaceman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoFlyingAttackAgent": {
     name: "Scrofa Attack Drone",
     scans: 3,
     faction: "corpus",
     image: "NokkoFlyingAttack.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoFlyingSupportAgent": {
     name: "Scrofa Shield Osprey",
     scans: 5,
     faction: "corpus",
     image: "NokkoFlyingSupport.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoHeavyEliteSpacemanAgent": {
     name: "Scrofa Elite Crewman",
     scans: 5,
     faction: "corpus",
     image: "NokkoHeavyEliteSpaceman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoLabMeleeHeavyAgent": {
     name: "Scrofa Legionary",
     scans: 3,
     faction: "corpus",
     image: "NokkoLabMeleeHeavy.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoLaserCannonBipedAgent": {
     name: "Scrofa Laser MOA",
     scans: 10,
     faction: "corpus",
     image: "NokkoLaserCannonBiped.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMeleeHeavyAgent": {
     name: "Scrofa Heavy Trencher",
     scans: 3,
     faction: "corpus",
     image: "NokkoMeleeHeavy.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMineDroneAgent": {
     name: "Scrofa Mine Osprey",
     scans: 10,
     faction: "corpus",
     image: "NokkoMineDrone.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMiniArachnoidAgent": {
     name: "Scrofa Mite Raknoid",
@@ -3645,30 +3961,35 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "NokkoRailgunBiped.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoRangedHeavyAgent": {
     name: "Scrofa Grenadier Crewman",
     scans: 5,
     faction: "corpus",
     image: "NokkoRangedHeavy.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoShockwaveBipedAgent": {
     name: "Scrofa Shockwave Moa",
     scans: 5,
     faction: "corpus",
     image: "NokkoShockwaveBiped.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoShotgunSpacemanAgent": {
     name: "Scrofa Plasmor Crewman",
     scans: 5,
     faction: "corpus",
     image: "NokkoShotgunSpaceman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoSniperAgent": {
     name: "Scrofa Sniper Ranger",
     scans: 5,
     faction: "corpus",
     image: "NokkoSniper.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoSuicideBipedAgent": {
     name: "Scrofa Decoy MOA",
@@ -3735,6 +4056,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "orokin",
     image: "OrokinHeavyFemaleAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/OrokinAutoTurretAgent": {
     name: "Orokin Sentry",
@@ -3747,6 +4069,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "orokin",
     image: "OrokinBladeSawman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/OrokinDroneAttackAgent": {
     name: "Corrupted Drone",
@@ -3759,48 +4082,56 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "orokin",
     image: "OrokinHealingAncientAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/OrokinMinigunBombard": {
     name: "Corrupted Heavy Gunner",
     scans: 3,
     faction: "orokin",
     image: "OrokinHeavyFemaleAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/OrokinMoaBipedAgent": {
     name: "Corrupted MOA",
     scans: 5,
     faction: "orokin",
     image: "OrokinMoaBipedAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/OrokinNullifySpacemanAgent": {
     name: "Corrupted Nullifier",
     scans: 5,
     faction: "orokin",
     image: "OrokinNullifySpaceman.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/OrokinRocketBombard": {
     name: "Corrupted Bombard",
     scans: 3,
     faction: "orokin",
     image: "CorruptedBombardNew.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/OrokinShieldDroneAgent": {
     name: "Orokin Drone",
     scans: 20,
     faction: "orokin",
     image: "OrokinShieldDroneAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/RifleLancer": {
     name: "Corrupted Lancer",
     scans: 20,
     faction: "orokin",
     image: "OrokinRifleLancerAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Orokin/RifleSpacemanAgent": {
     name: "Corrupted Crewman",
     scans: 20,
     faction: "orokin",
     image: "OrokinRifleSpacemanAvatar.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Quests/SandmanBoss/InarosGolemAgent": {
     name: "Tomb Protector Effigy",
@@ -3951,18 +4282,21 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "JetpackCrewmanDera.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusThreeNavAgent": {
     name: "Quanta Ranger",
     scans: 5,
     faction: "corpus",
     image: "JetpackCrewmamQuanta.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusTwoNavAgent": {
     name: "Penta Ranger",
     scans: 5,
     faction: "corpus",
     image: "JetpackCrewmanPenta.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Corpus/Drones/SwarmDrone": {
     name: "Locust Drone",
@@ -3999,12 +4333,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "corpus",
     image: "CrpShipFlak.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Corpus/LaserShipNavAgent": {
     name: "Frigate",
     scans: 5,
     faction: "corpus",
     image: "CrpShipLaser.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/CorpusIceSledAgent": {
     name: "Comet Shard",
@@ -4179,12 +4515,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 10,
     faction: "grineer",
     image: "GrnDrone.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Grineer/Drones/LaserDrone": {
     name: "Lancer Dreg",
     scans: 10,
     faction: "grineer",
     image: "GrnLaserDrone.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Grineer/Drones/StasisDrone": {
     name: "Temporal Dreg",
@@ -4209,24 +4547,28 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "grineer",
     image: "GrnSkiff.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/MissileShieldSkiff": {
     name: "Shield-Hellion Dargyn",
     scans: 5,
     faction: "grineer",
     image: "GrnSkiffMissileShield.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/MissileSkiff": {
     name: "Hellion Dargyn",
     scans: 5,
     faction: "grineer",
     image: "GrnSkiffMissile.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/ShieldSkiff": {
     name: "Shield Dargyn",
     scans: 5,
     faction: "grineer",
     image: "GrnSkiffShield.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/SpaceBattles/Infested/GrenadeCarrierDrone": {
     name: "Mutalist Toxic Carrier",
@@ -4287,42 +4629,49 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "anarchs",
     image: "AnarchArcus.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Tau/Dax/TauDaxHeavyArch/AnarchTauDaxHeavyArchgunAgent": {
     name: "Anarch Libritor",
     scans: 5,
     faction: "anarchs",
     image: "AnarchLibritor.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Tau/Dax/TauDaxMedic/AnarchTauDaxMedicAgent": {
     name: "Anarch Capsarii",
     scans: 15,
     faction: "anarchs",
     image: "AnarchCapsarii.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Tau/Dax/TauDaxNinja/AnarchTauDaxNinjaAgent": {
     name: "Anarch Tenebra",
     scans: 15,
     faction: "anarchs",
     image: "AnarchTenebra.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent": {
     name: "Anarch Gladius",
     scans: 20,
     faction: "anarchs",
     image: "AnarchGladius.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerLancer/AnarchTauGrineerLancerAgent": {
     name: "Anarch Grineer Lancer",
     scans: 20,
     faction: "anarchs",
     image: "AnarchGrineerLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerTrapper/AnarchTauGrineerTrapperAgent": {
     name: "Anarch Grineer Trapper",
     scans: 15,
     faction: "anarchs",
     image: "AnarchGrineerTrapper.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/Tau/GuiltSentient/SentientGuiltBossAgent": {
     name: "Dactolyst",
@@ -4625,6 +4974,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "techrot",
     image: "InfestedAncient.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/DeviationInfestedBabau1999Agent": {
     name: "Techrot Babau (Temporal Archimedea Survival)",
@@ -4637,6 +4987,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 3,
     faction: "techrot",
     image: "InfestedBabau.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Infested/InfestedMaggot/InfestedMaggot1999Agent": {
     name: "Techrot Miasmite",
@@ -4649,6 +5000,7 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "techrot",
     image: "InfestedMutalist.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Infested/InfestedRamSled/InfestedRamSledAgent": {
     name: "Techrot Ramsled",
@@ -4661,12 +5013,14 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 40,
     faction: "techrot",
     image: "TechrotRunner.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Infested/InfestedUndazoa/InfestedUndazoa1999Agent": {
     name: "Techrot Matmas",
     scans: 20,
     faction: "techrot",
     image: "InfestedUnadoza.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Infested/InfestedVolatileRunner/InfestedVolatileRunner1999Agent": {
     name: "Techrot Volatile Galliflex",
@@ -4685,18 +5039,21 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 20,
     faction: "scaldra",
     image: "LasrianButcher.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Lasrian/LasrianChemStrikeNox/LasrianChemStrikeNox1999Agent": {
     name: "Scaldra Dedicant",
     scans: 5,
     faction: "scaldra",
     image: "LasrianNox.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Lasrian/LasrianDrone/LasrianDroneAgent": {
     name: "Scaldra Harbinger",
     scans: 20,
     faction: "scaldra",
     image: "LasrianDrone.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Lasrian/LasrianDropship/LasrianSedanAgent": {
     name: "Scaldra TI-92",
@@ -4709,18 +5066,21 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
     scans: 5,
     faction: "scaldra",
     image: "LasrianGoonadier.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Lasrian/LasrianRifleLancer/LasrianLancer1999Agent": {
     name: "Scaldra Jaeger",
     scans: 20,
     faction: "scaldra",
     image: "LasrianLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Lasrian/LasrianShieldLancer/LasrianShieldLancer1999Agent": {
     name: "Scaldra Barbican",
     scans: 20,
     faction: "scaldra",
     image: "LasrianShieldLancer.png",
+    eximusScans: 3,
   },
   "/Lotus/Types/Enemies/WF1999Lasrian/LasrianTank/LasrianTankAgent": {
     name: "H-09 Efervon Tank",
@@ -4760,10 +5120,4535 @@ export const CODEX_SCAN_REQUIREMENTS: Record<
   },
 };
 
+// Lowercased avatar paths a profile records scans against, mapped to the entry
+// they credit. Sourced from ExportEnemies agents[].avatarTypes.
+export const CODEX_SCAN_AVATARS: Record<string, { key: string; eximus?: true }> = {
+  "/lotus/types/enemies/acolytes/areacasteracolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/AreaCasterAcolyteAgent",
+  },
+  "/lotus/types/enemies/acolytes/controlacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/ControlAcolyteAgent",
+  },
+  "/lotus/types/enemies/acolytes/duellistacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/DuellistAcolyteAgent",
+  },
+  "/lotus/types/enemies/acolytes/heavyacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/HeavyAcolyteAgent",
+  },
+  "/lotus/types/enemies/acolytes/rogueacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/RogueAcolyteAgent",
+  },
+  "/lotus/types/enemies/acolytes/strikeracolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/StrikerAcolyteAgent",
+  },
+  "/lotus/types/enemies/capturetargets/capturetargetcorpusnullifieravatar": {
+    key: "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpusNullifier",
+  },
+  "/lotus/types/enemies/capturetargets/capturetargetghoulavatar": {
+    key: "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGhoulAgent",
+  },
+  "/lotus/types/enemies/capturetargets/capturetargetgrineerghoulship": {
+    key: "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerGhoulShip",
+  },
+  "/lotus/types/enemies/corpus/aladvpet/aladvpetavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/AladVPet/AladVPet",
+  },
+  "/lotus/types/enemies/corpus/aladvpet/zanukahunteravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/AladVPet/ZanukaHunterAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcarrusavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcarrusavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcarruspilotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusPilotAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcarruspilotavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusPilotAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcarruspilotbossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusPilotBossAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcorpusoverrideavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusOverrideAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcorpusoverrideavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusOverrideAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcorpussniperavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusSniperAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcorpussniperavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusSniperAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamcorpussniperbossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusSniperBossAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgammoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgammoaavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgammoabossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaBossAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgammoasatyravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaSatyrAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgammoasatyravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaSatyrAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgammoasatyrbossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaSatyrBossAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamospreyavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamOspreyAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamospreyavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamOspreyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgamospreybossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamOspreyBossAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/amalgampilotghostbossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamPilotGhostBossAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/avatars/corpuscarruspilotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/CorpusCarrusPilotAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/prototypes/avatars/amalgamprototypecarrusavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/Prototypes/AmalgamPrototypeCarrusAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/prototypes/avatars/amalgamprototypecarruspilotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/Prototypes/AmalgamPrototypeCarrusPilotAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/prototypes/avatars/amalgamprototypemeleeavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/Prototypes/AmalgamPrototypeMeleeAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/prototypes/avatars/amalgamprototypemoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/Prototypes/AmalgamPrototypeMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/amalgams/prototypes/avatars/amalgamprototypesatyravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/Prototypes/AmalgamPrototypeSatyrAgent",
+  },
+  "/lotus/types/enemies/corpus/aristocrats/avatars/aristocratmanageravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Aristocrats/AristocratManagerAgent",
+  },
+  "/lotus/types/enemies/corpus/aristocrats/avatars/minimoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Aristocrats/MiniMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/lasercannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/LaserCannonBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/lasercannonbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/LaserCannonBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/laserdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/LaserDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/laserdiscbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/LaserDiscBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/laserdiscbipedavatarrare": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/LaserDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/railgunbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/RailgunBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/railgunbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/RailgunBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/riotbipedcontrolavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/RiotBipedControlAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/riotbipeddispersionavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/RiotBipedDispersionAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/riotbipedpreventionavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/RiotBipedPreventionAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/shockwavebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/ShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/shockwavebipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/ShockwaveBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/shockwavebipedhackedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/ShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/supermoabipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/SuperMoaBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/bipedrobot/aiweek/supermoabipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/SuperMoaBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombadetectoravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaDetectorAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombadetectoravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaDetectorAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombalaseravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaLaserAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombalaseravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaLaserAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombashieldavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaShieldAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombashieldavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaShieldAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombateslaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaTeslaAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcombateslaavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCombaTeslaAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmaneliteavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanEliteAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmaneliteavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanEliteAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmannullifieravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanNullifierAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmannullifieravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanNullifierAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmansniperavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanSniperAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmansniperavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanSniperAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmantechavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanTechAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipcrewmantechavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipCrewmanTechAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmachinisthammeravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMachinistHammerAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmachinisthammeravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMachinistHammerAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoaderaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDeraAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoaderaavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDeraAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoadiscavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDiscAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoadiscavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDiscAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoadualcannonavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDualCannonAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoadualcannonavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDualCannonAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoaglaxionavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaGlaxionAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipmoaglaxionavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaGlaxionAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipospreymineavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyMineAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipospreymineavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyMineAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipospreyoxiumavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyOxiumAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipospreyshieldavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyShieldAgent",
+  },
+  "/lotus/types/enemies/corpus/corpusshipremastered/avatars/shipospreyshieldavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyShieldAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/disruptioncarruspilotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionCarrusPilotAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/disruptionhyenaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionHyenaAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/disruptionlaserdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionLaserDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/disruptionriotmoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionRiotMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/disruptionshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/ShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/luadisruptioncarruspilotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionCarrusPilotAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/luadisruptionhyenaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionHyenaAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/luadisruptionlaserdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionLaserDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/disruption/avatars/luadisruptionriotmoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Disruption/DisruptionRiotMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/discdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/DiscDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/discdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/DiscDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/leechdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/LeechDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/leechdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/LeechDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/minedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/MineDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/minedroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/MineDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/shielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/ShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/shielddroneavatarally": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/ShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/shielddroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/ShieldDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/shielddroneavatarleaderally": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/ShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/suicidedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/SuicideDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/vacdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/VacuumDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/aiweek/vacdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/VacuumDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/drones/droneavatars/droneattackavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/DroneAttackAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/droneavatars/droneattackavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/DroneAttackAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/drones/vip/raptorpackavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/Vip/RaptorPack",
+  },
+  "/lotus/types/enemies/corpus/drones/vip/raptortwocarrieravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/Vip/RaptorTwoCarrierAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/vip/raptortwolaseravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/Vip/RaptorTwoLaserAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/vip/raptortwomortaravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/Vip/RaptorTwoMortarAgent",
+  },
+  "/lotus/types/enemies/corpus/drones/vip/raptortwoswarmdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/Vip/RaptorTwoSwarmDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/dropship/corpusdropshipavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Dropship/CorpusDropshipAgent",
+  },
+  "/lotus/types/enemies/corpus/dropship/corpushuntershipavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Dropship/CorpusHunterShipAgent",
+  },
+  "/lotus/types/enemies/corpus/dropship/corpushuntershipeliteavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Dropship/CorpusHunterShipEliteAgent",
+  },
+  "/lotus/types/enemies/corpus/dropship/spacefighterlaserhuntershipavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Dropship/SpaceFighterLaserHunterShipAgent",
+  },
+  "/lotus/types/enemies/corpus/dropship/venus/venusdropshipavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Dropship/Venus/VenusDropshipAgent",
+  },
+  "/lotus/types/enemies/corpus/dropship/venus/venussmalldropshipavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Dropship/Venus/VenusSmallDropshipAgent",
+  },
+  "/lotus/types/enemies/corpus/gamemodes/ascension/ascensioncannonmoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Gamemodes/Ascension/AscensionCannonMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/gamemodes/deployablespacemanwardenavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Gamemodes/DeployableSpacemanWardenAgent",
+  },
+  "/lotus/types/enemies/corpus/gamemodes/deployablespacemanwardenavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Gamemodes/DeployableSpacemanWardenAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gamemodes/purgatoryghostavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Gamemodes/PurgatoryGhost",
+  },
+  "/lotus/types/enemies/corpus/gamemodes/purgatorywarrioravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Gamemodes/PurgatoryWarrior",
+  },
+  "/lotus/types/enemies/corpus/gamemodes/purgatorywarriorrangedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Gamemodes/PurgatoryWarrior",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasbaseflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasbaseflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasdeployableflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingDeployableSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasdeployableflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingDeployableSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasdeployablespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasDeployableSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasdeployablespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasDeployableSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasdiscdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasDiscDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasdiscdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasDiscDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaseliteflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaseliteflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaselitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaselitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaslasercannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasLaserCannonBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaslasercannonbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasLaserCannonBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaslaserdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasLaserDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gaslaserdiscbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasLaserDiscBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasmeleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasMeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasmeleespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasMeleeSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasnullifyflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingNullifierSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasnullifyflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingNullifierSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasnullifyspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasNullifySpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasnullifyspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasNullifySpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasrailgunbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasRailgunBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasrailgunbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasRailgunBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasRifleSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasriflespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasRifleSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasscientistavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasScientistAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshielddroneavatarlead": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasShieldDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshockwavebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshockwavebipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasShockwaveBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshotgunflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshotgunflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingShotgunSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gasshotgunspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasShotgunSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gassniperflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingSniperSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gassniperflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasFlyingSniperSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gassniperspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasSniperSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gassniperspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasSniperSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gassuicidedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasSuicideDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gassupermoabipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasSuperMoaBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/gascity/avatars/gassupermoabipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/GasCity/GasSuperMoaBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/narmercarrierspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/NarmerSpacemanCarrierAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/narmerdiscdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerDiscDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/narmerguardspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/NarmerGuardSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/narmerguardturretavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/MiniBoss/TurretQuadMiniBossAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/narmerriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerRifleSpacemanAvatar",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/narmershipmoaderaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerShipMoaDeraAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcarrusavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcarrusavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcarruspilotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusPilotAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcarruspilotavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCarrusPilotAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcorpusoverrideavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusOverrideAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcorpusoverrideavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusOverrideAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcorpussniperavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusSniperAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamcorpussniperavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamCorpusSniperAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgammoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgammoaavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgammoasatyravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaSatyrAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgammoasatyravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamMoaSatyrAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamospreyavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamOspreyAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmeramalgamospreyavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Amalgams/AmalgamOspreyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmerattackdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerDiscDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmerattackdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerDiscDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmerminedroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerDiscDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmerriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerRifleSpacemanAvatar",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmerriflespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerRifleSpacemanAvatar",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmershipmoaderaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerShipMoaDeraAgent",
+  },
+  "/lotus/types/enemies/corpus/narmer/avatars/pnwnarmershipmoaderaavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerShipMoaDeraAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/narmer/turrets/narmersecuritycameraavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Turrets/SecurityCameraAgent",
+  },
+  "/lotus/types/enemies/corpus/newwar/avatars/sentmoaderaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDeraAgent",
+  },
+  "/lotus/types/enemies/corpus/newwar/avatars/sentmoadiscavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDiscAgent",
+  },
+  "/lotus/types/enemies/corpus/newwar/avatars/sentmoadualcannonavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipMoaDualCannonAgent",
+  },
+  "/lotus/types/enemies/corpus/newwar/avatars/sentospreyoxiumavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyOxiumAgent",
+  },
+  "/lotus/types/enemies/corpus/newwar/avatars/sentospreyshieldavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/CorpusShipRemastered/ShipOspreyShieldAgent",
+  },
+  "/lotus/types/enemies/corpus/quadrobot/microhyenaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/MicroHyenaAgent",
+  },
+  "/lotus/types/enemies/corpus/quadrobot/miniboss/quadrobotminibossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/MiniBoss/QuadRobotMiniBossAgent",
+  },
+  "/lotus/types/enemies/corpus/quadrobot/miniboss/shielddroneminibossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/MiniBoss/ShieldDroneMiniBossAgent",
+  },
+  "/lotus/types/enemies/corpus/quadrobot/miniboss/turretquadminibossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/MiniBoss/TurretQuadMiniBossAgent",
+  },
+  "/lotus/types/enemies/corpus/quadrobot/quadrobotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/QuadRobotAgentNEW",
+  },
+  "/lotus/types/enemies/corpus/quadrobot/quadrobotavatarnew": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/QuadRobotAgentNEW",
+  },
+  "/lotus/types/enemies/corpus/quadrobot/tnwquadrobotavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/QuadRobotAgentNEW",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/boardingmeleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/BoardingMeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/boardingmeleespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/BoardingMeleeSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/boardingriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/BoardingRifleSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/boardingriflespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/BoardingRifleSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/boardingshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/BoardingShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/boardingshotgunspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/BoardingShotgunSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/corpusrailjackflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CorpusRailjackFlyingSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/corpusrailjackflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CorpusRailjackFlyingSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpadmiralflyingavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpAdmiralFlyingAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpadmiralflyingavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpAdmiralFlyingAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewcannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewCannonBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewcannonbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewCannonBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewdiscbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewDiscBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcreweliteavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewEliteAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcreweliteavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewEliteAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewmeleeavatar": {
+    key: "Lotus/Types/Enemies/Corpus/Railjack/CrpCrewMeleeAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewmeleeavatarleader": {
+    key: "Lotus/Types/Enemies/Corpus/Railjack/CrpCrewMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewnullifieravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewNullifierAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewnullifieravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewNullifierAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewrifleavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewRifleAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewrifleavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewRifleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewshielddroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewShieldDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewshipcaptainavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewshipCaptain",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewshipcaptainavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewshipCaptain",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewshotgunavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewShotgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpcrewshotgunavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crprailjackshockwavebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpRailjackShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crprailjackshockwavebipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpRailjackShockwaveBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crprjrailgunbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewRJRailgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpspecopsrangedavatarone": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsShockerAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpspecopsrangedavataroneleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsShockerAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpspecopsrangedavatarthree": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsMinigunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpspecopsrangedavatarthreeleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsMinigunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpspecopsriotbipedcontrolavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsRiotBipedControlAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crpspecopsriotbipedcontrolavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpSpecOpsRiotBipedControlAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crptechdeployableavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewmanTechDeployableAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crptechdeployableavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpCrewmanTechDeployableAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crptechengineeravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpTechEngineerAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/crptechengineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/CrpTechEngineerAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/overridejammingdrone2avatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/OverrideJammingDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsarachnoidavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsArachnoidAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsarachnoidavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsArachnoidAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsfiremoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsFireMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsfiremoaavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsFireMoaAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsicemoaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsIceMoaAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsicemoaavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsIceMoaAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsstaffavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsStaffAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/avatars/specopsstaffavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/SpecOpsStaffAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspaceboardingmeleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingMeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspaceboardingmeleespacemanavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingMeleeSpacemanAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspaceboardingriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingRifleSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspaceboardingriflespacemanavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingRifleSpacemanAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspaceboardingshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspaceboardingshotgunspacemanavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceBoardingShotgunSpacemanAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecorpusrailjackflyingspacemanavatar":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCorpusRailjackFlyingSpacemanAgent",
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecorpusrailjackflyingspacemanavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCorpusRailjackFlyingSpacemanAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewcannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewCannonBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewcannonbipedavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewCannonBipedAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewdiscbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewDiscBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcreweliteavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewEliteAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcreweliteavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewEliteAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewMeleeAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewmeleeavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewnullifieravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewNullifierAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewnullifieravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewNullifierAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewrifleavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewRifleAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewrifleavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewRifleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewshielddroneavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewShieldDroneAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewshipcaptainavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewshipCaptain",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewshipcaptainavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewshipCaptain",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewshotgunavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewShotgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrpcrewshotgunavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrprailjackshockwavebipedavatar":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpRailjackShockwaveBipedAgent",
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrprailjackshockwavebipedavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpRailjackShockwaveBipedAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrprjrailgunbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewRJRailgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrptechdeployableavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewmanTechDeployableAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrptechdeployableavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpCrewmanTechDeployableAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrptechengineeravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpTechEngineerAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/deepspace/avatars/deepspacecrptechengineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/DeepSpace/DeepSpaceCrpTechEngineerAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptuneboardingmeleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingMeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptuneboardingmeleespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingMeleeSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptuneboardingriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingRifleSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptuneboardingriflespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingRifleSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptuneboardingshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptuneboardingshotgunspacemanavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneBoardingShotgunSpacemanAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecorpusrailjackflyingspacemanavatar":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCorpusRailjackFlyingSpacemanAgent",
+    },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecorpusrailjackflyingspacemanavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCorpusRailjackFlyingSpacemanAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewcannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewCannonBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewcannonbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewCannonBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewdiscbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewDiscBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcreweliteavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewEliteAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcreweliteavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewEliteAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewMeleeAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewmeleeavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewnullifieravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewNullifierAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewnullifieravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewNullifierAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewrifleavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewRifleAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewrifleavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewRifleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewshielddroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewShieldDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewshipcaptainavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewshipCaptain",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewshipcaptainavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewshipCaptain",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewshotgunavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewShotgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrpcrewshotgunavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrprailjackshockwavebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpRailjackShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrprailjackshockwavebipedavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpRailjackShockwaveBipedAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrprjrailgunbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewRJRailgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrptechdeployableavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewmanTechDeployableAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrptechdeployableavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpCrewmanTechDeployableAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrptechengineeravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpTechEngineerAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/neptune/avatars/neptunecrptechengineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Neptune/NeptuneCrpTechEngineerAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutoboardingmeleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingMeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutoboardingmeleespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingMeleeSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutoboardingriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingRifleSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutoboardingriflespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingRifleSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutoboardingshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutoboardingshotgunspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoBoardingShotgunSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocorpusrailjackflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCorpusRailjackFlyingSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocorpusrailjackflyingspacemanavatarleader":
+    {
+      key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCorpusRailjackFlyingSpacemanAgent",
+      eximus: true,
+    },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewcannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewCannonBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewcannonbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewCannonBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewdiscbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewDiscBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcreweliteavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewEliteAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcreweliteavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewEliteAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewMeleeAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewmeleeavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewnullifieravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewNullifierAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewnullifieravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewNullifierAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewrifleavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewRifleAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewrifleavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewRifleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewshielddroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewShieldDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewshipcaptainavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewshipCaptain",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewshipcaptainavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewshipCaptain",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewshotgunavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewShotgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrpcrewshotgunavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrprailjackshockwavebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpRailjackShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrprailjackshockwavebipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpRailjackShockwaveBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrprjrailgunbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewRJRailgunAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrptechdeployableavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewmanTechDeployableAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrptechdeployableavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpCrewmanTechDeployableAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrptechengineeravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpTechEngineerAgent",
+  },
+  "/lotus/types/enemies/corpus/railjack/pluto/avatars/plutocrptechengineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Railjack/Pluto/PlutoCrpTechEngineerAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/carrierspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/CarrierSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/deployablespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/DeployableSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/deployablespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/DeployableSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/meleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/MeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/meleespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/MeleeSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/nullifyspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/NullifySpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/nullifyspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/NullifySpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/riflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/riflespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/shotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/ShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/shotgunspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/ShotgunSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/sniperspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/SniperSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/aiweek/sniperspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/SniperSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/elitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/EliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/spaceman/elitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/EliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarskatingdetector": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentSkatingDetector",
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarskatinglaser": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentSkatingLaser",
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarskatingshield": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentSkatingShield",
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarskatingtesla": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentSkatingTesla",
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarwalkingdetector": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingDetector",
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarwalkinglaser": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingLaser",
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarwalkingshield": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingShield",
+  },
+  "/lotus/types/enemies/corpus/spaceman/modularspacemanavatarwalkingtesla": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingTesla",
+  },
+  "/lotus/types/enemies/corpus/spaceman/vip/sniperbossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/Vip/SniperAgent",
+  },
+  "/lotus/types/enemies/corpus/specialevents/armoredjackal/armoredjackalavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/SpecialEvents/ArmoredJackal/ArmoredJackalAgent",
+  },
+  "/lotus/types/enemies/corpus/specialevents/artificersuicidedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/SpecialEvents/ArtificerSuicideDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/specialevents/corpusartificeravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/SpecialEvents/CorpusArtificer",
+  },
+  "/lotus/types/enemies/corpus/turrets/turretavatars/autoturretheavyavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Turrets/AutoTurretHeavyAgent",
+  },
+  "/lotus/types/enemies/corpus/turrets/turretavatars/cartturretlaseravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Turrets/CartTurretLaserAgent",
+  },
+  "/lotus/types/enemies/corpus/turrets/turretavatars/securitycameranarrowavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Turrets/SecurityCameraAgent",
+  },
+  "/lotus/types/enemies/corpus/turrets/turretavatars/venussecuritycameraavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Turrets/SecurityCameraAgent",
+  },
+  "/lotus/types/enemies/corpus/vehicle/wheelcardropshipavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vehicle/WheelCarAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/solarisquestdefensedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusDefenseDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusautorocketturretavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusAutoTurretAgentRocket",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusautoturretavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusAutoTurretAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venuscarrierspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusSpacemanCarrierAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusdefensedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusDefenseDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusdroneattackavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusDroneAttackAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusdroneattackavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusDroneAttackAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusdronefreezecloudavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusDroneAttackAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusdronefreezecloudavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusDroneAttackAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venuselitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venuselitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusheavyelitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusHeavyEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusheavyelitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusHeavyEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venuslasercannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusLaserCannonBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venuslasercannonbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusLaserCannonBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venuslaserdiscbipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusLaserDiscBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venuslaserdiscbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusLaserDiscBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusmodularavatarwalkingdetector": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingDetector",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusmodularavatarwalkinglaser": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingLaser",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusmodularavatarwalkingshield": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingShield",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusmodularavatarwalkingtesla": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/ModularSpacemanAgentWalkingTesla",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusShieldDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusshielddroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusShieldDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusshockwavebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusshockwavebipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusShockwaveBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venusshotgunspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusShotgunSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venussniperspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusSniperSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venussniperspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusSniperSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venussuicidedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusSuicideDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/avatars/venussuicidedroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/VenusSuicideDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/commanders/avatars/venuscommanderaquaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Commanders/VenusCommanderAquaAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/commanders/avatars/venuscommandergreenavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Commanders/VenusCommanderGreenAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/commanders/avatars/venuscommanderorangeavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Commanders/VenusCommanderOrangeAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/ambulas/venusambulasavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Ambulas/VenusAmbulasAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/hyenas/venushyenaastroavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Hyenas/VenusHyenaAstroAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/hyenas/venushyenaburneravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Hyenas/VenusHyenaBurnerAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/hyenas/venushyenahotrodavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Hyenas/VenusHyenaHotrodAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/hyenas/venushyenapaceravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Hyenas/VenusHyenaPacerAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/quadavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/QuadAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/quadleaderavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/QuadAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venuscombatspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusCombatSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venuscombatspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusCombatSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusflyingelitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusFlyingEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusflyingelitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusFlyingEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusflyingspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusFlyingSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusflyingspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusFlyingSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusgrenadierelitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGrenadierEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusgrenadierelitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGrenadierEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusgrenadierspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGrenadierSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusgrenadierspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGrenadierSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusguardspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusGuardSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusguardturretavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/QuadRobot/MiniBoss/TurretQuadMiniBossAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusheavydroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusHeavyDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusheavyelitedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusHeavyEliteDroneAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusheavymeleeelitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusHeavyMeleeEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusheavymeleeelitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusHeavyMeleeEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusheavymeleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusHeavyMeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusheavymeleespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusHeavyMeleeSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusicewavebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusIcewaveBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusicewavebipedleaderavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusIcewaveBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusicewaveelitebipedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusIcewaveEliteBipedAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/heavies/venusicewaveelitebipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/VenusIcewaveEliteBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/corpus/venus/vip/avatars/venusvippowerspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Vip/VenusVipPowerSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/vip/avatars/venusvipriflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Vip/VenusVipDualPistolSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/vip/avatars/venusvipshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Vip/VenusVipShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/venus/vip/avatars/venusvipsniperspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Vip/VenusVipSniperSpacemanAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/aladv/aladbossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/AladV/AladBossAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/ambulas/ambulasdropshipavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Ambulas/AmbulasDropshipAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/ambulas/ambulashackingdroneavatarb": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Ambulas/AmbulasHackingDrone",
+  },
+  "/lotus/types/enemies/corpus/vip/ambulas/ambulaspackavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Ambulas/BossAmbulasRangedAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/ambulas/bossambulasrangedavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Ambulas/BossAmbulasRangedAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/arachnoid/arachnoidcamperavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidCamperAvatar",
+  },
+  "/lotus/types/enemies/corpus/vip/arachnoid/arachnoidcamperterraavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidCamperTerraAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/arachnoid/arachnoidcamperterraundergroundavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidCamperTerraAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/arachnoid/arachnoidcoolantavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidCoolantAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/arachnoid/arachnoidhungeravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidHungerAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/arachnoid/arachnoidmicroavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidMicroAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/arachnoid/arachnoidwraithavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidWraithAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/defensetargetaladv/defensetargetaladavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/AladV/AladBossAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/hyena/hyenaelecavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Hyena/HyenaElecAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/hyena/hyenafireavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Hyena/HyenaFireAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/hyena/hyenagunavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Hyena/HyenaGunAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/hyena/hyenaiceavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/Hyena/HyenaIceAgent",
+  },
+  "/lotus/types/enemies/corpus/vip/infestedaladv/infestedaladbossavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Vip/InfestedAladV/InfestedAladBossAgent",
+  },
+  "/lotus/types/enemies/corpus/zariman/avatars/crpinterrupteravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Zariman/CrpInterrupterAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/corpusarenaallybaseavatara": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/JunctionRework/VoltJunctionBossAvatar",
+  },
+  "/lotus/types/enemies/corpuschampions/corpusarenaallybaseavatarb": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantMagAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/corpusarenaallybaseavatarc": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantFrostAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/specters/arenaspecteremberavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantEmberAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/specters/arenaspecterfrostavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantFrostAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/specters/arenaspectermagavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantMagAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/specters/arenaspectervoltavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/JunctionRework/VoltJunctionBossAvatar",
+  },
+  "/lotus/types/enemies/corpuschampions/teama/ccteamarifleavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamA/CCTeamARifleAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teama/ccteamaskateavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamA/CCTeamASkateAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teama/ccteamaskatebavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamA/CCTeamAHeavyAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teama/ccteamazanukaavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamA/CCTeamAZanukaAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teama/heavysuicidedroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/SpecialEvents/ArtificerSuicideDroneAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamb/ccteambdisruptoravatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamB/CCTeamBDisruptorAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamb/ccteambhyenaavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamB/CCTeamBHyenaAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamb/ccteambospreyavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamB/CCTeamBOspreyAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamb/ccteambriotmoaavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamB/CCTeamBRiotMoaAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamc/ccteamcdeceptionavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamC/CCTeamCDeceptionAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamc/ccteamcmoaavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamC/CCTeamCMoaAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamc/ccteamcsimplifiedhackeravatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamC/CCTeamCSimplifiedHackerAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamc/ccteamcstealthavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamC/CCTeamCStealthAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamd/ccteamdbusteraavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamD/CCTeamDBusterAAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamd/ccteamdbusterbavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamD/CCTeamDBusterBAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamd/ccteamdbustercavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamD/CCTeamDBusterCAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamd/ccteamdospreyavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamD/CCTeamDOspreyAgent",
+  },
+  "/lotus/types/enemies/corpuschampions/teamd/corpuschampionbusterbaseavatar": {
+    key: "/Lotus/Types/Enemies/CorpusChampions/TeamA/CCTeamAHeavyAgent",
+  },
+  "/lotus/types/enemies/corrupted/avatars/corruptedbeastmasteravatar": {
+    key: "/Lotus/Types/Enemies/Corrupted/CorruptedBeastMaster",
+  },
+  "/lotus/types/enemies/duviri/jackal/quadrobotavatarduviri": {
+    key: "/Lotus/Types/Enemies/Duviri/Jackal/QuadRobotAgentDuviri",
+  },
+  "/lotus/types/enemies/duviri/paxduviricus/paxduviricusdungeonencounteravatar": {
+    key: "/Lotus/Types/Enemies/Duviri/PaxDuviricus/PaxDuviricusDungeonEncounterAgent",
+  },
+  "/lotus/types/enemies/entrati/doppelganger/entratidoppelgangeravatar": {
+    key: "/Lotus/Types/Enemies/Entrati/Doppelganger/EntratiDoppelgangerAgent",
+  },
+  "/lotus/types/enemies/entrati/doppelganger/entratidoppelgangerrangedavatar": {
+    key: "/Lotus/Types/Enemies/Entrati/Doppelganger/EntratiDoppelgangerRangedAgent",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/beastmasteravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/BeastMaster",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/bladesawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/BladeSawman",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/bladesawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/BladeSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/bladesawmanavatartutorial": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/BladeSawman",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/blowtorchsawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/BlowtorchSawman",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/cameradroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/Avatars/CameraDroneAvatar",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/cameradroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/Avatars/CameraDroneAvatar",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/cameradroneavatarorokin": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CameraDroneAgentOrokin",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/cameradroneavatarorokinleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CameraDroneAgentOrokin",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/carrierriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CarrierRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/catmasteravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CatMaster",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/combatcatbrowavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CombatCatbrowAgent",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/combatkubrowavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CombatKubrowAgent",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/eliteriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/eliteriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EliteRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/eliteriflelanceravatarrare": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/eliteshieldlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EliteShieldLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/eliteshieldlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EliteShieldLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/eviseratorlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EviseratorLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/eviseratorlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EviseratorLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/femalegrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerFemale",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/femalegrineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerFemale",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/femalegrineertutorialavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerFemale",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/flamelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/FlameLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/flamelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/FlameLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineerchargeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerCharger",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineerchargeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerCharger",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineerchargeravatarrare": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerCharger",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineermeleestaffavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerMeleeStaffAgent",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineermeleestaffavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerMeleeStaffAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineerworkeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerWorker",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineerworkeravatarb": {
+    key: "Lotus/Types/Enemies/Grineer/AIWeek/GrineerWorkerB",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/grineerworkeravatarc": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerWorkerC",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/heavyfemalegrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/MinigunBombard",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/heavyfemalegrineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/MinigunBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/incendiarybombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/IncendiaryBombard",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/incendiarybombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/IncendiaryBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/jetpackheavymarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackHeavyMarine",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/jetpackheavymarineavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackHeavyMarine",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/jetpackheavymarineavatarrare": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackHeavyMarine",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/jetpackmarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackMarine",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/jetpackmarinecarrieravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CarrierJetpack",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/jetpackmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackMeleeMarine",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/jetpacksniperavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackSniper",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/kelarollingdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/KelaRollingDrone",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/machetewomanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/MacheteWoman",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/machetewomanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/MacheteWoman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/manicgrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ManicGrineer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/manicgrineeravatarscaled": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ManicGrineer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/manicrocketbombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ManicRocketBombard",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/manicrocketbombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ManicRocketBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchcatmasteravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchCatMaster",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchflamebladeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchFlamebladeSawman",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchgrineerchargeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchGrineerCharger",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchgrineermarinepistolavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchGrineerMarinePistol",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchmanicavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchManic",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchpowerfistavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchPowerfist",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchpowerfistavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchPowerfist",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchshieldlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchShieldLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/nightwatchshieldlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/NightwatchShieldLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/pistonsawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/PistonSawman",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/pistonsawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/PistonSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/riflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/riflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/rocketbombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RocketBombard",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/rocketbombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RocketBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/rollingdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerRollingDrone",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/rollingdroneturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RollerAutoTurret",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/shieldlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ShieldLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/shieldlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ShieldLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/shieldlanceravatartutorial": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ShieldLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/shotgunlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ShotgunLancer",
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/shotgunlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ShotgunLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/aiweek/avatars/stickyrollingdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/StickyRollingDrone",
+  },
+  "/lotus/types/enemies/grineer/aiweek/grineerbigdropshipavatartutorial": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerDropship/GrineerBigDropshipAgent",
+  },
+  "/lotus/types/enemies/grineer/chemstrike/chemstrikenoxavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/ChemStrike/ChemStrikeNoxAgent",
+  },
+  "/lotus/types/enemies/grineer/chemstrike/chemstrikenoxavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/ChemStrike/ChemStrikeNoxAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/deathsquad/avatars/deathsquadavatara": {
+    key: "/Lotus/Types/Enemies/Grineer/DeathSquad/DeathSquadA",
+  },
+  "/lotus/types/enemies/grineer/deathsquad/avatars/deathsquadavatarb": {
+    key: "/Lotus/Types/Enemies/Grineer/DeathSquad/DeathSquadB",
+  },
+  "/lotus/types/enemies/grineer/deathsquad/avatars/deathsquadavatarc": {
+    key: "/Lotus/Types/Enemies/Grineer/DeathSquad/DeathSquadC",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/bladesawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/BladeSawman",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/bladesawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/BladeSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/eliteriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/EliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/eliteriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/EliteRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/evisceratorlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/EvisceratorLancer",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/evisceratorlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/EvisceratorLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/grineermarinepistolavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/GrineerMarinePistol",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/grineermarinepistolavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/GrineerMarinePistol",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/jetpackmarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/JetpackMarine",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/riflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/riflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/RifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/shotgunlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/ShotgunLancer",
+  },
+  "/lotus/types/enemies/grineer/desert/avatars/shotgunlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/ShotgunLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/desert/heavyfemalegrineeravatardesert": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/MinigunBombard",
+  },
+  "/lotus/types/enemies/grineer/desert/heavyfemalegrineeravatardesertleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Desert/MinigunBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/demodevoureravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DemoDevourerAgent",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/demoexpiredavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DemoExpiredAgent",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/disruptionchargeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DisruptionCharger",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/disruptionchargerfortressavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DisruptionCharger",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/disruptionminigunbombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DisruptionMinigunBombard",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/disruptionminigunbombardfortressavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DisruptionMinigunBombard",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/disruptionnoxavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DisruptionNoxAgent",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/disruptionnoxfortressavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DisruptionNoxAgent",
+  },
+  "/lotus/types/enemies/grineer/disruption/avatars/disruptionroyalguardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Disruption/DisruptionRoyalGuardAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonalarmdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Narmer/NarmerEidolonAlarmDroneAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonautomortarturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonAutoTurretAgentMortar",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonautorocketturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonAutoTurretAgentRocket",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonautoturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonAutoTurretAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonbladesawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonBladeSawman",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonbladesawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonBladeSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonblowtorchsawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonBlowtorchSawman",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonblowtorchsawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonBlowtorchSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidoloneliteriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonEliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidoloneliteriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonEliteRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidoloneviseratorlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonEviseratorLancer",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidoloneviseratorlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonEviseratorLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonfemalegrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerFemale",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonfemalegrineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerFemale",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolongrineermarinepistolavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerMarinePistol",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolongrineermarinepistolavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerMarinePistol",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonheavyfemalegrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonMinigunBombard",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonheavyfemalegrineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonMinigunBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonincendiarybombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonIncendiaryBombard",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonincendiarybombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonIncendiaryBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonjetpackmarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonJetpackMarine",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonjetpackmarineavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonJetpackMarine",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonjetpackmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonJetpackMelee",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonmortarbombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonMortarBombard",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonpredatoravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonPredator",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonpredatoravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonPredator",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonrocketbombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonRocketBombard",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonrocketbombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonRocketBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonrollingdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerRollingDrone",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonrollingdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonGrineerRollingDrone",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonshieldlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonShieldLancer",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonshieldlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonShieldLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonshotgunlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonShotgunLancer",
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonshotgunlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonShotgunLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/eidolon/avatars/eidolonskiffpilotavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonSkiffPilotAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerbomber/bombersearchdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/Avatars/CameraDroneAvatar",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerbomber/grineerbomberavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerBomber/GrineerBomberAvatar",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerdropship/grineerbigdropshipavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerDropship/GrineerBigDropshipAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerdropship/grineerdropshipavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerDropship/GrineerDropshipAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerskiff/grineershieldskiffavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerSkiff/GrineerShieldSkiffAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerskiff/grineerskiffavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerSkiff/GrineerSkiffAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerskiff/grineerskiffshieldunmannedavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerSkiff/GrineerShieldSkiffAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/grineerskiff/grineerskiffunmannedavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerSkiff/GrineerSkiffAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/vip/avatars/eidolonvipgruntavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/Vip/EidolonVipGruntAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/vip/avatars/eidolonvipgruntdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/Vip/EidolonVipGruntDroneAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/vip/avatars/eidolonvippilotavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/Vip/EidolonVipPilotAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/vip/avatars/eidolonvipskiffavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/Vip/EidolonVipSkiffAgent",
+  },
+  "/lotus/types/enemies/grineer/eidolon/vip/avatars/eidolonvipsniperavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/Vip/Avatars/EidolonVipSniperAvatar",
+  },
+  "/lotus/types/enemies/grineer/eidolon/vomvalystlure/eidolonvomlureavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/VomvalystLure/EidolonVomLureAgent",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/bladesawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/BladeSawman",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/bladesawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/BladeSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/eliteriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/EliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/eliteriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/EliteRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/evisceratorlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/EvisceratorLancer",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/evisceratorlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/EvisceratorLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/grineerchargeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/GrineerCharger",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/grineerchargeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/GrineerCharger",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/grineerchargeravatarrare": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/GrineerCharger",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/grineermarinepistolavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/GrineerMarinePistol",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/grineermarinepistolavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/GrineerMarinePistol",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/jetpackmarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/JetpackMarine",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/jetpackmarineavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/JetpackMarine",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/riflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/riflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/RifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/riflelancertutorialavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/shotgunlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/ShotgunLancer",
+  },
+  "/lotus/types/enemies/grineer/forest/avatars/shotgunlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/ShotgunLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/forest/heavyfemalegrineeravatardesert": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/MinigunBombard",
+  },
+  "/lotus/types/enemies/grineer/forest/heavyfemalegrineeravatardesertleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Forest/MinigunBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressbeastmasteravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressBeastMaster",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressbladesawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressBladeSawman",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressbladesawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressBladeSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressblowtorchsawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressBlowtorchSawman",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressblowtorchsawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressBlowtorchSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresscatmasteravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressCatMaster",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresscombatcatbrowavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressCombatCatbrowAgent",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresscombatkubrowavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressCombatKubrowAgent",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresseliteriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressEliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresseliteriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressEliteRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresseviseratorlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressEviseratorLancer",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresseviseratorlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressEviseratorLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressfemalegrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerFemale",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressfemalegrineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerFemale",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressflamelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressFlameLancer",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressflamelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressFlameLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressgrineerchargeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerCharger",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressgrineerchargeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerCharger",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressgrineermarinepistolavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerMarinePistol",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressgrineermarinepistolavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerMarinePistol",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressheavyfemalegrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressMinigunBombard",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressheavyfemalegrineeravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressMinigunBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressincendiarybombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressIncendiaryBombard",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressincendiarybombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressIncendiaryBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressjetpackmarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressJetpackMarine",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressjetpackmarineavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressJetpackMarine",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressmachetewomanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressMacheteWoman",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressmachetewomanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressMacheteWoman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresspistonsawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressPistonSawman",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortresspistonsawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressPistonSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressrocketbombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressRocketBombard",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressrocketbombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressRocketBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressrollingdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerRollingDrone",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressrollingdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressGrineerRollingDrone",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressshieldlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressShieldLancer",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressshieldlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressShieldLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressshotgunlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressShotgunLancer",
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressshotgunlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/FortressShotgunLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/fortress/avatars/fortressskiffavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Fortress/Avatars/FortressSkiff",
+  },
+  "/lotus/types/enemies/grineer/ghouls/ghouldevoureravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Ghouls/GhoulDevourerAgent",
+  },
+  "/lotus/types/enemies/grineer/ghouls/ghouldrillavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Ghouls/GhoulDrillAgent",
+  },
+  "/lotus/types/enemies/grineer/ghouls/ghoulexpiredavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Ghouls/GhoulExpiredAgent",
+  },
+  "/lotus/types/enemies/grineer/ghouls/ghoulsawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Ghouls/GhoulSawmanAgent",
+  },
+  "/lotus/types/enemies/grineer/ghouls/vip/ghouldrillvipavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Ghouls/Vip/GhoulDrillVipAgent",
+  },
+  "/lotus/types/enemies/grineer/ghouls/vip/ghouldrillvipdroneavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/SpecialEvents/ArtificerSuicideDroneAgent",
+  },
+  "/lotus/types/enemies/grineer/ghouls/vip/ghoulsawmanvipavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Ghouls/Vip/GhoulSawmanVipAgent",
+  },
+  "/lotus/types/enemies/grineer/grineerautoturretstaticavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/GrineerAutoTurretStaticAgent",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineerlancerunarmoredavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarineleaderavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/GrineerMarineLeader",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarineleaderavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/GrineerMarineLeader",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarinemeleeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/BladeSawman",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarineorangeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/ShotgunLancer",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarinepistolavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/GrineerMarinePistol",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarinepistolavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/GrineerMarinePistol",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/grineermarineshieldavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/tutoralmarineravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/grineeravatars/tutoralmarinerintroavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/infestedmicroplanet/grineerriflesurvivoravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/InfestedMicroPlanet/GrineerShotgunSurvivorAgent",
+  },
+  "/lotus/types/enemies/grineer/narmer/avatars/kahlcombatkubrowavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CombatKubrowAgent",
+  },
+  "/lotus/types/enemies/grineer/narmer/avatars/narmereidolonalarmdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Narmer/NarmerEidolonAlarmDroneAgent",
+  },
+  "/lotus/types/enemies/grineer/narmer/avatars/narmerriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerRifleLancerAvatar",
+  },
+  "/lotus/types/enemies/grineer/narmer/avatars/pnwnarmercarrierriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/NarmerSpacemanCarrierAgent",
+  },
+  "/lotus/types/enemies/grineer/narmer/avatars/pnwnarmerriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerRifleLancerAvatar",
+  },
+  "/lotus/types/enemies/grineer/narmer/avatars/pnwnarmerriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerRifleLancerAvatar",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/admiralfireavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Avatars/AdmiralFireAvatar",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/admiraliceavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Avatars/AdmiralIceAvatar",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/admirallightningavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/AdmiralLightningAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/admiralpoisonavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/AdmiralPoisonAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnboardingdemoavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingDemoAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnboardingdemoavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingDemoAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnboardingmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingMeleeAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnboardingmeleeavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnboardingshotgunavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingShotgunAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnboardingshotgunavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncaptainheavyavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCaptainHeavyAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncaptainheavyavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCaptainHeavyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncaptainrollingturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCaptainRollerTurretAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncaptainrollingturretavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCaptainRollerTurretAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncrewbladeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewBladeAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncrewbladeavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewBladeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncreweliterifleavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewEliteRifleAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncreweliterifleavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewEliteRifleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncrewevisceratoravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewEvisceratorAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncrewevisceratoravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewEvisceratorAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncrewflameavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewFlameAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grncrewflameavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnCrewFlameAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnpilotavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnPilotAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/avatars/grnpilotavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnPilotAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndsboardingdemoavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingDemoAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndsboardingdemoavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingDemoAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndsboardingmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingMeleeAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndsboardingmeleeavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndsboardingshotgunavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingShotgunAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndsboardingshotgunavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSBoardingShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscaptainheavyavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCaptainHeavyAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscaptainheavyavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCaptainHeavyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscaptainrollingturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCaptainRollerTurretAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscaptainrollingturretavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCaptainRollerTurretAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscrewbladeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewBladeAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscrewbladeavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewBladeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscreweliterifleavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewEliteRifleAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscreweliterifleavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewEliteRifleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscrewevisceratoravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewEvisceratorAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscrewevisceratoravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewEvisceratorAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscrewflameavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewFlameAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndscrewflameavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSCrewFlameAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndspilotavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSPilotAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/deepspace/grndspilotavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/DeepSpace/GrnDSPilotAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnboardingdemoavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingDemoAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnboardingdemoavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingDemoAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnboardingmeleeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingMeleeAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnboardingmeleeavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/GrnBoardingMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnboardingshotgunavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnBoardingShotgunAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnboardingshotgunavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnBoardingShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncaptainheavyavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCaptainHeavyAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncaptainheavyavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCaptainHeavyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncaptainrollingturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCaptainRollerTurretAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncaptainrollingturretavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCaptainRollerTurretAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncrewbladeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewBladeAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncrewbladeavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewBladeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncreweliterifleavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewEliteRifleAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncreweliterifleavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewEliteRifleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncrewevisceratoravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnBoardingShotgunAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncrewevisceratoravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnBoardingShotgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncrewflameavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewFlameAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturncrewflameavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnCrewFlameAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnpilotavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnPilotAgent",
+  },
+  "/lotus/types/enemies/grineer/railjack/saturn/grnsaturnpilotavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/RailJack/Saturn/GrnSaturnPilotAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/bladesawmanavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/BladeSawman",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/bladesawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/BladeSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/eliteriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/EliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/eliteriflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/EliteRifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/evisceratorlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/EvisceratorLancer",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/evisceratorlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/EvisceratorLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/femalegrineerheavyavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleHeavy",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/femalegrineerheavyavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleHeavy",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/femalegrineermacheteavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleMachete",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/femalegrineermacheteavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleMachete",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/femalegrineersniperavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleSniper",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/femalegrineersniperavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerFemaleSniper",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/grineermarinepistolavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerMarinePistol",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/grineermarinepistolavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/GrineerMarinePistol",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/jetpackmarineavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/JetpackMarine",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/jetpackmarineavatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/JetpackMarine",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/riflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/RifleLancer",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/riflelanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/RifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/sealabmanicbombardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/SeaLabManicRocketBombard",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/sealabmanicgrineeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/SeaLabManicGrineer",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/shotgunlanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/ShotgunLancer",
+  },
+  "/lotus/types/enemies/grineer/sealab/avatars/shotgunlanceravatarleader": {
+    key: "/Lotus/Types/Enemies/Grineer/SeaLab/ShotgunLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/specialevents/grineerartificeravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SpecialEvents/GrineerArtificer",
+  },
+  "/lotus/types/enemies/grineer/specialevents/surveillancedroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/SpecialEvents/SurveillanceDroneAvatar",
+  },
+  "/lotus/types/enemies/grineer/thumper/thumperavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Thumper/ThumperAgent",
+  },
+  "/lotus/types/enemies/grineer/thumper/thumperlargeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Thumper/ThumperLargeAgent",
+  },
+  "/lotus/types/enemies/grineer/thumper/thumpermedavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Thumper/ThumperMedAgent",
+  },
+  "/lotus/types/enemies/grineer/veilbreaker/avatars/spragavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackMeleeMarine",
+  },
+  "/lotus/types/enemies/grineer/veilbreaker/avatars/venkraavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackSniper",
+  },
+  "/lotus/types/enemies/grineer/veilbreaker/avatars/venkraflyingavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/JetpackSniper",
+  },
+  "/lotus/types/enemies/grineer/vip/avatars/bosslechkrilavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/BossLechKrilAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/avatars/captainvorbossavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/CaptainVorBossAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/avatars/marineleaderavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/Hek/HekDroneStage1Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/vip/avatars/marineleaderdecoyavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/Hek/HekDroneStage1Agent",
+  },
+  "/lotus/types/enemies/grineer/vip/avatars/ninjaleaderavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/TylRegor/TylRegorAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/grineer/vip/grineerroyalguard/grineerroyalguardavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/GrineerRoyalGuard/GrineerRoyalGuardAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/hek/hekbipedavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/Hek/HekBipedAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/hek/hekdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/Hek/HekDroneStage1Agent",
+  },
+  "/lotus/types/enemies/grineer/vip/hek/propdrones/propccdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/Hek/PropDrones/HekPropCCDroneAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/hek/propdrones/strikedroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/Hek/PropDrones/StrikeDroneAvatar",
+  },
+  "/lotus/types/enemies/grineer/vip/royaljester/royaljesteravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/RoyalJester/RoyalJesterAvatar",
+  },
+  "/lotus/types/enemies/grineer/vip/sargasruk/avatars/sargasrukavatarnew": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/SargasRuk/SargasRukBossAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/tylregor/tylregoravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/TylRegor/TylRegorAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/vorrework/captainvorbossreworkavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/CaptainVorBossAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/vorrework/vorarenaturret/vorarenaturretavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/VorRework/VorArenaTurret/VorArenaTurretAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/vortutorial/vortutorialavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/CaptainVorBossAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/vortwo/duvirivortwobossavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/VorTwo/VorTwoBossAgent",
+  },
+  "/lotus/types/enemies/grineer/vip/vortwo/vortwobossavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/VorTwo/VorTwoBossAgent",
+  },
+  "/lotus/types/enemies/grineer/zariman/avatars/grnantiwarframeavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Zariman/GrnAntiWarframeAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionbeastmasteravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionBeastmasterAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionchargeravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionChargerAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionengineeravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionEngineerAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampiongruntavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionGruntAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionhealeravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionHealerAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionheavyavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionHeavyAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionjetpackavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionJetpackAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionsniperavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionSniperAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampionsniperdecoyavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionSniperAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/events/wfgrineerchampiontankavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionTankAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionbaseavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/EliteRifleLancer",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionbeastmasteravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionBeastmasterAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionchargeravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionChargerAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionengineeravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionEngineerAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampiongruntavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionGruntAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionhealeravatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionHealerAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionheavyavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionHeavyAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionjetpackavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionJetpackAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionsniperavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionSniperAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampionsniperdecoyavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionSniperAgent",
+  },
+  "/lotus/types/enemies/grineerchampions/grineerchampiontankavatar": {
+    key: "/Lotus/Types/Enemies/GrineerChampions/GrineerChampionTankAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/ancientavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/AncientAvatar",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/ancientavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/AncientAvatar",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/diseasedancientavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/DiseasedAncient",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/diseasedancientavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/DiseasedAncient",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/healingancientavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/HealingAncient",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/healingancientavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/HealingAncient",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/protectorancientavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/ProtectorAncient",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/protectorancientavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/ProtectorAncient",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/spawningancientavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/SpawningAncient",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/spawningancientavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/SpawningAncient",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/spawningancientavatarminiboss": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/SpawningAncientMiniboss",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/toxicancientavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/ToxicAncient",
+  },
+  "/lotus/types/enemies/infested/aiweek/ancients/toxicancientavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Ancients/ToxicAncient",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/1999runnercrawleravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/MeleeCrawler",
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/1999runnercrawleravatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/MeleeCrawler",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/crawleravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/MeleeCrawler",
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/crawleravatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/MeleeCrawler",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/graspingcrawleravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/GraspingCrawler",
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/graspingcrawleravatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/GraspingCrawler",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/grenadeavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/GrenadeCrawler",
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/grenadeavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/GrenadeCrawler",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/lightningavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/LightningCrawler",
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/lightningavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/LightningCrawler",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/noxiouscrawleravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/NoxiousCrawler",
+  },
+  "/lotus/types/enemies/infested/aiweek/crawlers/noxiouscrawleravatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/NoxiousCrawler",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/emissary/ancientshellavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Emissary/AncientShellAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/emissary/ancienttankavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Emissary/AncientTankAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/emissary/infestedjetpackavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Emissary/InfestedJetpackAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/greystrain/boneblade/bonebladeavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/GreyStrain/BoneBlade/BoneBladeAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/greystrain/boneblade/bonebladeeximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/GreyStrain/BoneBlade/BoneBladeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/greystrain/femur/infestedfemuravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/GreyStrain/Femur/InfestedFemurAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/greystrain/femur/infestedfemureximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/GreyStrain/Femur/InfestedFemurAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/infesteddrones/cellcarrierdroneavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedDrones/CellCarrierDroneAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/infesteddrones/infestedattackdroneavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedDrones/InfestedAttackDroneAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/infesteddrones/poisondroneavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedDrones/PoisonDroneAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/infestedmoas/nanitecloudbipedavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedMoas/NaniteCloudBipedAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/infestedmoas/nanitecloudbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedMoas/NaniteCloudBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/infestedmoas/slowbombbipedavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedMoas/SlowBombBipedAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/infestedmoas/slowbombbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedMoas/SlowBombBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/juggernautavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/Juggernaut",
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/juggernautavatarboss": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/JuggernautBoss",
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/juggernautbossjadeshadowsavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/JuggernautBoss",
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/quadrupedavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/Quadruped",
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/quadrupedavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/Quadruped",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/quadrupedavatarrare": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/Quadruped",
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/quadrupedcolonistavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/QuadrupedColonist",
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/quadrupedcolonistavatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/QuadrupedColonist",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/quadrupeds/rusheravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/RusherAgent",
+  },
+  "/lotus/types/enemies/infested/aiweek/runners/leapingrunneravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Runners/LeapingRunner",
+  },
+  "/lotus/types/enemies/infested/aiweek/runners/leapingrunneravatarleader": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Runners/LeapingRunner",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/aiweek/runners/runneravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Runners/MeleeRunner",
+  },
+  "/lotus/types/enemies/infested/aiweek/runners/suiciderunneravatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/Runners/SuicideRunner",
+  },
+  "/lotus/types/enemies/infested/aiweek/weavemutalist/decodespawnavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/WeaveMutalist/DecodeSpawn",
+  },
+  "/lotus/types/enemies/infested/aiweek/weavemutalist/decodespawnavatarendless": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/WeaveMutalist/DecodeSpawn",
+  },
+  "/lotus/types/enemies/infested/aiweek/weavemutalist/weavemutalistavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/WeaveMutalist/WeaveMutalist",
+  },
+  "/lotus/types/enemies/infested/disruption/avatars/disruptionancienttankavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Disruption/DisruptionAncientTankAgent",
+  },
+  "/lotus/types/enemies/infested/disruption/avatars/disruptionboileravatar": {
+    key: "/Lotus/Types/Enemies/Infested/Disruption/DisruptionBoilerAgent",
+  },
+  "/lotus/types/enemies/infested/disruption/avatars/disruptionjuggernautavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Disruption/DisruptionJuggernautAgent",
+  },
+  "/lotus/types/enemies/infested/disruption/avatars/disruptionquadrupedavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Disruption/DisruptionQuadrupedAgent",
+  },
+  "/lotus/types/enemies/infested/eidolon/eidolonlephantisavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Eidolon/EidolonLephantisAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/ancienttankmicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/AncientTankMicroPlanetAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/ancienttankmicroplaneteximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/AncientTankMicroPlanetAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/ashen/ashenavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Ashen/AshenAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/ashen/ashenbigavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Ashen/AshenBigAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/ashen/asheneximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Ashen/AshenAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/cellcarrierdronemicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/CellCarrierDroneMicroPlanet",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/deployablespacemanresearcheravatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/DeployableSpacemanResearcher",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/diseasedancientmicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/DiseasedAncientMicroPlanet",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/diseasedancientmicroplaneteximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/DiseasedAncientMicroPlanet",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/drones/tendril/infestedexplodingtendrildroneavatar":
+    {
+      key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Drones/Tendril/InfestedTendrilDroneAgent",
+    },
+  "/lotus/types/enemies/infested/infestedmicroplanet/drones/tendril/infestedtendrildroneavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Drones/Tendril/InfestedTendrilDroneAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/dropship/infestedbigdropshipavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Dropship/InfestedBigDropshipAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/femurassassinatetargetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/FemurAssassinateTargetAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/healingancientmicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/HealingAncientMicroPlanet",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/healingancientmicroplaneteximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/HealingAncientMicroPlanet",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/infestedattackdronemicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/InfestedAttackDroneMicroPlanet",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/infestedattackdronemicroplaneteximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/InfestedAttackDroneMicroPlanet",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/juggernautmicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/JuggernautMicroPlanetCasual",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/juggernautmicroplanetcasualavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/JuggernautMicroPlanetCasual",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/juggernautmicroplanetcasualeximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/JuggernautMicroPlanetCasual",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/juggernautmicroplanetescortavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/JuggernautMicroPlanetEscort",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/leapingsuiciderunneravatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/LeapingSuicideRunner",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/nanitecloudbipedmicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/NaniteCloudBipedMicroPlanet",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/nanitecloudbipedmicroplaneteximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/NaniteCloudBipedMicroPlanet",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/oni/infestedjetpackmicroplanetoniavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Oni/InfestedJetpackMicroPlanetOni",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/quadrupedmicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/QuadrupedMicroPlanet",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/quadrupedmicroplaneteximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/QuadrupedMicroPlanet",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/runnermicroplanetavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/MeleeMicroPlanetRunner",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/runnermicroplaneteximusavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/MeleeMicroPlanetRunner",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splitteravatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splitteravatareximus": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splitteravatarvip": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterAgentVIP",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splittersplitavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterSplitAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splittersplitavatareximus": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterSplitAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splittersplitavatarvip": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterSplitAgentVIP",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splittertopsplitavatar": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterTopSplitAgent",
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splittertopsplitavatareximus": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterTopSplitAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/infested/infestedmicroplanet/splitter/splittertopsplitavatarvip": {
+    key: "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Splitter/SplitterTopSplitAgentVIP",
+  },
+  "/lotus/types/enemies/infested/specialevents/arlozealotdual/arlozealotdualswordgunavatar": {
+    key: "/Lotus/Types/Enemies/Infested/SpecialEvents/ArloZealotDual/ArloZealotDualSwordGunAgent",
+  },
+  "/lotus/types/enemies/infested/specialevents/arlozealotgunavatar": {
+    key: "/Lotus/Types/Enemies/Infested/SpecialEvents/ArloZealotGunAgent",
+  },
+  "/lotus/types/enemies/infested/specialevents/arlozealotswordavatar": {
+    key: "/Lotus/Types/Enemies/Infested/SpecialEvents/ArloZealotSwordAgent",
+  },
+  "/lotus/types/enemies/infested/vip/avatars/golemfullavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Vip/GolemFullAgent",
+  },
+  "/lotus/types/enemies/infested/vip/avatars/quadrupedvipavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Vip/QuadrupedVIP",
+  },
+  "/lotus/types/enemies/infested/vip/j3golem/juniorgolemspaceavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Vip/J3Golem/JuniorGolemSpaceAgent",
+  },
+  "/lotus/types/enemies/kuvalich/kuvalarvlingavatar": {
+    key: "/Lotus/Types/Enemies/KuvaLich/KuvaLarvlingAgent",
+  },
+  "/lotus/types/enemies/kuvalich/kuvalarvlingfemaleavatar": {
+    key: "/Lotus/Types/Enemies/KuvaLich/KuvaLarvlingFemaleAgent",
+  },
+  "/lotus/types/enemies/maninthewall/handbomber/handbomberavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/HandBomber/HandBomberAgent",
+  },
+  "/lotus/types/enemies/maninthewall/handbomber/handbomberleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/HandBomber/HandBomberAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/murmur/mitwmurmuravatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Murmur/MITWMurmurAgent",
+  },
+  "/lotus/types/enemies/maninthewall/murmur/mitwmurmurleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Murmur/MITWMurmurAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/necramechbonewindow/cohnecramechbonewidowavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechBonewindow/CoHNecramechBonewidowAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechbonewindow/necramechbonewidowavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechBonewindow/NecramechBonewidowAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechbonewindow/necramechbonewidowdisruptionavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechBonewindow/NecramechBonewidowDisruptionAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechmelee/alchemynecramechmeleeavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechMelee/AlchemyNecramechMeleeAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechmelee/alchemynecramechmeleeavatarleader": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechMelee/AlchemyNecramechMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/necramechmelee/necramechmeleeavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechMelee/NecramechMeleeAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechmelee/necramechmeleeleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechMelee/NecramechMeleeAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/necramechranged/alchemynecramechrangedavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechRanged/AlchemyNecramechRangedAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechranged/alchemynecramechrangedavatarleader": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechRanged/AlchemyNecramechRangedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/necramechranged/necramechrangedavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechRanged/NecramechRangedAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechranged/necramechrangedavatarleader": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechRanged/NecramechRangedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/necramechvoidrig/cohnecramechvoidrigavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechVoidRig/CoHNecramechVoidRigAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechvoidrig/necramechvoidrigavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechVoidRig/NecramechVoidRigAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechvoidrig/necramechvoidrigdisruptionavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechVoidRig/NecramechVoidRigDisruptionAgent",
+  },
+  "/lotus/types/enemies/maninthewall/necramechvoidrig/necramechvoidrigleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/NecramechVoidRig/NecramechVoidRigAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/octopede/arm/armturret/mitwoctopedearmturretavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ArmTurret/MITWOctopedeArmTurretAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/arm/armturret/mitwoctopedearmturretleftavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ArmTurret/MITWOctopedeArmTurretAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/arm/explosivearm/mitwoctopedeexplosivearmavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ExplosiveArm/MITWOctopedeExplosiveArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/arm/explosivearm/mitwoctopedeexplosivearmleftavatar":
+    {
+      key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ExplosiveArm/MITWOctopedeExplosiveArmAgent",
+    },
+  "/lotus/types/enemies/maninthewall/octopede/arm/mitwoctopedearmavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/MITWOctopedeArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/arm/mitwoctopedearmleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/MITWOctopedeArmAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/octopede/arm/mitwoctopedearmleftavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/MITWOctopedeArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/arm/mitwoctopedearmratavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/MITWOctopedeArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/bossagents/mitwoctopedebossarmavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/MITWOctopedeArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/bossagents/mitwoctopedebossarmleftavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/MITWOctopedeArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/bossagents/mitwoctopedebossarmturretavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ArmTurret/MITWOctopedeArmTurretAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/bossagents/mitwoctopedebossarmturretleftavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ArmTurret/MITWOctopedeArmTurretAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/bossagents/mitwoctopedebossbipedallegsavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Leg/BipedalLegs/MITWOctopedeBipedalLegsAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/bossagents/mitwoctopedebossexplosivearmavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ExplosiveArm/MITWOctopedeExplosiveArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/bossagents/mitwoctopedebossexplosivearmleftavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/ExplosiveArm/MITWOctopedeExplosiveArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/leg/bipedallegs/mitwoctopedebipedallegsavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Leg/BipedalLegs/MITWOctopedeBipedalLegsAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/leg/mitwoctopedelegavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/Arm/MITWOctopedeArmAgent",
+  },
+  "/lotus/types/enemies/maninthewall/octopede/mitwoctopedeavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Octopede/MITWOctopedeAgent",
+  },
+  "/lotus/types/enemies/maninthewall/slinky/mitwslinkyavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Slinky/MITWSlinkyAgent",
+  },
+  "/lotus/types/enemies/maninthewall/slinky/mitwslinkyleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Slinky/MITWSlinkyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/treasurebox/mitwtreasureboxavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+  },
+  "/lotus/types/enemies/maninthewall/treasurebox/mitwtreasureboxcloneavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+  },
+  "/lotus/types/enemies/maninthewall/treasurebox/mitwtreasureboxcloneleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/treasurebox/mitwtreasureboxleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/triangle/mitwsupporttriangleavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Triangle/MITWSupportTriangleAgent",
+  },
+  "/lotus/types/enemies/maninthewall/triangle/mitwsupporttriangleleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/Triangle/MITWSupportTriangleAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/maninthewall/vialcarrydrone/vialdroneavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/VialCarryDrone/VialDroneAgent",
+  },
+  "/lotus/types/enemies/narmer/arid/narmeraridriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerRifleLancerAvatar",
+  },
+  "/lotus/types/enemies/narmer/narmerbaseavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Eidolon/EidolonEliteRifleLancer",
+  },
+  "/lotus/types/enemies/narmer/narmercrewmanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerRifleSpacemanAvatar",
+  },
+  "/lotus/types/enemies/narmer/narmermoaderaavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Narmer/PNWNarmerShipMoaDeraAgent",
+  },
+  "/lotus/types/enemies/narmer/narmerriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerRifleLancerAvatar",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoarachnoidhungeravatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoPlantMeleeHeavyAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoarachnoidmicroavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMiniArachnoidAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkobaseheavybipedavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoBaseHeavyBipedAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkobaseheavybipedavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoBaseHeavyBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkocombatspacemanavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoLabMeleeHeavyAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkocombatspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoLabMeleeHeavyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoelitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoelitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavydroneavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoFlyingAttackAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavydroneavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoFlyingAttackAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavyelitespacemanavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoHeavyEliteSpacemanAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavyelitespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoHeavyEliteSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavygrenadierspacemanavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoRangedHeavyAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavygrenadierspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoRangedHeavyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavymeleespacemanavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMeleeHeavyAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoheavymeleespacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMeleeHeavyAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkolasercannonbipedavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoLaserCannonBipedAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkolasercannonbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoLaserCannonBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkominedroneavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMineDroneAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkominedroneavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoMineDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkorailgunbipedavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoRailgunBipedAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkorailgunbipedavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoRailgunBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoFlyingSupportAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoshielddroneavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoFlyingSupportAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoshockwavebipedavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoShockwaveBipedAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoshockwavebipedavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoShockwaveBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoshotgunspacemanavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoShotgunSpacemanAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkoshotgunspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoShotgunSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkosniperspacemanavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoSniperAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkosniperspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoSniperAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/nokkocolony/avatars/nokkosuicidebipedavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Agents/NokkoSuicideBipedAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkobasecorpusvipavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Vip/NokkoBaseCorpusVIPAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkobaseraknoidvipavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Vip/NokkoBaseRaknoidVIPAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkocolonyvipavatara": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Vip/NokkoColonyVIPAvatarA",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkocolonyvipavatarb": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Vip/NokkoColonyVIPAgentB",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkohyenaastroavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Hyenas/VenusHyenaAstroAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkohyenaburneravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Hyenas/VenusHyenaBurnerAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkohyenapaceravatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Venus/Heavies/Hyenas/VenusHyenaPacerAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkolabvipavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Vip/NokkoLabVIPAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/nokkoplantvipavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Vip/NokkoPlantVIPAgent",
+  },
+  "/lotus/types/enemies/nokkocolony/vip/trappedchestvipavatar": {
+    key: "/Lotus/Types/Enemies/NokkoColony/Vip/NokkoTrappedChestVIPAgent",
+  },
+  "/lotus/types/enemies/orokin/entrati/entratitech/nechrotech/nechrotechavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/Entrati/EntratiTech/NechroTech/NechroTechEnemyAgent",
+  },
+  "/lotus/types/enemies/orokin/entrati/entratitech/thanotech/thanotechavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/Entrati/EntratiTech/Thanotech/ThanoTechEnemyAgent",
+  },
+  "/lotus/types/enemies/orokin/gamemodes/corruptedwardenavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/Gamemodes/CorruptedWardenAgent",
+  },
+  "/lotus/types/enemies/orokin/gamemodes/corruptedwardenavatarleader": {
+    key: "/Lotus/Types/Enemies/Orokin/Gamemodes/CorruptedWardenAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/orokinautoturretavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinAutoTurretAgent",
+  },
+  "/lotus/types/enemies/orokin/orokinbladesawmanavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinBladeSawman",
+  },
+  "/lotus/types/enemies/orokin/orokinbladesawmanavatarleader": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinBladeSawman",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/orokindroneattackavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinDroneAttackAgent",
+  },
+  "/lotus/types/enemies/orokin/orokinhealingancientavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinHealingAncient",
+  },
+  "/lotus/types/enemies/orokin/orokinhealingancientleaderavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinHealingAncient",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/orokinheavyfemaleallyavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinMinigunBombard",
+  },
+  "/lotus/types/enemies/orokin/orokinheavyfemaleavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinMinigunBombard",
+  },
+  "/lotus/types/enemies/orokin/orokinheavyfemaleleaderavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinMinigunBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/orokinmoabipedavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinMoaBipedAgent",
+  },
+  "/lotus/types/enemies/orokin/orokinmoabipedleaderavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinMoaBipedAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/orokinnullifyspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinNullifySpacemanAgent",
+  },
+  "/lotus/types/enemies/orokin/orokinnullifyspacemanavatarleader": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinNullifySpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/orokinrocketbombardallyavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinRocketBombard",
+  },
+  "/lotus/types/enemies/orokin/orokinrocketbombardavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinRocketBombard",
+  },
+  "/lotus/types/enemies/orokin/orokinrocketbombardavatarleader": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinRocketBombard",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/orokinrollingdroneavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/GrineerRollingDrone",
+  },
+  "/lotus/types/enemies/orokin/orokinshielddroneavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinShieldDroneAgent",
+  },
+  "/lotus/types/enemies/orokin/orokinshielddroneleaderavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/OrokinShieldDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/riflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Orokin/RifleLancer",
+  },
+  "/lotus/types/enemies/orokin/riflelancerleaderavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/RifleLancer",
+    eximus: true,
+  },
+  "/lotus/types/enemies/orokin/riflespacemanavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/RifleSpacemanAgent",
+  },
+  "/lotus/types/enemies/orokin/riflespacemanleaderavatar": {
+    key: "/Lotus/Types/Enemies/Orokin/RifleSpacemanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/quests/sandmanboss/inarosgolemavatar": {
+    key: "/Lotus/Types/Enemies/Quests/SandmanBoss/InarosGolemAgent",
+  },
+  "/lotus/types/enemies/quests/sandmanboss/sandmanbossavatar": {
+    key: "/Lotus/Types/Enemies/Quests/SandmanBoss/SandmanBossAgent",
+  },
+  "/lotus/types/enemies/relayevent/meleespacemanrelayreconphase2bavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/MeleeSpacemanAgent",
+  },
+  "/lotus/types/enemies/sentients/aerolyst/pnwsentientaerolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Aerolyst/SentientAerolystAgent",
+  },
+  "/lotus/types/enemies/sentients/aerolyst/sentientaerolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Aerolyst/SentientAerolystAgent",
+  },
+  "/lotus/types/enemies/sentients/brachiolyst/eidolonbrachiolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Brachiolyst/SentientBrachiolystAgent",
+  },
+  "/lotus/types/enemies/sentients/brachiolyst/sentientbrachiolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Brachiolyst/SentientBrachiolystAgent",
+  },
+  "/lotus/types/enemies/sentients/brachiolyst/sunkillerbrachiolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Brachiolyst/SentientBrachiolystAgent",
+  },
+  "/lotus/types/enemies/sentients/condrix/sentientcondrixavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Condrix/SentientCondrixAgent",
+  },
+  "/lotus/types/enemies/sentients/condrix/sentientcondrixavatarmechevent": {
+    key: "/Lotus/Types/Enemies/Sentients/Condrix/SentientCondrixAgentMechEvent",
+  },
+  "/lotus/types/enemies/sentients/dolicholyst/sentientdolicholystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Dolicholyst/SentientDolicholystAgent",
+  },
+  "/lotus/types/enemies/sentients/eidolon/sentienteidolonghostcasteravatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Eidolon/SentientEidolonGhostCasterAgent",
+  },
+  "/lotus/types/enemies/sentients/eidolon/sentientteralystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Eidolon/SentientTeralystAgent",
+  },
+  "/lotus/types/enemies/sentients/eidolon/sentientteralystbigavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Eidolon/SentientTeralystBigAgent",
+  },
+  "/lotus/types/enemies/sentients/eidolon/sentientteralystrainavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Eidolon/SentientTeralystRainAgent",
+  },
+  "/lotus/types/enemies/sentients/eidolon/sentientvomvalystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Eidolon/SentientVomvalystAgent",
+  },
+  "/lotus/types/enemies/sentients/mimics/sentienttroopermimicavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Mimics/SentientTrooperMimicAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/drifterflyingbrachiolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Brachiolyst/SentientBrachiolystAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/driftersentientmeleetroopernopowersavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientMeleeTrooperNoPowersAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/driftersentienttroopernopowersavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientTrooperNoPowersAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/driftersymbilystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Symbilyst/SentientSymbilystAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/newwarkahlbrachiolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Brachiolyst/SentientBrachiolystAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/newwarkahlortholystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Ortholyst/SentientOrtholystAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/newwarkahlsymbilystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Symbilyst/SentientSymbilystAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/newwarkahltrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientBaseTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/newwarsentientghostomicrusavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Eidolon/SentientEidolonGhostCasterAgent",
+  },
+  "/lotus/types/enemies/sentients/newwar/newwarsentientortholystomicrusavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Ortholyst/SentientOrtholystAgent",
+  },
+  "/lotus/types/enemies/sentients/ortholyst/eidolonortholystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Ortholyst/SentientOrtholystAgent",
+  },
+  "/lotus/types/enemies/sentients/ortholyst/sentientortholystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Ortholyst/SentientOrtholystAgent",
+  },
+  "/lotus/types/enemies/sentients/ortholyst/sentientortholysttauavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Ortholyst/SentientOrtholystAgent",
+  },
+  "/lotus/types/enemies/sentients/ortholyst/sunkillerortholystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Ortholyst/SentientOrtholystAgent",
+  },
+  "/lotus/types/enemies/sentients/ropalolyst/sentientropalolystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Ropalolyst/SentientRopalolystAgent",
+  },
+  "/lotus/types/enemies/sentients/scouts/scoutavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Scouts/ScoutAvatar",
+  },
+  "/lotus/types/enemies/sentients/symbilyst/eidolonsymbilystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Symbilyst/SentientSymbilystAgent",
+  },
+  "/lotus/types/enemies/sentients/symbilyst/sentientsymbilystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Symbilyst/SentientSymbilystAgent",
+  },
+  "/lotus/types/enemies/sentients/symbilyst/sunkillersymbilystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Symbilyst/SentientSymbilystAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/eidolonmeleetrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientMeleeTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/eidolontrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientBaseTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sentientgascitymeleetrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientMeleeTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sentientmeleetrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientMeleeTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sentientmeleetroopernopowersavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientMeleeTrooperNoPowersAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sentienttrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientBaseTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sentienttroopernopowersavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientTrooperNoPowersAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sentientvoidmeleetrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientVoidMeleeTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sentientvoidtrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientVoidTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sunkillermeleetrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientMeleeTrooperAgent",
+  },
+  "/lotus/types/enemies/sentients/troopers/sunkillertrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientBaseTrooperAgent",
+  },
+  "/lotus/types/enemies/shadowgrapher/inkframecloneenemyavatar": {
+    key: "/Lotus/Types/Enemies/Shadowgrapher/InkframeCloneEnemyAgent",
+  },
+  "/lotus/types/enemies/shadowgrapher/inkframeenemyavatar": {
+    key: "/Lotus/Types/Enemies/Shadowgrapher/InkframeCloneEnemyAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crewman/jetpackmarineavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusNavAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crewman/jetpackmarineavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusNavAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crewman/jetpackmarinethreeavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusThreeNavAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crewman/jetpackmarinethreeavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusThreeNavAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crewman/jetpackmarinetwoavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusTwoNavAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crewman/jetpackmarinetwoavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/CrewMan/JetCorpusTwoNavAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crpspacedroneattackavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/DroneAttackAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/crpspacedroneattackavatarleader": {
+    key: "/Lotus/Types/Enemies/Corpus/Drones/DroneAttackAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/corpus/drones/swarmdroneavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Drones/SwarmDrone",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/fighters/spacefighterchargeeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Fighters/SpaceFighterChargeEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/fighters/spacefightergoxavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Fighters/SpaceFighterGoxAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/fighters/spacefighterlasereliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Fighters/SpaceFighterLaserEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/fighters/spacefighterplasmaeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Fighters/SpaceFighterPlasmaEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/corpusicesledavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/CorpusIceSledAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/corpusramsledavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/CorpusRamSledAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/crppodavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/CorpusPodAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/deepspace/spacefighterdschargeavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/DeepSpace/SpaceFighterDSChargeAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/deepspace/spacefighterdschargeeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/DeepSpace/SpaceFighterDSChargeEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/deepspace/spacefighterdsgoxavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/DeepSpace/SpaceFighterDSGoxAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/deepspace/spacefighterdslaseravatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/DeepSpace/SpaceFighterDSLaserAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/deepspace/spacefighterdslasereliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/DeepSpace/SpaceFighterDSLaserEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/deepspace/spacefighterdsplasmaavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/DeepSpace/SpaceFighterDSPlasmaAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/deepspace/spacefighterdsplasmaeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/DeepSpace/SpaceFighterDSPlasmaEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/flakshipavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/FlakShipNavAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/flakshipavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/FlakShipNavAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/lasershipavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/LaserShipNavAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/lasershipavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/LaserShipNavAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/neptune/spacefighterneptunechargeavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Neptune/SpaceFighterNeptuneChargeAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/neptune/spacefighterneptunechargeeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Neptune/SpaceFighterNeptuneChargeEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/neptune/spacefighterneptunegoxavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Neptune/SpaceFighterNeptuneGoxAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/neptune/spacefighterneptunelaseravatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Neptune/SpaceFighterNeptuneLaserAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/neptune/spacefighterneptunelasereliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Neptune/SpaceFighterNeptuneLaserEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/neptune/spacefighterneptuneplasmaavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Neptune/SpaceFighterNeptunePlasmaAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/neptune/spacefighterneptuneplasmaeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Neptune/SpaceFighterNeptunePlasmaEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/pluto/spacefighterplutochargeavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Pluto/SpaceFighterPlutoChargeAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/pluto/spacefighterplutochargeeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Pluto/SpaceFighterPlutoChargeEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/pluto/spacefighterplutogoxavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Pluto/SpaceFighterPlutoGoxAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/pluto/spacefighterplutolaseravatar": {
+    key: "/Lotus/Language/Railjack/CorpusFighterPlutoLaserName",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/pluto/spacefighterplutolasereliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Pluto/SpaceFighterPlutoLaserEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/pluto/spacefighterplutoplasmaavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Pluto/SpaceFighterPlutoPlasmaAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/pluto/spacefighterplutoplasmaeliteavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/Pluto/SpaceFighterPlutoPlasmaEliteAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/quests/newwarspacefighterplutolaseravatar": {
+    key: "/Lotus/Language/Railjack/CorpusFighterPlutoLaserName",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/spacefighterchargeavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/SpaceFighterChargeAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/spacefighterlaseravatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/SpaceFighterLaserAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/spacefighterplasmaavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Ships/SpaceFighterPlasmaAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/ships/swarmshipavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/SwarmShipNavAgent",
+  },
+  "/lotus/types/enemies/spacebattles/corpus/turrets/corpusspaceturretavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Corpus/Turrets/CorpusSpaceTurretAgent",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/drones/grineerspacedroneavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Drones/GrineerSpaceDrone",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/drones/grineerspacedroneavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Drones/GrineerSpaceDrone",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/grineer/drones/laserdroneavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Drones/LaserDrone",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/drones/laserdroneavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Drones/LaserDrone",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/grineer/drones/stasisdroneavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Drones/StasisDrone",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/grineermissileplatavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/GrineerMissilePlatAvatar",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/pods/combatpodavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Pods/CombatPod",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/grineerspacemarineavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/GrineerSpaceMarine",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/grineerspacemarineavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/GrineerSpaceMarine",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/missileshieldskiffavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/MissileShieldSkiff",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/missileshieldskiffavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/MissileShieldSkiff",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/missileskiffavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/MissileSkiff",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/missileskiffavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/MissileSkiff",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/shieldskiffavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/ShieldSkiff",
+  },
+  "/lotus/types/enemies/spacebattles/grineer/skiffs/shieldskiffavatarleader": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Grineer/Skiffs/ShieldSkiff",
+    eximus: true,
+  },
+  "/lotus/types/enemies/spacebattles/infested/carrierlightningspacedroneavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Infested/LightningCarrierDrone",
+  },
+  "/lotus/types/enemies/spacebattles/infested/carrierspacedroneavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Infested/GrenadeCarrierDrone",
+  },
+  "/lotus/types/enemies/spacebattles/infested/infestedattackdroneavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Infested/InfestedAttackDrone",
+  },
+  "/lotus/types/enemies/spacebattles/sentient/fighters/spacefightersntassaultavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Sentient/Fighters/SpaceFighterSntAssaultAgent",
+  },
+  "/lotus/types/enemies/spacebattles/sentient/fighters/splinespacefightersntassaultavatar": {
+    key: "/Lotus/Types/Enemies/SpaceBattles/Sentient/Fighters/SpaceFighterSntAssaultAgent",
+  },
+  "/lotus/types/enemies/stalker/jadestalkeravatar": {
+    key: "/Lotus/Types/Enemies/Stalker/JadeStalkerAgent",
+  },
+  "/lotus/types/enemies/stalker/lisetstalkeravatar": {
+    key: "/Lotus/Types/Enemies/Stalker/SentientStalkerAgent",
+  },
+  "/lotus/types/enemies/stalker/sentientstalkeravatar": {
+    key: "/Lotus/Types/Enemies/Stalker/SentientStalkerAgent",
+  },
+  "/lotus/types/enemies/stalker/stalkeravatar": {
+    key: "/Lotus/Types/Enemies/Stalker/StalkerAgent",
+  },
+  "/lotus/types/enemies/stalker/stalkerspecteravatar": {
+    key: "/Lotus/Types/Enemies/Stalker/StalkerAgent",
+  },
+  "/lotus/types/enemies/tau/coh/acolytes/cohareacasteracolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/AreaCasterAcolyteAgent",
+  },
+  "/lotus/types/enemies/tau/coh/acolytes/cohcontrolacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/ControlAcolyteAgent",
+  },
+  "/lotus/types/enemies/tau/coh/acolytes/cohduellistacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/DuellistAcolyteAgent",
+  },
+  "/lotus/types/enemies/tau/coh/acolytes/cohheavyacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/HeavyAcolyteAgent",
+  },
+  "/lotus/types/enemies/tau/coh/acolytes/cohrogueacolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/RogueAcolyteAgent",
+  },
+  "/lotus/types/enemies/tau/coh/acolytes/cohstrikeracolyteavatar": {
+    key: "/Lotus/Types/Enemies/Acolytes/StrikerAcolyteAgent",
+  },
+  "/lotus/types/enemies/tau/coh/bosses/cohduvirivortwobossavatar": {
+    key: "/Lotus/Types/Enemies/Grineer/Vip/VorTwo/VorTwoBossAgent",
+  },
+  "/lotus/types/enemies/tau/coh/bosses/cohoraxiaenemyavatar": {
+    key: "/Lotus/Types/Enemies/Tau/CoH/Bosses/CoHOraxiaEnemyAgent",
+  },
+  "/lotus/types/enemies/tau/coh/bosses/cohpaxduviricusdungeonencounteravatar": {
+    key: "/Lotus/Types/Enemies/Tau/CoH/Bosses/CoHPaxDuviricusDungeonEncounterAgent",
+  },
+  "/lotus/types/enemies/tau/coh/bosses/cohquadrupedvipavatar": {
+    key: "/Lotus/Types/Enemies/Infested/Vip/QuadrupedVIP",
+  },
+  "/lotus/types/enemies/tau/coh/cohsentienttroopermimicavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Mimics/SentientTrooperMimicAgent",
+  },
+  "/lotus/types/enemies/tau/coh/cohtreasureboxavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+  },
+  "/lotus/types/enemies/tau/coh/cohtreasureboxcloneavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+  },
+  "/lotus/types/enemies/tau/coh/cohtreasureboxcloneleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/coh/cohtreasureboxleaderavatar": {
+    key: "/Lotus/Types/Enemies/ManInTheWall/TreasureBox/MITWTreasureBoxAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/coh/powercellcarriers/cohcarrierriflelanceravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CarrierRifleLancer",
+  },
+  "/lotus/types/enemies/tau/coh/powercellcarriers/cohcarrierspacemanavatar": {
+    key: "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/CarrierSpacemanAgent",
+  },
+  "/lotus/types/enemies/tau/coh/powercellcarriers/cohcellcarrierdroneavatar": {
+    key: "/Lotus/Types/Enemies/Infested/AiWeek/InfestedDrones/CellCarrierDroneAgent",
+  },
+  "/lotus/types/enemies/tau/coh/powercellcarriers/cohjetpackmarinecarrieravatar": {
+    key: "/Lotus/Types/Enemies/Grineer/AIWeek/CarrierJetpack",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxarcher/anarchtaudaxarcheravatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxArcher/AnarchTauDaxArcherAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxarcher/anarchtaudaxarcherleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxArcher/AnarchTauDaxArcherAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxarcher/empiretaudaxarcheravatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxArcher/AnarchTauDaxArcherAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxarcher/empiretaudaxarcherleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxArcher/AnarchTauDaxArcherAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxheavyarch/anarchtaudaxheavyarchavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxHeavyArch/AnarchTauDaxHeavyArchgunAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxheavyarch/anarchtaudaxheavyarchleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxHeavyArch/AnarchTauDaxHeavyArchgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxheavyarch/empiretaudaxheavyarchavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxHeavyArch/AnarchTauDaxHeavyArchgunAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxheavyarch/empiretaudaxheavyarchleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxHeavyArch/AnarchTauDaxHeavyArchgunAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxmedic/anarchtaudaxmedicavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxMedic/AnarchTauDaxMedicAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxmedic/anarchtaudaxmedicleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxMedic/AnarchTauDaxMedicAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxmedic/empiretaudaxmedicavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxMedic/AnarchTauDaxMedicAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxmedic/empiretaudaxmedicleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxMedic/AnarchTauDaxMedicAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxninja/anarchtaudaxninjaavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxNinja/AnarchTauDaxNinjaAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxninja/anarchtaudaxninjaleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxNinja/AnarchTauDaxNinjaAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxninja/empiretaudaxninjaavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxNinja/AnarchTauDaxNinjaAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxninja/empiretaudaxninjaleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxNinja/AnarchTauDaxNinjaAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/anarchtaudaxswordsmanavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/anarchtaudaxswordsmanfemaleavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/anarchtaudaxswordsmanfemaleleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/anarchtaudaxswordsmanleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/empiretaudaxswordsmanavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/empiretaudaxswordsmanfemaleavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/empiretaudaxswordsmanfemaleleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/dax/taudaxswordsman/empiretaudaxswordsmanleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Dax/TauDaxSwordsman/AnarchTauDaxSwordsmanAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/grineer/taugrineerlancer/anarchtaugrineerlanceravatar": {
+    key: "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerLancer/AnarchTauGrineerLancerAgent",
+  },
+  "/lotus/types/enemies/tau/grineer/taugrineerlancer/anarchtaugrineerlancerleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerLancer/AnarchTauGrineerLancerAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/grineer/taugrineertrapper/anarchtaugrineertrapperavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerTrapper/AnarchTauGrineerTrapperAgent",
+  },
+  "/lotus/types/enemies/tau/grineer/taugrineertrapper/anarchtaugrineertrapperleaderavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerTrapper/AnarchTauGrineerTrapperAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/tau/guiltsentient/dactolystbossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/GuiltSentient/SentientGuiltBossAgent",
+  },
+  "/lotus/types/enemies/tau/guiltsentient/dactolystmeleetrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientMeleeTrooperAgent",
+  },
+  "/lotus/types/enemies/tau/guiltsentient/dactolysttrooperavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Troopers/SentientBaseTrooperAgent",
+  },
+  "/lotus/types/enemies/tau/monolyst/hardmodemonolystchoralystavatar": {
+    key: "/Lotus/Types/Enemies/Sentients/Eidolon/SentientEidolonGhostCasterAgent",
+  },
+  "/lotus/types/enemies/tau/primes/ash/ashprimebossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Ash/AshPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/ash/ashprimebosshardmodeavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Ash/AshPrimeBossHardModeAgent",
+  },
+  "/lotus/types/enemies/tau/primes/ash/ashprimetmwavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Ash/AshPrimeTMWAgent",
+  },
+  "/lotus/types/enemies/tau/primes/caliban/calibanprimebossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Caliban/CalibanPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/caliban/calibanprimebosshardmodeavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Caliban/CalibanPrimeBossHardModeAgent",
+  },
+  "/lotus/types/enemies/tau/primes/caliban/calibanprimebosshazardavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Caliban/CalibanPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/caliban/calibanprimebossquestavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Caliban/CalibanPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/caliban/calibanprimetmwavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Caliban/CalibanPrimeTMWAgent",
+  },
+  "/lotus/types/enemies/tau/primes/ember/emberprimebossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Ember/EmberPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/ember/emberprimebosshardmodeavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Ember/EmberPrimeBossHardModeAgent",
+  },
+  "/lotus/types/enemies/tau/primes/ember/emberprimetmwavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Ember/EmberPrimeTMWAgent",
+  },
+  "/lotus/types/enemies/tau/primes/mesa/mesaprimebossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Mesa/MesaPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/mesa/mesaprimebosshardmodeavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Mesa/MesaPrimeBossHardModeAgent",
+  },
+  "/lotus/types/enemies/tau/primes/mesa/mesaprimetmwavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Mesa/MesaPrimeTMWAgent",
+  },
+  "/lotus/types/enemies/tau/primes/protea/proteaprimebossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Protea/ProteaPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/protea/proteaprimebosshardmodeavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Protea/ProteaPrimeBossHardModeAgent",
+  },
+  "/lotus/types/enemies/tau/primes/protea/proteaprimebossquestavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Protea/ProteaPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/protea/proteaprimetmwavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Protea/ProteaPrimeTMWAgent",
+  },
+  "/lotus/types/enemies/tau/primes/trinity/trinityprimebossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Trinity/TrinityPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/volt/voltprimebossavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Volt/VoltPrimeBossAgent",
+  },
+  "/lotus/types/enemies/tau/primes/volt/voltprimebosshardmodeavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Volt/VoltPrimeBossHardModeAgent",
+  },
+  "/lotus/types/enemies/tau/primes/volt/voltprimetmwavatar": {
+    key: "/Lotus/Types/Enemies/Tau/Primes/Volt/VoltPrimeTMWAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/fairyquest/fairyquestlokiavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/FairyQuest/FairyQuestLokiAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/fairyquest/fairyquestpaladinavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/FairyQuest/FairyQuestPaladinAvatar",
+  },
+  "/lotus/types/enemies/tennoreplicants/fairyquest/fairyquestsarynavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/FairyQuest/FairyQuestSarynAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/fairyquest/knavelokidecoyavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/FairyQuest/FairyQuestLokiAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/junctionrework/emberjunctionbossavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantEmberAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/junctionrework/mesajunctionbossavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/JunctionRework/MesaJunctionBossAvatar",
+  },
+  "/lotus/types/enemies/tennoreplicants/junctionrework/voltjunctionbossavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/JunctionRework/VoltJunctionBossAvatar",
+  },
+  "/lotus/types/enemies/tennoreplicants/odaliskquest/odaliskquestspecteravatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/OdaliskQuest/OdaliskQuestSpecterAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/oraxiaenemy/oraxiaenemyavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/OraxiaEnemy/OraxiaEnemyAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/oraxiaenemy/oraxiaenemycloneavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/OraxiaEnemy/OraxiaEnemyAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/oraxiaenemy/oraxiaenemyspiderlingrangedavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/OraxiaEnemy/OraxiaEnemySpiderlingAvatar",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantberserkeravatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantBerserkerAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantemberavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantEmberAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantexcaliburavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantExcaliburAvatar",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantfrostavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantFrostAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantlokiavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantLokiAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantmagavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantMagAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantnovaavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantNovaAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantrhinoavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantRhinoAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantsarynavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantSarynAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicanttrinityavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantTrinityAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/relayboss/tennoreplicantyinyangavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantYinYangAvatar",
+  },
+  "/lotus/types/enemies/tennoreplicants/syndicateallies/colonyrescueallies/colonistrescuesteelmeridianavatara":
+    {
+      key: "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyRescueAllies/ColonistRescueSteelMeridianAvatarA",
+    },
+  "/lotus/types/enemies/tennoreplicants/syndicateallies/colonyrescueallies/colonistrescuesteelmeridianavatarb":
+    {
+      key: "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyRescueAllies/ColonistRescueSteelMeridianAvatarA",
+    },
+  "/lotus/types/enemies/tennoreplicants/syndicateallies/colonyrescueallies/colonistrescuesteelmeridianavatarc":
+    {
+      key: "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyRescueAllies/ColonistRescueSteelMeridianAvatarA",
+    },
+  "/lotus/types/enemies/tennoreplicants/syndicateallies/colonyrescueallies/colonistrescuesteelmeridianavatard":
+    {
+      key: "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyRescueAllies/ColonistRescueSteelMeridianAvatarA",
+    },
+  "/lotus/types/enemies/tennoreplicants/tennoreplicantchromaavatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/TennoReplicantChromaAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/tennoreplicantchromaavatarderelict": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/TennoReplicantChromaAgent",
+  },
+  "/lotus/types/enemies/tennoreplicants/tennoreplicantgunslingeravatar": {
+    key: "/Lotus/Types/Enemies/TennoReplicants/TennoReplicantGunslingerAgent",
+  },
+  "/lotus/types/enemies/water/grineer/avatars/eellanceravatar": {
+    key: "/Lotus/Types/Enemies/Water/Grineer/EelLancerAgent",
+  },
+  "/lotus/types/enemies/water/grineer/avatars/froglanceravatar": {
+    key: "/Lotus/Types/Enemies/Water/Grineer/FrogLancerNavAgent",
+  },
+  "/lotus/types/enemies/water/grineer/avatars/squidlanceravatar": {
+    key: "/Lotus/Types/Enemies/Water/Grineer/SquidLancerAgent",
+  },
+  "/lotus/types/enemies/water/grineer/avatars/waterminedroneavatar": {
+    key: "/Lotus/Types/Enemies/Water/Grineer/WaterMineDrone",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedancient/infestedancient1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedAncient/InfestedAncient1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedancient/infestedancient1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedAncient/InfestedAncient1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999infested/infestedbabau/deviationinfestedbabau1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/DeviationInfestedBabau1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedbabau/infestedbabau1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedbabau/infestedbabau1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999infested/infestedbabau/infestedbabau1999questavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedbabau/questinfestedbabau1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedmaggot/infestedmaggot1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedMaggot/InfestedMaggot1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedmutalist/infestedmutalist1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedMutalist/InfestedMutalist1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedmutalist/infestedmutalist1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedMutalist/InfestedMutalist1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999infested/infestedrunner/infestedrunner1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedRunner/InfestedRunner1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedrunner/infestedrunner1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedRunner/InfestedRunner1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999infested/infestedundazoa/infestedundazoa1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedUndazoa/InfestedUndazoa1999Agent",
+  },
+  "/lotus/types/enemies/wf1999infested/infestedundazoa/infestedundazoa1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedUndazoa/InfestedUndazoa1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999infested/infestedvolatilerunner/infestedvolatilerunner1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Infested/InfestedVolatileRunner/InfestedVolatileRunner1999Agent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/disruption/1999disruptionnox/1999disruptionnoxavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/Disruption/1999DisruptionNox/1999DisruptionNoxAgent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianbutcher/lasrianbutcher1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianButcher/LasrianButcher1999Agent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianbutcher/lasrianbutcher1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianButcher/LasrianButcher1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianchemstrikenox/lasrianchemstrikenox1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianChemStrikeNox/LasrianChemStrikeNox1999Agent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianchemstrikenox/lasrianchemstrikenox1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianChemStrikeNox/LasrianChemStrikeNox1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriandrone/lasriandroneavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianDrone/LasrianDroneAgent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriandrone/lasriandroneavatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianDrone/LasrianDroneAgent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriandropship/lasriansedandrophipavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianDropship/LasrianSedanAgent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriangoonadier/lasriangoonadier1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianGoonadier/LasrianGoonadier1999Agent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriangoonadier/lasriangoonadier1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianGoonadier/LasrianGoonadier1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianriflelancer/lasrianriflelancer1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianRifleLancer/LasrianLancer1999Agent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianriflelancer/lasrianriflelancer1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianRifleLancer/LasrianLancer1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianshieldlancer/lasrianshieldlancer1999avatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianShieldLancer/LasrianShieldLancer1999Agent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasrianshieldlancer/lasrianshieldlancer1999avatarleader": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianShieldLancer/LasrianShieldLancer1999Agent",
+    eximus: true,
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriantank/lasriantankavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianTank/LasrianTankAgent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriantank/lasriantankhardmodeavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianTank/LasrianTankHardModeAgent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriantank/lasriantankhardmodeinfestedavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianTank/LasrianTankHardModeInfestedAgent",
+  },
+  "/lotus/types/enemies/wf1999lasrian/lasriantank/lasriantankinfestedavatar": {
+    key: "/Lotus/Types/Enemies/WF1999Lasrian/LasrianTank/LasrianTankInfestedAgent",
+  },
+};
+
 // Profile-only scans from DE PublicExport, with mirrored DE or wiki art.
 export const CODEX_EXTRA_INFO: Record<
   string,
-  { name?: string; icon?: string; faction: string; scans?: number }
+  { name?: string; icon?: string; faction: string; scans?: number; eximusScans?: number }
 > = {
   "/Lotus/Objects/CrpMegaExplodingBarrel": {
     name: "Large Corpus Exploding Barrel",
@@ -5137,10 +10022,497 @@ export const CODEX_EXTRA_INFO: Record<
     faction: "objects",
     scans: 1,
   },
+  "/Lotus/Types/Enemies/Acolytes/CrawlerMinionAvatar": {
+    name: "Void Shade",
+    icon: "https://assets.wfhelper.com/icons/2476ed8c271e6890fcc2b2cc.png",
+    faction: "stalker",
+  },
+  "/Lotus/Types/Enemies/Acolytes/GraspingCrawlerMinionAvatar": {
+    name: "Nauseous Void Shade",
+    icon: "https://assets.wfhelper.com/icons/2476ed8c271e6890fcc2b2cc.png",
+    faction: "stalker",
+  },
+  "/Lotus/Types/Enemies/Acolytes/ShadowControlAcolyteAvatar": {
+    name: "Shadow Of Torment",
+    icon: "https://assets.wfhelper.com/icons/13c1b175a7e3afaad8896d7e.png",
+    faction: "stalker",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Acolytes/ShadowDuellistAcolyteAvatar": {
+    name: "Shadow Of Violence",
+    icon: "https://assets.wfhelper.com/icons/ea8d184b2f6a6da15c68bc3c.png",
+    faction: "stalker",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Acolytes/ShadowHeavyAcolyteAvatar": {
+    name: "Shadow Of Malice",
+    icon: "https://assets.wfhelper.com/icons/32a488fc562398d5e10b3ec0.png",
+    faction: "stalker",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Acolytes/ShadowRogueAcolyteAvatar": {
+    name: "Shadow Of Mania",
+    icon: "https://assets.wfhelper.com/icons/6ff9b7908abf72b726cb9c26.png",
+    faction: "stalker",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Acolytes/ShadowStrikerAcolyteAvatar": {
+    name: "Shadow Of Angst",
+    icon: "https://assets.wfhelper.com/icons/969237b65d797cf1fc274156.png",
+    faction: "stalker",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetBaseAvatar": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpus": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpusEngineerAvatar": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpusFlyingAvatar": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpusMrFreezeAvatar": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpusScoutAvatar": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpusShockAvatar": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetCorpusWardenAvatar": {
+    name: "Corpus Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineer": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerBeastMasterAvatar": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerCloakAvatar": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerMercuryAvatar": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerMiterAvatar": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerPistolAvatar": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerPyroAvatar": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetGrineerRollerAvatar": {
+    name: "Grineer Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/CaptureTargets/CaptureTargetMaRooAvatar": {
+    name: "Maroo",
+    icon: "https://assets.wfhelper.com/icons/35cc568e96c81af3c13b069a.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Corpus/Amalgams/Avatars/AmalgamPilotGhostAvatar": {
+    name: "Spectralyst",
+    icon: "https://assets.wfhelper.com/icons/1687878ad99e681999a71fd3.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Amalgams/Avatars/AmalgamSniperReplicaAvatar": {
+    name: "Spectralyst",
+    icon: "https://assets.wfhelper.com/icons/f61872696404600b26f027a4.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/BipedRobot/AIWeek/GuidedDummyBipedAvatar": {
+    name: "Test Moa",
+    icon: "https://assets.wfhelper.com/icons/fce6af851b502c3d69b1b7aa.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Corpus/Drones/AIWeek/CorpusEliteShieldDroneAvatar": {
+    name: "Arbitration Shield Drone",
+    icon: "https://assets.wfhelper.com/icons/8bfa87f5e51d7b7045d38cdc.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Drones/Vip/DroneAttackAvatar": {
+    name: "Raptor",
+    icon: "https://assets.wfhelper.com/icons/86b36ab76a7af172ebc559e9.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Drones/Vip/RaptorTwoAvatar": {
+    name: "Raptor",
+    icon: "https://assets.wfhelper.com/icons/daf5c330b688b6cc7cc8b29e.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Dropship/CorpusDropshipTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Gamemodes/Ascension/AscensionAutoTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Lawyers/LawyerAscensionAvatarA": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/862ce23b4a482cbd52411c56.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Lawyers/LawyerAvatarA": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/862ce23b4a482cbd52411c56.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Lawyers/LawyerTreasurerAvatar": {
+    name: "CANDIDATE",
+    icon: "https://assets.wfhelper.com/icons/1181090604ef6e8c7965447b.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/CaptureTargetNarmerCorpusEngineerAvatar": {
+    name: "Narmer Capture Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/CaptureTargetNarmerCorpusShockAvatar": {
+    name: "Narmer Capture Target",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerArachnoidMicroAvatar": {
+    name: "Narmer Mite",
+    icon: "https://assets.wfhelper.com/icons/84b3c3baaddb0ad318716a35.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerCameraDroneAvatar": {
+    name: "Narmer Observation Drone",
+    icon: "https://assets.wfhelper.com/icons/9096b993cfc28edad49fdf46.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerDeployableSpacemanAvatar": {
+    name: "Narmer Corpus Tech",
+    icon: "https://assets.wfhelper.com/icons/2a2e9699c72883d8112518e8.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerLeechDroneAvatar": {
+    name: "Narmer Leech Osprey",
+    icon: "https://assets.wfhelper.com/icons/3e10cf1e61f818c49ab58c37.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerMeleeSpacemanAvatar": {
+    name: "Narmer Prod Crewman",
+    icon: "https://assets.wfhelper.com/icons/3d60321020aa8d7f0dec979b.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerMineDroneAvatar": {
+    name: "Narmer Mine Osprey",
+    icon: "https://assets.wfhelper.com/icons/f4854452d63a3661b6438d7e.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerNullifySpacemanAvatar": {
+    name: "Narmer Nullifier Crewman",
+    icon: "https://assets.wfhelper.com/icons/caac35e3bc667b27d48d8fad.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerShieldDroneAvatar": {
+    name: "Narmer Shield Osprey",
+    icon: "https://assets.wfhelper.com/icons/1ea45f7c9a18885437ab2e2a.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerShipMoaDiscAvatar": {
+    name: "Narmer Disc Moa",
+    icon: "https://assets.wfhelper.com/icons/682f6a972f887ec2fc4af60c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerShipMoaDualCannonAvatar": {
+    name: "Narmer Geminex Moa",
+    icon: "https://assets.wfhelper.com/icons/864061175a5cf06a1c9b304d.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerShipMoaGlaxionAvatar": {
+    name: "Narmer Glaxion Moa",
+    icon: "https://assets.wfhelper.com/icons/54b81e78a7e438d078bf70f4.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerShotgunSpacemanAvatar": {
+    name: "Narmer Detron Crewman",
+    icon: "https://assets.wfhelper.com/icons/3cab3a108c430f7292e84056.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerSniperSpacemanAvatar": {
+    name: "Narmer Sniper Crewman",
+    icon: "https://assets.wfhelper.com/icons/455517f199bcb2ef8dc8d238.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/NarmerSpecOpsArachnoidAvatar": {
+    name: "Narmer Raknoid",
+    icon: "https://assets.wfhelper.com/icons/6da52ea137d765650169a3cf.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerBaseFlyingSpacemanAvatar": {
+    name: "Narmer Elite Ranger",
+    icon: "https://assets.wfhelper.com/icons/48abdaf7db1174d64e4e7b90.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerCorpusCarrusPilotAvatar": {
+    name: "Narmer Machinist",
+    icon: "https://assets.wfhelper.com/icons/734a78b4d750c911109d3257.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerDeployableFlyingSpacemanAvatar": {
+    name: "Narmer Tech Ranger",
+    icon: "https://assets.wfhelper.com/icons/da557439db1703999d9b2cb3.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerEliteSpacemanAvatar": {
+    name: "Narmer Elite Crewman",
+    icon: "https://assets.wfhelper.com/icons/c020dcdbba2ca470e79942f4.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerMeleeSpacemanAvatar": {
+    name: "Narmer Prod Crewman",
+    icon: "https://assets.wfhelper.com/icons/3d60321020aa8d7f0dec979b.png",
+    faction: "narmer",
+    scans: 20,
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerMineDroneAvatar": {
+    name: "Narmer Mine Osprey",
+    icon: "https://assets.wfhelper.com/icons/f4854452d63a3661b6438d7e.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerNullifyFlyingSpacemanAvatar": {
+    name: "Narmer Nullifier Ranger",
+    icon: "https://assets.wfhelper.com/icons/614b29ed1d1de9dbfd023df1.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerNullifySpacemanAvatar": {
+    name: "Narmer Nullifier Crewman",
+    icon: "https://assets.wfhelper.com/icons/caac35e3bc667b27d48d8fad.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerShieldDroneAvatar": {
+    name: "Narmer Shield Osprey",
+    icon: "https://assets.wfhelper.com/icons/1ea45f7c9a18885437ab2e2a.png",
+    faction: "narmer",
+    scans: 20,
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerShipMoaDiscAvatar": {
+    name: "Narmer Disc Moa",
+    icon: "https://assets.wfhelper.com/icons/682f6a972f887ec2fc4af60c.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerShipMoaDualCannonAvatar": {
+    name: "Narmer Geminex Moa",
+    icon: "https://assets.wfhelper.com/icons/864061175a5cf06a1c9b304d.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerShipMoaGlaxionAvatar": {
+    name: "Narmer Glaxion Moa",
+    icon: "https://assets.wfhelper.com/icons/54b81e78a7e438d078bf70f4.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerShockwaveBipedAvatar": {
+    name: "Narmer Shockwave Moa",
+    icon: "https://assets.wfhelper.com/icons/328879304784f9d7d1c4da3c.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerShotgunFlyingSpacemanAvatar": {
+    name: "Narmer Detron Ranger",
+    icon: "https://assets.wfhelper.com/icons/857ba165993d756c325c8d95.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerShotgunSpacemanAvatar": {
+    name: "Narmer Detron Crewman",
+    icon: "https://assets.wfhelper.com/icons/857ba165993d756c325c8d95.png",
+    faction: "narmer",
+    scans: 20,
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerSniperFlyingSpacemanAvatar": {
+    name: "Narmer Sniper Ranger",
+    icon: "https://assets.wfhelper.com/icons/87a1853aa16eeefaa89e843a.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerSniperSpacemanAvatar": {
+    name: "Narmer Sniper Crewman",
+    icon: "https://assets.wfhelper.com/icons/455517f199bcb2ef8dc8d238.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerSuicideDroneAvatar": {
+    name: "Narmer Oxium Osprey",
+    icon: "https://assets.wfhelper.com/icons/ea6ef87e0a00b9f6f8c68f50.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Avatars/PNWNarmerVacDroneAvatar": {
+    name: "Narmer Scavenger Drone",
+    icon: "https://assets.wfhelper.com/icons/fd5ead73ae487d6d6568d585.png",
+    faction: "corpus",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Transports/LoboNarmerWheelCarDropshipAvatar": {
+    name: "Narmer Coildrive",
+    icon: "https://assets.wfhelper.com/icons/52d53431cab833d69e2147a8.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Transports/NarmerVenusDropshipAvatar": {
+    name: "Narmer Condor Dropship",
+    icon: "https://assets.wfhelper.com/icons/9fc2ac942c1f5cbed3b0fdee.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Transports/NarmerVenusSmallDropshipAvatar": {
+    name: "Narmer Buzzard Dropship",
+    icon: "https://assets.wfhelper.com/icons/a335ef7eec6b9fd8598f9e0c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Transports/NarmerWheelCarDropshipAvatar": {
+    name: "Narmer Coildrive",
+    icon: "https://assets.wfhelper.com/icons/fb1acaef9c02635a001a28db.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Turrets/NarmerAutoTurretHeavyAvatar": {
+    name: "Narmer Turret",
+    icon: "https://assets.wfhelper.com/icons/2c100f8e021812fe4c708982.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Turrets/NarmerCartTurretEnergyBallAvatar": {
+    name: "Narmer Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/a4ea810f89618ad3260dd8bd.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Narmer/Turrets/NarmerCartTurretLaserAvatar": {
+    name: "Narmer Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/affffd3f22a72602cac064a8.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/NewWar/Avatars/SentAutoTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Railjack/Avatars/CrpAdmiralFreezeTurretAvatar": {
+    name: "Cryo Sentry",
+    icon: "https://assets.wfhelper.com/icons/cbe2fe4456f8d7104afb3c82.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Railjack/Captains/CaptainFemaleAvatar": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/862ce23b4a482cbd52411c56.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Railjack/Captains/CaptainMaleAvatar": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/862ce23b4a482cbd52411c56.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Spaceman/CivilianAvatarCaptureEvent": {
+    name: "Corpus Scout",
+    icon: "https://assets.wfhelper.com/icons/25b915439ae20ae83f91cc28.png",
+    faction: "corpus",
+    scans: 20,
+  },
   "/Lotus/Types/Enemies/Corpus/Turrets/TurretAvatars/AutoTurretAvatar": {
     name: "Senta Turret",
     icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
     faction: "objects",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Turrets/TurretAvatars/AutoTurretAvatarInvincible": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Turrets/TurretAvatars/AutoTurretCSDemoAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/7565f32a3806ac1f09f156c1.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Turrets/TurretAvatars/CartTurretEnergyBallAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "corpus",
     scans: 20,
   },
   "/Lotus/Types/Enemies/Corpus/Turrets/TurretAvatars/SecurityCameraAvatar": {
@@ -5149,10 +10521,1717 @@ export const CODEX_EXTRA_INFO: Record<
     faction: "objects",
     scans: 20,
   },
+  "/Lotus/Types/Enemies/Corpus/Turrets/TurretAvatars/SpaceMissileAutoTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Vehicle/LoboWheelCarDropshipAvatar": {
+    name: "Special Duty Coildrive",
+    icon: "https://assets.wfhelper.com/icons/fddf9b7867f06e6f807ae196.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Venus/Avatars/CorpusCameraDroneAvatar": {
+    name: "Observation Drone",
+    icon: "https://assets.wfhelper.com/icons/f85386570b78c35f3697ab67.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Venus/Avatars/SolarisRescueAvatar": {
+    name: "Solaris Prisoner",
+    icon: "https://assets.wfhelper.com/icons/b2e2aeada6f8167a273898b4.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Venus/Avatars/VenusNullifySpacemanAvatar": {
+    name: "Terra Nullifier Crewman",
+    icon: "https://assets.wfhelper.com/icons/748f48e6ca3c4c84e4556caf.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Venus/Avatars/VenusRailgunBipedAvatar": {
+    name: "Terra Railgun Moa",
+    icon: "https://assets.wfhelper.com/icons/1d263d000f4b0eb2ef465a90.png",
+    faction: "corpus",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Corpus/Venus/Hoverboard/CrpHoverboardUnmannedAvatar": {
+    name: "K-Drive",
+    icon: "https://assets.wfhelper.com/icons/a6feb27222d00154d6aa9722.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Corpus/Venus/Hoverboard/TnwDrifterBoard/CrpHoverboardDrifterAvatar": {
+    name: "K-Drive",
+    icon: "https://assets.wfhelper.com/icons/a6feb27222d00154d6aa9722.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidCamperBroodTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidCamperTerraTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidCamperTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/ArachnoidMoltenAvatar": {
+    name: "Thermic Raknoid",
+    icon: "https://assets.wfhelper.com/icons/e1c194d1ebbc61184fe81e77.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Corpus/Vip/Arachnoid/KahlArachnoidHungerAvatar": {
+    name: "Narmer Scyto Raknoid",
+    icon: "https://assets.wfhelper.com/icons/6785c4a1f34d979338e06275.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Corpus/Vip/Hyena/HyenaPackAvatar": {
+    name: "The Hyena Pack",
+    icon: "https://assets.wfhelper.com/icons/e409295e24f4049fd18ea4c3.png",
+    faction: "corpus",
+    scans: 10,
+  },
+  "/Lotus/Types/Enemies/CorpusChampions/Specters/ArenaSpecterIvaraAvatar": {
+    name: "Ivara Specter",
+    icon: "https://assets.wfhelper.com/icons/ef6c37385a3fff4ecd50c51b.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/CorpusChampions/Specters/ArenaSpecterWukongAvatar": {
+    name: "Wukong Specter",
+    icon: "https://assets.wfhelper.com/icons/b982ded9f4ca69e7eacecfa2.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Corrupted/Avatars/CorruptedCombatKubrowAvatar": {
+    name: "Corrupted Drahk",
+    icon: "https://assets.wfhelper.com/icons/22112dee06ad488650238d95.png",
+    faction: "orokin",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/DuviriMeleeAvatar": {
+    name: "Thrax Centurion",
+    icon: "https://assets.wfhelper.com/icons/e5af802ffb8de6e0bbe4ef34.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/DuviriRifleAvatar": {
+    name: "Thrax Legatus",
+    icon: "https://assets.wfhelper.com/icons/53abce5de7c0fbcdb55e9bdf.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/DuviriThraxMeleeAvatar": {
+    name: "Hollow Thrax Centurion",
+    icon: "https://assets.wfhelper.com/icons/bfe394b983409569f24f8631.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/EclipseDuviriMeleeAvatar": {
+    name: "Eclipse Thrax Centurion",
+    icon: "https://assets.wfhelper.com/icons/bfe394b983409569f24f8631.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/EclipseDuviriMeleeAvatarEasy": {
+    name: "Hollow Thrax Centurion",
+    icon: "https://assets.wfhelper.com/icons/bfe394b983409569f24f8631.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/EclipseDuviriRifleAvatar": {
+    name: "Lua Thrax Legatus",
+    icon: "https://assets.wfhelper.com/icons/cb766b5b732512f5bacedbb2.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/EclipseDuviriRifleAvatarEasy": {
+    name: "Hollow Thrax Legatus",
+    icon: "https://assets.wfhelper.com/icons/cb766b5b732512f5bacedbb2.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/EclipseDuviriUndercroftMeleeAvatarEasy": {
+    name: "Hollow Thrax Centurion",
+    icon: "https://assets.wfhelper.com/icons/bfe394b983409569f24f8631.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/Avatars/EclipseDuviriUndercroftRifleAvatarEasy": {
+    name: "Hollow Thrax Legatus",
+    icon: "https://assets.wfhelper.com/icons/cb766b5b732512f5bacedbb2.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/Dax/Avatars/DuviriAshigaruAvatar": {
+    name: "Dax Herald",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Duviri/Dax/Avatars/DuviriDaxAvatar": {
+    name: "Dax Gladius",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Duviri/Dax/Avatars/DuviriDaxHeavyAvatar": {
+    name: "Dax Malleus",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Duviri/Dax/Avatars/DuviriDaxHeavyUndercroftAvatar": {
+    name: "Dax Malleus",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/Dax/Avatars/DuviriDaxRangedAvatar": {
+    name: "Dax Arcus",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Duviri/Dax/Avatars/DuviriQuestAshigaruAvatar": {
+    name: "Dax Herald",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/Mounted/DuviriAshigaruMountedAvatar": {
+    name: "Dax Herald",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/Mounted/DuviriMountedDaxAvatar": {
+    name: "Dax Equitem",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/PaxDuviricus/BetrayalShade/PaxBetrayalShadeAvatar": {
+    name: "Persecutor Liminus",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/PaxDuviricus/BetrayalShade/PaxBetrayalShadeBackstabAvatar": {
+    name: "Persecutor Liminus",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Duviri/PaxDuviricus/PaxDuviricusDungeonEncounterWraithAvatar": {
+    name: "Kullervo",
+    icon: "https://assets.wfhelper.com/icons/a77b647c9cf331758f6ca8c8.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Duviri/VoidEclipse/EclipseDuviriDaxAvatar": {
+    name: "Lone Guardian",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/AIWeek/Avatars/GrineerDefectorAvatar": {
+    name: "Bailiff Defector",
+    icon: "https://assets.wfhelper.com/icons/0e17b9fee5d2e7e3b309277c.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Grineer/AIWeek/Avatars/NightwatchCarrierRifleLancerAvatar": {
+    name: "Nightwatch Carrier",
+    icon: "https://assets.wfhelper.com/icons/0e9b0452c281cc20fb3c6b79.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Eidolon/Avatars/EidolonCaptureTarget": {
+    name: "Tusk Target",
+    icon: "https://assets.wfhelper.com/icons/b618c1b910740d5352ccd174.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Eidolon/Avatars/EidolonHackableDroneAvatar": {
+    name: "Hacked Drone",
+    icon: "https://assets.wfhelper.com/icons/699313cfcb0bbd0c587c4f11.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Grineer/Eidolon/Avatars/EidolonRescueAvatar": {
+    name: "Ostron Prisoner",
+    icon: "https://assets.wfhelper.com/icons/d3c22e11709748d9481065a0.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Eidolon/GrineerDropship/DropshipTurret/GrineerDropshipTurretAvatar":
+    {
+      name: "Turret",
+      icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+      faction: "grineer",
+    },
+  "/Lotus/Types/Enemies/Grineer/Fortress/Avatars/GrineerAutoFlameTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Fortress/Avatars/GrineerAutoRocketTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Fortress/Avatars/GrineerAutoTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Gamemodes/WardenGrineerHeavyAvatar": {
+    name: "Grineer Warden",
+    icon: "https://assets.wfhelper.com/icons/6c93a5d48342d34ef35893f7.png",
+    faction: "grineer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Gamemodes/WardenGrineerHeavyTutorialAvatar": {
+    name: "Grineer Warden",
+    icon: "https://assets.wfhelper.com/icons/6c93a5d48342d34ef35893f7.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/GfsSecurityCameraNarrowAvatar": {
+    name: "Fortress Scanner",
+    icon: "https://assets.wfhelper.com/icons/6faa6b66fb33dcc4987056a2.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/GfsSecurityCameraNarrowAvatarTop": {
+    name: "Fortress Scanner",
+    icon: "https://assets.wfhelper.com/icons/6faa6b66fb33dcc4987056a2.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/GfsSecurityCameraWallMounted": {
+    name: "Fortress Scanner",
+    icon: "https://assets.wfhelper.com/icons/6faa6b66fb33dcc4987056a2.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/GfsSecurityCameraWallMountedPvpMap": {
+    name: "Fortress Scanner",
+    icon: "https://assets.wfhelper.com/icons/6faa6b66fb33dcc4987056a2.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/GhostTower/GhostAvatar": {
+    name: "Kuva",
+    icon: "https://assets.wfhelper.com/icons/b14a5330567aee8439612c92.png",
+    faction: "grineer",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/GhostTower/VoidNegationTower/VoidNegationTowerAvatar": {
+    name: "Kuva Siphon",
+    icon: "https://assets.wfhelper.com/icons/d1c638681330b3c8268ddbe3.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Ghouls/GhoulCaptureDroneAvatar": {
+    name: "Diriga",
+    icon: "https://assets.wfhelper.com/icons/1823975cd6b786f7c5575bc5.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/CaptureTargetNarmerGrineerCloakAvatar": {
+    name: "Narmer Capture Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/CaptureTargetNarmerGrineerPistolAvatar": {
+    name: "Narmer Capture Target",
+    icon: "https://assets.wfhelper.com/icons/37157ab200bf09e7223f7742.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerBlowtorchSawmanAvatar": {
+    name: "Narmer Flameblade",
+    icon: "https://assets.wfhelper.com/icons/ee56f4c115d9f32a2a9c6f72.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerBossLancerAvatar": {
+    name: "Narmer Commander",
+    icon: "https://assets.wfhelper.com/icons/84e0dbaed0f423bde31691fa.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerFemaleGrineerAvatar": {
+    name: "Narmer Ballista",
+    icon: "https://assets.wfhelper.com/icons/bea7c8b42b7d0bf5abc2f757.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerFlameLancerAvatar": {
+    name: "Narmer Scorch",
+    icon: "https://assets.wfhelper.com/icons/67452ad97ef628b5192e5438.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerGrineerBigDropshipAvatar": {
+    name: "Narmer Bolkor",
+    icon: "https://assets.wfhelper.com/icons/ce3c253d3b63eb30df5f378d.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerGrineerDropshipAvatar": {
+    name: "Narmer Firbolg",
+    icon: "https://assets.wfhelper.com/icons/faabf82d3e08ec925de21c8d.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerHeavyFemaleGrineerAvatar": {
+    name: "Narmer Heavy Gunner",
+    icon: "https://assets.wfhelper.com/icons/39691ae214550f327677838c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerIncendiaryBombardAvatar": {
+    name: "Narmer Napalm",
+    icon: "https://assets.wfhelper.com/icons/cca040eda225fada534888e1.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerJetpackMarineAvatar": {
+    name: "Narmer Hellion",
+    icon: "https://assets.wfhelper.com/icons/28b0232d3262462be71ac56b.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerMacheteWomanAvatar": {
+    name: "Narmer Scorpion",
+    icon: "https://assets.wfhelper.com/icons/620aa40fbc0b41cd0f393479.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerPistonSawmanAvatar": {
+    name: "Narmer Powerfist",
+    icon: "https://assets.wfhelper.com/icons/b926c793c8e8224fca5e6797.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerRocketBombardAvatar": {
+    name: "Narmer Bombard",
+    icon: "https://assets.wfhelper.com/icons/64ec305676e8aa40c15c160a.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerShieldLancerAvatar": {
+    name: "Narmer Shield Lancer",
+    icon: "https://assets.wfhelper.com/icons/b0851fd2c406f0bb6fed0ea9.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerShotgunLancerAvatar": {
+    name: "Narmer Trooper",
+    icon: "https://assets.wfhelper.com/icons/ae265aaaa71a51364ae0054e.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerThumperAvatar": {
+    name: "Narmer Thumper",
+    icon: "https://assets.wfhelper.com/icons/4b18dba8999596879e26477c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerThumperKahlAvatar": {
+    name: "Narmer Thumper",
+    icon: "https://assets.wfhelper.com/icons/4b18dba8999596879e26477c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerThumperKahlIntroAvatar": {
+    name: "Narmer Thumper",
+    icon: "https://assets.wfhelper.com/icons/4b18dba8999596879e26477c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerThumperLargeAvatar": {
+    name: "Narmer Thumper Doma",
+    icon: "https://assets.wfhelper.com/icons/cfba65507bc8edc57e866fa0.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/NarmerThumperMedAvatar": {
+    name: "Narmer Thumper Bull",
+    icon: "https://assets.wfhelper.com/icons/dfad0c392482c8a8c8b93a72.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerBladeSawmanAvatar": {
+    name: "Narmer Butcher",
+    icon: "https://assets.wfhelper.com/icons/335fe17de02c38288eb4aceb.png",
+    faction: "narmer",
+    scans: 20,
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerDemoExpiredAvatar": {
+    name: "Narmer Demolisher Expired",
+    icon: "https://assets.wfhelper.com/icons/3ecf2bbd8c8dd951783df293.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerDisruptionChargerAvatar": {
+    name: "Narmer Demolisher Bailiff",
+    icon: "https://assets.wfhelper.com/icons/2771b3245e65ce3d1d37c145.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerDisruptionMinigunBombardAvatar": {
+    name: "Narmer Demolisher Gunner",
+    icon: "https://assets.wfhelper.com/icons/a2a0484618ed504332c0f7e0.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerEliteRifleLancerAvatar": {
+    name: "Narmer Elite Lancer",
+    icon: "https://assets.wfhelper.com/icons/079b69b66135e5963d9278ba.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerFemaleGrineerAvatar": {
+    name: "Narmer Ballista",
+    icon: "https://assets.wfhelper.com/icons/bea7c8b42b7d0bf5abc2f757.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerFlameLancerAvatar": {
+    name: "Narmer Scorch",
+    icon: "https://assets.wfhelper.com/icons/67452ad97ef628b5192e5438.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerForestDroneAvatar": {
+    name: "Narmer Regulator",
+    icon: "https://assets.wfhelper.com/icons/b29191445e4e468171706fd5.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerGrineerMarinePistolAvatar": {
+    name: "Narmer Seeker",
+    icon: "https://assets.wfhelper.com/icons/d1e88dc2aaa6280d0600315b.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerHeavyFemaleGrineerAvatar": {
+    name: "Narmer Heavy Gunner",
+    icon: "https://assets.wfhelper.com/icons/39691ae214550f327677838c.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerIncendiaryBombardAvatar": {
+    name: "Narmer Napalm",
+    icon: "https://assets.wfhelper.com/icons/cca040eda225fada534888e1.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerMacheteWomanAvatar": {
+    name: "Narmer Scorpion",
+    icon: "https://assets.wfhelper.com/icons/620aa40fbc0b41cd0f393479.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerPistonSawmanAvatar": {
+    name: "Narmer Powerfist",
+    icon: "https://assets.wfhelper.com/icons/b926c793c8e8224fca5e6797.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerRocketBombardAvatar": {
+    name: "Narmer Bombard",
+    icon: "https://assets.wfhelper.com/icons/64ec305676e8aa40c15c160a.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerShieldLancerAvatar": {
+    name: "Narmer Shield Lancer",
+    icon: "https://assets.wfhelper.com/icons/b0851fd2c406f0bb6fed0ea9.png",
+    faction: "narmer",
+    scans: 20,
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/Narmer/Avatars/PNWNarmerShotgunLancerAvatar": {
+    name: "Narmer Trooper",
+    icon: "https://assets.wfhelper.com/icons/ae265aaaa71a51364ae0054e.png",
+    faction: "narmer",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Grineer/RailJack/Avatars/BaseAdmiralAvatar": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/1093e4f1b8f8e3b05a576a6c.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/RailJack/Avatars/CarabusPoisonAvatar": {
+    name: "Carabus",
+    icon: "https://assets.wfhelper.com/icons/9cadbe431d191d3385350a21.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/RailJack/Avatars/GrineerMissilePlatformBottomTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/RailJack/Avatars/GrineerMissilePlatformTurretAvatar": {
+    name: "Senta Turret",
+    icon: "https://assets.wfhelper.com/icons/1758e869e3dea14f8b22fb73.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/ArtificerSuicideDroneAvatar": {
+    name: "Carabus",
+    icon: "https://assets.wfhelper.com/icons/9cadbe431d191d3385350a21.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/ForestDroneAvatar": {
+    name: "Frontier Regulator",
+    icon: "https://assets.wfhelper.com/icons/2f1cf27a226719a3c3d9cb69.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/VideoDroneAvatar": {
+    name: "Rathuum Broadcaster",
+    icon: "https://assets.wfhelper.com/icons/fe045ea8b88b852b52868eed.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/WolfGangsterAlertAvatar": {
+    name: "Saturn Six Fugitive",
+    icon: "https://assets.wfhelper.com/icons/9c2433f55233a792f4c7f9cf.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/WolfGangsterAvatar": {
+    name: "Saturn Six Fugitive",
+    icon: "https://assets.wfhelper.com/icons/9c2433f55233a792f4c7f9cf.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/WolfNarmerStalkerAvatar": {
+    name: "Wolf of Saturn Six",
+    icon: "https://assets.wfhelper.com/icons/f4584a3b3f952c9f996b6c43.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/WolfSentientStalkerAlertAvatar": {
+    name: "Wolf of Saturn Six",
+    icon: "https://assets.wfhelper.com/icons/f4584a3b3f952c9f996b6c43.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/WolfSentientStalkerAvatar": {
+    name: "Wolf of Saturn Six",
+    icon: "https://assets.wfhelper.com/icons/f4584a3b3f952c9f996b6c43.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Grineer/SpecialEvents/WolfStalkerAvatar": {
+    name: "Wolf of Saturn Six",
+    icon: "https://assets.wfhelper.com/icons/f4584a3b3f952c9f996b6c43.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Grineer/Vip/Hek/PropDrones/PropDroneAvatar": {
+    name: "Propaganda Drone",
+    icon: "https://assets.wfhelper.com/icons/0c33db4973f2a3c956a08766.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Vip/KelaDeThaym/KelaDeThaymAvatar": {
+    name: "Kela De Thaym",
+    icon: "https://assets.wfhelper.com/icons/bbaa31dc28d8586c92cdd25f.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Grineer/Vip/VorRework/CaptainVorBossReworkHardModeAvatar": {
+    name: "Janus Captain Vor",
+    icon: "https://assets.wfhelper.com/icons/c698b37ebd7e2d01547c7c1a.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/GrineerChampions/ChampionDrones/ChampionDroneBaseAvatar": {
+    name: "Deth Carabus",
+    icon: "https://assets.wfhelper.com/icons/a974c5d5983cdea4c96fd395.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/GrineerChampions/ChampionDrones/ChampionHealerDroneAvatar": {
+    name: "Medical Carabus",
+    icon: "https://assets.wfhelper.com/icons/1e262a4e5fee81091c66c991.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/GrineerChampions/ChampionDrones/EngineerRollingDroneTurretAvatar": {
+    name: "Reth Roller",
+    icon: "https://assets.wfhelper.com/icons/de0dde511f805e36e1dc2c49.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Infested/AiWeek/GreyStrain/BoneBlade/BoneBladeBossAvatar": {
+    name: "DEIMOS JUGULUS REX",
+    icon: "https://assets.wfhelper.com/icons/4faa55c3f159013d36c6058e.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/JuggernautTacAlertAvatar": {
+    name: "Jack O'Naut",
+    icon: "https://assets.wfhelper.com/icons/18251bd31186da3d19389364.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/Infested/AiWeek/Quadrupeds/RusherAvatarMist": {
+    name: "BLIGHTED MAGGOT",
+    icon: "https://assets.wfhelper.com/icons/42c3e1b0784bd7429c906223.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/LightningCrawlerMicroPlanetAvatar": {
+    name: "DEIMOS ELECTRIC CRAWLER",
+    icon: "https://assets.wfhelper.com/icons/c533a2a15deb97856aab95fa.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/MinigunBombardGrineerAvatar": {
+    name: "Garv",
+    icon: "https://assets.wfhelper.com/icons/44288bf3c6d17ae6ef2748c1.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Infested/InfestedMicroplanet/Oni/InfestedOniAvatar": {
+    name: "Infested Oni",
+    icon: "https://assets.wfhelper.com/icons/a3b4adbcab61a9be3b6d43bf.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/Infested/Vip/J3Golem/J3GolemSpaceAvatar": {
+    name: "J3 Jordas Golem",
+    icon: "https://assets.wfhelper.com/icons/918d7579e892798d82891424.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/InfestedLich/Packet/PacketHairAvatar": {
+    name: "Packlet",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "techrot",
+  },
+  "/Lotus/Types/Enemies/KuvaLich/KuvaLichAAvatar": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/f91adf18c920d66efdf02938.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/KuvaLich/KuvaLichFemaleAAvatar": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/f91adf18c920d66efdf02938.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/ManInTheWall/RepairDrone/RepairDroneAvatar": {
+    name: "Necramite",
+    icon: "https://assets.wfhelper.com/icons/b04c1b37037b2d1661c1ddef.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Narmer/Arid/NarmerAridBombardAvatar": {
+    name: "Narmer Bombard",
+    icon: "https://assets.wfhelper.com/icons/522316ad70aaacbc56f2149f.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/Arid/NarmerAridFlameLancerAvatar": {
+    name: "Narmer Scorch",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Narmer/Arid/NarmerAridMinigunAvatar": {
+    name: "Narmer Heavy Gunner",
+    icon: "https://assets.wfhelper.com/icons/1093e4f1b8f8e3b05a576a6c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/Arid/NarmerAridShotgunLancerAvatar": {
+    name: "Narmer Trooper",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Narmer/Deacon/NarmerDeaconBasicAvatar": {
+    name: "Narmer Deacon",
+    icon: "https://assets.wfhelper.com/icons/7aa0f3bad3f6ac7772f6cd55.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/Deacon/NarmerSamuraiDeaconBasicAvatar": {
+    name: "Narmer Deacon",
+    icon: "https://assets.wfhelper.com/icons/7aa0f3bad3f6ac7772f6cd55.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/Drone/NarmerPropDroneAvatar": {
+    name: "Propaganda Drone",
+    icon: "https://assets.wfhelper.com/icons/0c33db4973f2a3c956a08766.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/Drone/PazuulNarmerPropDroneAvatar": {
+    name: "Propaganda Drone",
+    icon: "https://assets.wfhelper.com/icons/0c33db4973f2a3c956a08766.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerBombardAvatar": {
+    name: "Narmer Bombard",
+    icon: "https://assets.wfhelper.com/icons/522316ad70aaacbc56f2149f.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerDefenseDroneAvatar": {
+    name: "Narmer Sensolyst Drone",
+    icon: "https://assets.wfhelper.com/icons/a45e309e3f62af0b1fcb3280.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerMinigunAvatar": {
+    name: "Narmer Heavy Gunner",
+    icon: "https://assets.wfhelper.com/icons/1093e4f1b8f8e3b05a576a6c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerMinigunSecurityNodeAvatar": {
+    name: "Narmer Heavy Gunner",
+    icon: "https://assets.wfhelper.com/icons/1093e4f1b8f8e3b05a576a6c.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerMoaDiscAvatar": {
+    name: "Narmer Disc Moa",
+    icon: "https://assets.wfhelper.com/icons/5e62137f16746a35aca274e4.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerMoaDualCannonAvatar": {
+    name: "Narmer Geminex Moa",
+    icon: "https://assets.wfhelper.com/icons/38919b246329991cd52f7e70.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerOspreyShieldAvatar": {
+    name: "Narmer Shield Osprey",
+    icon: "https://assets.wfhelper.com/icons/b6e8c73d1dcc9cf79255b6a4.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerOstronMaleMeleeAvatar": {
+    name: "Narmer Militant",
+    icon: "https://assets.wfhelper.com/icons/3e7bdc26a3a008d74c18f2b3.png",
+    faction: "narmer",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerOstronMalePassiveMeleeAvatar": {
+    name: "Narmer Ostron",
+    icon: "https://assets.wfhelper.com/icons/133053fa8d60fed223abe974.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerShieldAvatar": {
+    name: "Narmer Shield Lancer",
+    icon: "https://assets.wfhelper.com/icons/e3f2bf940a60f8d7eb832e2d.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerShotgunLancerAvatar": {
+    name: "Narmer Trooper",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerSniperAvatar": {
+    name: "Narmer Sniper Crewman",
+    icon: "https://assets.wfhelper.com/icons/2c9b4c395f695f551bd025fa.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerSolaranMalePassiveMeleeAvatar": {
+    name: "Narmer Solaris Worker",
+    icon: "https://assets.wfhelper.com/icons/133053fa8d60fed223abe974.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerTechAvatar": {
+    name: "Narmer Tech",
+    icon: "https://assets.wfhelper.com/icons/45e99b6611293ce458b862c5.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/NarmerTechDroneAvatar": {
+    name: "Narmer Osprey",
+    icon: "https://assets.wfhelper.com/icons/5fcafd8017ac8c7e0990938d.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/OstronScavengerBoyAvatar": {
+    name: "Ostron Boy",
+    icon: "https://assets.wfhelper.com/icons/3e7bdc26a3a008d74c18f2b3.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Narmer/Ships/NarmerVenusDropshipAvatar": {
+    name: "Narmer Condor Dropship",
+    icon: "https://assets.wfhelper.com/icons/9fc2ac942c1f5cbed3b0fdee.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/Narmer/Ships/NarmerVenusSmallDropshipAvatar": {
+    name: "Narmer Buzzard Dropship",
+    icon: "https://assets.wfhelper.com/icons/7df7cc1890dd9e025f2045d9.png",
+    faction: "narmer",
+  },
+  "/Lotus/Types/Enemies/NewWar/Archons/ArchonAmarAvatar": {
+    name: "Archon Amar",
+    icon: "https://assets.wfhelper.com/icons/dafa894b47dd35ba3688edf4.png",
+    faction: "sentient",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/Archons/ArchonAmarAvatarPNW": {
+    name: "Archon Amar",
+    icon: "https://assets.wfhelper.com/icons/dafa894b47dd35ba3688edf4.png",
+    faction: "narmer",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/Archons/ArchonBorealAvatar": {
+    name: "Archon Boreal",
+    icon: "https://assets.wfhelper.com/icons/5ac05e16db9e7e9aa3323817.png",
+    faction: "sentient",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/Archons/ArchonBorealAvatarPNW": {
+    name: "Archon Boreal",
+    icon: "https://assets.wfhelper.com/icons/5ac05e16db9e7e9aa3323817.png",
+    faction: "narmer",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/Archons/ArchonNiraAvatarNew": {
+    name: "Archon Nira",
+    icon: "https://assets.wfhelper.com/icons/c1d98768c6062d11eee243c1.png",
+    faction: "sentient",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/Archons/ArchonNiraAvatarNewPNW": {
+    name: "Archon Nira",
+    icon: "https://assets.wfhelper.com/icons/c1d98768c6062d11eee243c1.png",
+    faction: "narmer",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/NarmerKonzuAvatar": {
+    name: "VEILED KONZU",
+    icon: "https://assets.wfhelper.com/icons/133053fa8d60fed223abe974.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/NarmerOstronBeastmasterAvatar": {
+    name: "TEASONAI",
+    icon: "https://assets.wfhelper.com/icons/133053fa8d60fed223abe974.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/NarmerOstronFishmongerAvatar": {
+    name: "HAI-LUK",
+    icon: "https://assets.wfhelper.com/icons/133053fa8d60fed223abe974.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/NarmerOstronWeaponsmithAvatar": {
+    name: "HOK",
+    icon: "https://assets.wfhelper.com/icons/133053fa8d60fed223abe974.png",
+    faction: "unaffiliated",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/NewWar/OstronNewWarFemaleRescueAvatar": {
+    name: "Ostron Prisoner",
+    icon: "https://assets.wfhelper.com/icons/d3c22e11709748d9481065a0.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NewWar/OstronNewWarRescueAvatar": {
+    name: "Ostron Prisoner",
+    icon: "https://assets.wfhelper.com/icons/d3c22e11709748d9481065a0.png",
+    faction: "narmer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoBabyFortunaSignPostingAvatar": {
+    name: "Captive Sprodling",
+    icon: "https://assets.wfhelper.com/icons/b2e2aeada6f8167a273898b4.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoBabyRescueAvatar": {
+    name: "Captive Sprodling",
+    icon: "https://assets.wfhelper.com/icons/f4c398321524a1160cb0f200.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoBaseCitizenRescueAvatar": {
+    name: "Hostage",
+    icon: "https://assets.wfhelper.com/icons/5a95a8aadef9a34bf7a63b17.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoDefenseDroneAvatar": {
+    name: "Scrofa Drone",
+    icon: "https://assets.wfhelper.com/icons/df26582e033b589dcb5e9926.png",
+    faction: "corpus",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoFlyingNullifyAvatar": {
+    name: "Scrofa Obviator",
+    icon: "https://assets.wfhelper.com/icons/e17d255f34395303ce50b3c5.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoFlyingSpacemanAvatar": {
+    name: "Scrofa Provisor",
+    icon: "https://assets.wfhelper.com/icons/99e596436abdccde8ccf973c.png",
+    faction: "corpus",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoInfFlyingAttackAvatar": {
+    name: "Syzygy Attack Drone",
+    icon: "https://assets.wfhelper.com/icons/36fef1941979bfee93bbd95e.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoInfMeleeHeavyAvatar": {
+    name: "Syzygy Light Trencher",
+    icon: "https://assets.wfhelper.com/icons/142ed1710a537cdceab55797.png",
+    faction: "infestation",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoInfMiniAvatar": {
+    name: "Syzygy Mite Raknoid",
+    icon: "https://assets.wfhelper.com/icons/b71cfd0abba8e3a0c9b9a2d8.png",
+    faction: "infestation",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoInfRangedLightAvatar": {
+    name: "Syzygy Shockwave Moa",
+    icon: "https://assets.wfhelper.com/icons/b74e489a60579de90d040fe8.png",
+    faction: "infestation",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoInfRiotBipedControlAvatar": {
+    name: "Syzygy Denial Bursa",
+    icon: "https://assets.wfhelper.com/icons/3feeca5ba5efd7ba38041d37.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoInfSniperAvatar": {
+    name: "Syzygy Sniper Ranger",
+    icon: "https://assets.wfhelper.com/icons/6e670f3f6037aaa119c12b0c.png",
+    faction: "infestation",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoInfSpacemanAvatar": {
+    name: "Syzygy Prod Crewman",
+    icon: "https://assets.wfhelper.com/icons/aa31eb38c8b6dd6fb05a6966.png",
+    faction: "infestation",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoLabCritterRescueTargetAvatar": {
+    name: "Captive Virmink",
+    icon: "https://assets.wfhelper.com/icons/009dfe710f1d020c05815b88.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/NokkoColony/Avatars/NokkoMeleeLightSpacemanAvatar": {
+    name: "Scrofa Light Trencher",
+    icon: "https://assets.wfhelper.com/icons/1305c9f20cd141c3bd5adf87.png",
+    faction: "corpus",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Orokin/Entrati/EntratiTech/NechroTech/NechroTechDeimosQuestAvatar": {
+    name: "Rogue Voidrig",
+    icon: "https://assets.wfhelper.com/icons/68c9737b0508cd86a7f41bd6.png",
+    faction: "themurmur",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Orokin/Entrati/EntratiTech/NechroTech/NechroTechLandscapeAvatar": {
+    name: "Ally Voidrig",
+    icon: "https://assets.wfhelper.com/icons/68c9737b0508cd86a7f41bd6.png",
+    faction: "unaffiliated",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Orokin/Entrati/EntratiTech/Thanotech/ThanoTechLandscapeAvatar": {
+    name: "Ally Bonewidow",
+    icon: "https://assets.wfhelper.com/icons/d080428ce5e2063bfd613c51.png",
+    faction: "unaffiliated",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Quests/JadeShadowsPart2Quest/OrionBossAvatar": {
+    name: "CRIMSON",
+    icon: "https://assets.wfhelper.com/icons/c1d98768c6062d11eee243c1.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Quests/JadeShadowsPart2Quest/SiriusBossAvatar": {
+    name: "EMERALD",
+    icon: "https://assets.wfhelper.com/icons/c1d98768c6062d11eee243c1.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Quests/RevenantQuest/TennoReplicantRevenantQuestAvatar": {
+    name: "Revenant",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "orokin",
+  },
+  "/Lotus/Types/Enemies/Quests/SandmanBoss/SandmanReplicaAvatar": {
+    name: "Sand Shadow",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "orokin",
+  },
+  "/Lotus/Types/Enemies/RelayEvent/GrineerRelayReconPhase2AAvatar": {
+    name: "Bailiff",
+    icon: "https://assets.wfhelper.com/icons/3279b7a3252a6a81770f1bdb.png",
+    faction: "grineer",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Sentients/BardQuest/BardQuestSentientAvatar": {
+    name: "Eradicyst",
+    icon: "https://assets.wfhelper.com/icons/f90dac056df02d281fd219fb.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/BardQuest/HunhowBardBossAvatar": {
+    name: "Hunhow",
+    icon: "https://assets.wfhelper.com/icons/1711012e4a79bbfece549bdb.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/Brachiolyst/SentientBrachiolystCarrierAvatar": {
+    name: "Brachiolyst Disperser",
+    icon: "https://assets.wfhelper.com/icons/0f863ebadceeba83461b4320.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/Carriers/SentientCarrierAvatar": {
+    name: "[PH] Carrier",
+    icon: "https://assets.wfhelper.com/icons/bfd81e26cbf4acb553726d52.png",
+    faction: "sentient",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Sentients/Clotholyst/SentientClotholystAvatar": {
+    name: "Typholyst",
+    icon: "https://assets.wfhelper.com/icons/03c2da22e4b7b527f8532ac4.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/Clotholyst/SentientClotholystTauAvatar": {
+    name: "Typholyst",
+    icon: "https://assets.wfhelper.com/icons/03c2da22e4b7b527f8532ac4.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/MedusaTowerAvatar": {
+    name: "Medusalyst Tower",
+    icon: "https://assets.wfhelper.com/icons/26f6117b124b296a614cde81.png",
+    faction: "sentient",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Sentients/RailJack/SentientBoardingBrachiolystAvatar": {
+    name: "Anu Brachiolyst",
+    icon: "https://assets.wfhelper.com/icons/2b1629ce65eaabd8dda02825.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/RailJack/SentientBoardingHackerAvatar": {
+    name: "Anu Mantalyst",
+    icon: "https://assets.wfhelper.com/icons/f12720f72357d4b9b39d0dee.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/RailJack/SentientBoardingNoPowersAvatar": {
+    name: "Anu Pyrolyst",
+    icon: "https://assets.wfhelper.com/icons/87c7e3097a4a81c9476ddb1a.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/RailJack/SentientBoardingSymbilystAvatar": {
+    name: "Anu Symbilyst",
+    icon: "https://assets.wfhelper.com/icons/95592cc07937a966ab97fc40.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/SentientFragmentVomvalystAvatar": {
+    name: "Vomvalyst",
+    icon: "https://assets.wfhelper.com/icons/634b3df25ea88284b578ac5d.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Sentients/Vip/Erra/ErraFighterSentientAvatar": {
+    name: "Erra",
+    icon: "https://assets.wfhelper.com/icons/94486e630556ab035a5e4e8a.png",
+    faction: "sentient",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Sentients/Vip/Erra/ErraSentientAvatar": {
+    name: "Erra",
+    icon: "https://assets.wfhelper.com/icons/94486e630556ab035a5e4e8a.png",
+    faction: "sentient",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Sentients/Vip/Erra/ErraSentientFollowerAvatar": {
+    name: "Erra",
+    icon: "https://assets.wfhelper.com/icons/94486e630556ab035a5e4e8a.png",
+    faction: "unaffiliated",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Corpus/Fighters/SpaceFighterScannerAvatar": {
+    name: "Gox Scavenger",
+    icon: "https://assets.wfhelper.com/icons/981d3855e2cceb885d51cf3c.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Corpus/Turrets/CorpusCargoTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Corpus/Turrets/CorpusInfestedSpaceTurretAvatar": {
+    name: "Mutalist Cannon Battery",
+    icon: "https://assets.wfhelper.com/icons/a20dfad0b47525cf7c2904ae.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Corpus/Turrets/ObeliskMissileTurretAvatar": {
+    name: "Cannon Battery",
+    icon: "https://assets.wfhelper.com/icons/a20dfad0b47525cf7c2904ae.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Corpus/Turrets/ObeliskTurretAvatar": {
+    name: "Cannon Battery",
+    icon: "https://assets.wfhelper.com/icons/a20dfad0b47525cf7c2904ae.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Corpus/Turrets/RailjackTurretAvatar": {
+    name: "Cannon Battery",
+    icon: "https://assets.wfhelper.com/icons/a20dfad0b47525cf7c2904ae.png",
+    faction: "corpus",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSBrutalistAvatar": {
+    name: "Exo Flak",
+    icon: "https://assets.wfhelper.com/icons/99fca93f80b4621e556788f8.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSBrutalistEliteAvatar":
+    {
+      name: "Elite Exo Flak",
+      icon: "https://assets.wfhelper.com/icons/46472ae1f35df99a30e4f7ac.png",
+      faction: "grineer",
+    },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSDredgerAvatar": {
+    name: "Exo Taktis",
+    icon: "https://assets.wfhelper.com/icons/32aa8c825b1a88bdbbd2616e.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSDredgerEliteAvatar": {
+    name: "Elite Exo Taktis",
+    icon: "https://assets.wfhelper.com/icons/67bb95d7e313ca1f83a506a9.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSOutriderAvatar": {
+    name: "Exo Outrider",
+    icon: "https://assets.wfhelper.com/icons/922452d92873dde9301e777c.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSOutriderEliteAvatar":
+    {
+      name: "Elite Exo Outrider",
+      icon: "https://assets.wfhelper.com/icons/5d06f14b601c3897c9f4fc37.png",
+      faction: "grineer",
+    },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSRagerAvatar": {
+    name: "Exo Cutter",
+    icon: "https://assets.wfhelper.com/icons/75246f06b58dcedf37d39111.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/DeepSpace/SpaceFighterDSRagerEliteAvatar": {
+    name: "Elite Exo Cutter",
+    icon: "https://assets.wfhelper.com/icons/71e53c6ca41f8a8b4ef1dda7.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnBrutalistAvatar": {
+    name: "Gyre Flak",
+    icon: "https://assets.wfhelper.com/icons/38e5ae047720cede75f607d6.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnBrutalistEliteAvatar":
+    {
+      name: "Elite Gyre Flak",
+      icon: "https://assets.wfhelper.com/icons/2ec4f9d2ba4aaf2ad007275d.png",
+      faction: "grineer",
+    },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnDredgerAvatar": {
+    name: "Gyre Taktis",
+    icon: "https://assets.wfhelper.com/icons/5b2679e09a8e380a3dfbb1f0.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnDredgerEliteAvatar":
+    {
+      name: "Elite Gyre Taktis",
+      icon: "https://assets.wfhelper.com/icons/18f9578a761d1d2635a5b72a.png",
+      faction: "grineer",
+    },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnOutriderAvatar": {
+    name: "Gyre Outrider",
+    icon: "https://assets.wfhelper.com/icons/df6364af0ed6dab409819ef1.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnOutriderEliteAvatar":
+    {
+      name: "Elite Gyre Outrider",
+      icon: "https://assets.wfhelper.com/icons/88c31308ca6be25677af9edb.png",
+      faction: "grineer",
+    },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnRagerAvatar": {
+    name: "Gyre Cutter",
+    icon: "https://assets.wfhelper.com/icons/212ccba0f659074113d23618.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/Saturn/SpaceFighterSaturnRagerEliteAvatar": {
+    name: "Elite Gyre Cutter",
+    icon: "https://assets.wfhelper.com/icons/26d92685a65c3c39aaf7dd50.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterBrutalistAvatar": {
+    name: "Kosma Flak",
+    icon: "https://assets.wfhelper.com/icons/f9cd3ef61d6e516dbe478aa9.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterBrutalistEliteAvatar": {
+    name: "Elite Kosma Flak",
+    icon: "https://assets.wfhelper.com/icons/7cac47a26b0b2cad62d32f05.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterDredgerAvatar": {
+    name: "Kosma Taktis",
+    icon: "https://assets.wfhelper.com/icons/b5a13df8a14e4cd294b60efb.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterDredgerEliteAvatar": {
+    name: "Elite Kosma Taktis",
+    icon: "https://assets.wfhelper.com/icons/e943cfd8b48362559626dd1a.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterOutriderAvatar": {
+    name: "Kosma Outrider",
+    icon: "https://assets.wfhelper.com/icons/3ddc5d7371c507b722f3f6d6.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterOutriderEliteAvatar": {
+    name: "Elite Kosma Outrider",
+    icon: "https://assets.wfhelper.com/icons/8fefbcd4f0cb32e9e05030d7.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterRagerAvatar": {
+    name: "Kosma Cutter",
+    icon: "https://assets.wfhelper.com/icons/102aceaed8700a04519e30d3.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Fighters/SpaceFighterRagerEliteAvatar": {
+    name: "Elite Kosma Cutter",
+    icon: "https://assets.wfhelper.com/icons/a045229f422d90685b9c5b2e.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/GrineerPursuitSpaceShipAvatar": {
+    name: "Courier",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "grineer",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Ships/DeepSpace/GrineerDSRamSledAvatar": {
+    name: "Exo Ramsled",
+    icon: "https://assets.wfhelper.com/icons/9ce71bf74b51e146665e70df.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Ships/DeepSpace/SentientGrineerRamSledAvatar": {
+    name: "Elite Exo Ramsled",
+    icon: "https://assets.wfhelper.com/icons/9ce71bf74b51e146665e70df.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Ships/GrineerRamSledAvatar": {
+    name: "Kosma Ramsled",
+    icon: "https://assets.wfhelper.com/icons/9ce71bf74b51e146665e70df.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Ships/Saturn/GrineerSaturnRamSledAvatar": {
+    name: "Gyre Ramsled",
+    icon: "https://assets.wfhelper.com/icons/9ce71bf74b51e146665e70df.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Turrets/GrineerPursuitMissileTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Grineer/Turrets/GrineerPursuitTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Infested/InfestedRamSledAvatar": {
+    name: "Splintrix",
+    icon: "https://assets.wfhelper.com/icons/9ce71bf74b51e146665e70df.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Sentient/Fighters/SpaceFighterSntCoilAvatar": {
+    name: "Gyrix",
+    icon: "https://assets.wfhelper.com/icons/c81d9a33b42873a706c4b710.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/SpaceBattles/Sentient/SentientRamSledAvatar": {
+    name: "Splintrix",
+    icon: "https://assets.wfhelper.com/icons/9ce71bf74b51e146665e70df.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/Bosses/CoHInfestedCaptureMutalistAvatar": {
+    name: "Legacyte",
+    icon: "https://assets.wfhelper.com/icons/c918576bcb5dd62165c935bf.png",
+    faction: "techrot",
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/Bosses/CoHMITWOctopedeAvatar": {
+    name: "The Fragmented Suzerain",
+    icon: "https://assets.wfhelper.com/icons/5398c52d0ce547aefc75abe3.png",
+    faction: "themurmur",
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/Bosses/CoHPaxBetrayalShadeAvatar": {
+    name: "Persecutor Liminus",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/CoHDefenseAvatar": {
+    name: "The Golden Cradle",
+    icon: "https://assets.wfhelper.com/icons/800554e235314f1326563ec8.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/CoHEliteShieldDroneAvatar": {
+    name: "Arbitration Shield Drone",
+    icon: "https://assets.wfhelper.com/icons/8bfa87f5e51d7b7045d38cdc.png",
+    faction: "unaffiliated",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/CoHKuvaLichAAvatar": {
+    name: "KUVA LICH AGOR ROK",
+    icon: "https://assets.wfhelper.com/icons/f91adf18c920d66efdf02938.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/CoHRepairDroneAvatar": {
+    name: "Necramite",
+    icon: "https://assets.wfhelper.com/icons/b04c1b37037b2d1661c1ddef.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/PowerCellCarriers/CoHLasrianDroneCarrierAvatar": {
+    name: "Scaldra Harbinger Gas Carrier",
+    icon: "https://assets.wfhelper.com/icons/3d89697d945c333e4f3b170d.png",
+    faction: "scaldra",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Tau/CoH/PowerCellCarriers/CoHLasrianLancerCarrierAvatar": {
+    name: "Scaldra Jaegar Gas Carrier",
+    icon: "https://assets.wfhelper.com/icons/5c318616560d3b4d9db5f297.png",
+    faction: "scaldra",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Tau/Dax/TauDaxArcherLustratus/TauDaxArcherLustratusAvatar": {
+    name: "Anarch Arcus Lustratus",
+    icon: "https://assets.wfhelper.com/icons/f44506b40d68203020671fd5.png",
+    faction: "anarchs",
+    scans: 20,
+  },
   "/Lotus/Types/Enemies/Tau/Dax/TauDaxEmplacementTurret/TauDaxEmplacementTurret": {
     name: "Anarch Turret",
     icon: "https://assets.wfhelper.com/icons/7f884a5a90b9ef2d4e5162e1.png",
     faction: "objects",
+  },
+  "/Lotus/Types/Enemies/Tau/Dax/TauDaxHeavyLustratus/TauDaxHeavyLustratusAvatar": {
+    name: "Anarch Libritor Lustratus",
+    icon: "https://assets.wfhelper.com/icons/f2097f97f707da11b027a638.png",
+    faction: "orokin",
+  },
+  "/Lotus/Types/Enemies/Tau/Dax/TauDaxLustratus/AnarchTauDaxLustratusAvatar": {
+    name: "Dax Anarch Lustratus",
+    icon: "https://assets.wfhelper.com/icons/904f34b8f43c662e446733b1.png",
+    faction: "anarchs",
+  },
+  "/Lotus/Types/Enemies/Tau/Grineer/Dropship/QuestTauEmpireGrineerDropshipAvatar": {
+    name: "Prime Grineer Bolkor",
+    icon: "https://assets.wfhelper.com/icons/39c9a16588324d881969e4fd.png",
+    faction: "orokin",
+  },
+  "/Lotus/Types/Enemies/Tau/Grineer/Dropship/TauAnarchGrineerDropshipAvatar": {
+    name: "Anarch Bolkor",
+    icon: "https://assets.wfhelper.com/icons/39c9a16588324d881969e4fd.png",
+    faction: "anarchs",
+  },
+  "/Lotus/Types/Enemies/Tau/Grineer/Dropship/TauEmpireGrineerDropshipAvatar": {
+    name: "Prime Grineer Bolkor",
+    icon: "https://assets.wfhelper.com/icons/39c9a16588324d881969e4fd.png",
+    faction: "orokin",
+  },
+  "/Lotus/Types/Enemies/Tau/Grineer/Dropship/TauEmpireGrineerDropshipTurretAvatar": {
+    name: "Turret",
+    icon: "https://assets.wfhelper.com/icons/11198283b76f5326b4bc33eb.png",
+    faction: "grineer",
+  },
+  "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerLancer/EmpireTauGrineerLancerAvatar": {
+    name: "Prime Grineer Lancer",
+    icon: "https://assets.wfhelper.com/icons/54374ec14b11723c5b43a78f.png",
+    faction: "orokin",
+    scans: 20,
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerTrapper/EmpireTauGrineerTrapperAvatar": {
+    name: "Prime Grineer Lancer",
+    icon: "https://assets.wfhelper.com/icons/a6273fafcf09f08222cfe5d1.png",
+    faction: "orokin",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerTrapper/TrapperAccessories/AnarchTauGrineerDroneAvatar":
+    {
+      name: "Trapper Drone",
+      icon: "https://assets.wfhelper.com/icons/284712b3b356555e3e3fb76a.png",
+      faction: "orokin",
+      scans: 20,
+    },
+  "/Lotus/Types/Enemies/Tau/Grineer/TauGrineerTrapper/TrapperAccessories/TauGrineerDroneAvatar": {
+    name: "Trapper Drone",
+    icon: "https://assets.wfhelper.com/icons/284712b3b356555e3e3fb76a.png",
+    faction: "orokin",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Tau/GuiltSentient/DactolystBossHardModeAvatar": {
+    name: "Veyor Dactolyst",
+    icon: "https://assets.wfhelper.com/icons/f28788ea885a13ce53923db1.png",
+    faction: "sentient",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/Tau/Primes/Caliban/SummonMeleePrimeNPCAvatar": {
+    name: "Caliban's Conculyst",
+    icon: "https://assets.wfhelper.com/icons/5cc70cc15582b1a75e787c79.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Tau/Primes/Caliban/SummonNPCGhostCasterAvatar": {
+    name: "Caliban's Choralyst",
+    icon: "https://assets.wfhelper.com/icons/2403e922028f1e5eb9a5378d.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Tau/Primes/Caliban/SummonRangePrimeNPCAvatar": {
+    name: "Caliban's Ortholyst",
+    icon: "https://assets.wfhelper.com/icons/884bbd2f7339e593c0c3f9bb.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Tau/Primes/Caliban/SummonTankPrimeNPCAvatar": {
+    name: "Caliban's Summulyst",
+    icon: "https://assets.wfhelper.com/icons/de38a8dfeb021d12535828c9.png",
+    faction: "sentient",
+  },
+  "/Lotus/Types/Enemies/Tau/Sentient/Carrionite/CarrioniteAvatar": {
+    name: "Carrionite",
+    icon: "https://assets.wfhelper.com/icons/74d5354dc59936f423f6ffce.png",
+    faction: "sentient",
+    scans: 20,
+  },
+  "/Lotus/Types/Enemies/Tau/Uriel/UrielBossAvatar": {
+    name: "Roathe",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/FairyQuest/MoltSuicideRunnerAvatar": {
+    name: "Orphid Husks",
+    icon: "https://assets.wfhelper.com/icons/0eb1febf3dbf67ed7cd32c69.png",
+    faction: "infestation",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantBansheeAvatar": {
+    name: "Banshee Specter",
+    icon: "https://assets.wfhelper.com/icons/bf6d007022eaab21b98240a3.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantBardAvatar": {
+    name: "Octavia Specter",
+    icon: "https://assets.wfhelper.com/icons/ac0ede10658219065e224d8e.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantBrawlerAvatar": {
+    name: "Atlas Specter",
+    icon: "https://assets.wfhelper.com/icons/3dc4cd4fd30300156ad32676.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantFairyAvatar": {
+    name: "Titania Specter",
+    icon: "https://assets.wfhelper.com/icons/4b198d5b7ec02884a8bd7a82.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantMagicianAvatar": {
+    name: "Limbo Specter",
+    icon: "https://assets.wfhelper.com/icons/b71ea95351a65589926ac8d8.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantNecroAvatar": {
+    name: "Nekros Specter",
+    icon: "https://assets.wfhelper.com/icons/a66c1ed0f359f0cc37d74d3e.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantNidusAvatar": {
+    name: "Nidus Specter",
+    icon: "https://assets.wfhelper.com/icons/345ea7657d9ad008a1017768.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantNyxAvatar": {
+    name: "Nyx Specter",
+    icon: "https://assets.wfhelper.com/icons/87a51ed1069d413bfa00f3a0.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantPaladinAvatar": {
+    name: "Oberon Specter",
+    icon: "https://assets.wfhelper.com/icons/39ca32dd5738d6d0364098ea.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/RelayBoss/TennoReplicantPirateAvatar": {
+    name: "Hydroid Specter",
+    icon: "https://assets.wfhelper.com/icons/4a70a26a4d7673d12fb8e105.png",
+    faction: "orokin",
+    scans: 1,
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/CephalonSudaAllyAvatarA": {
+    name: "Cephalon Suda Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/CephalonSudaAllyAvatarB": {
+    name: "Cephalon Suda Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyDefenseAllies/PerrinColonistAvatarA":
+    {
+      name: "Myconian Hunter",
+      icon: "https://assets.wfhelper.com/icons/b315d2ba869f11ffe5fe7751.png",
+      faction: "corpus",
+    },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyDefenseAllies/PerrinColonistAvatarB":
+    {
+      name: "Myconian Hunter",
+      icon: "https://assets.wfhelper.com/icons/3286690049930a51834bea43.png",
+      faction: "corpus",
+    },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyDefenseAllies/PerrinColonistAvatarC":
+    {
+      name: "Myconian Hunter",
+      icon: "https://assets.wfhelper.com/icons/b315d2ba869f11ffe5fe7751.png",
+      faction: "corpus",
+    },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/ColonyDefenseAllies/PerrinColonistAvatarD":
+    {
+      name: "Myconian Hunter",
+      icon: "https://assets.wfhelper.com/icons/3286690049930a51834bea43.png",
+      faction: "corpus",
+    },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/HexisAllyAvatarA": {
+    name: "Arbiters of Hexis Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/HexisAllyAvatarB": {
+    name: "Arbiters of Hexis Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/HexisAllyAvatarDefense": {
+    name: "Arbiters of Hexis Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/NewLokaAllyAvatarA": {
+    name: "New Loka Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/NewLokaAllyAvatarB": {
+    name: "New Loka Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/PalladinoDefenseAvatar": {
+    name: "PALLADINO",
+    icon: "https://assets.wfhelper.com/icons/bcaf124997671bd592766708.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/PerrinAllyAvatarA": {
+    name: "Perrin Sequence Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/PerrinAllyAvatarB": {
+    name: "Perrin Sequence Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilAllyAvatarA": {
+    name: "Red Veil Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilAllyAvatarB": {
+    name: "Red Veil Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilAllyAvatarC": {
+    name: "Red Veil Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilEnemyAvatarA": {
+    name: "Red Veil Operative",
+    icon: "https://assets.wfhelper.com/icons/498a0124f000020e815584d9.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilEnemyAvatarCorrupted": {
+    name: "Red Veil Operative",
+    icon: "https://assets.wfhelper.com/icons/498a0124f000020e815584d9.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilEnemyAvatarCorruptedBow": {
+    name: "RED VEIL FANATIC",
+    icon: "https://assets.wfhelper.com/icons/498a0124f000020e815584d9.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilEnemyAvatarCorruptedDagger": {
+    name: "RED VEIL FANATIC",
+    icon: "https://assets.wfhelper.com/icons/498a0124f000020e815584d9.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/RedVeilEnemyAvatarCorruptedSword": {
+    name: "RED VEIL FANATIC",
+    icon: "https://assets.wfhelper.com/icons/498a0124f000020e815584d9.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/SteelMeridianAllyAvatarA": {
+    name: "Steel Meridian Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/SyndicateAllies/SteelMeridianAllyAvatarB": {
+    name: "Steel Meridian Operative",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/TennoReplicantAllyAvatar": {
+    name: "Tenno Specter",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/TennoReplicants/TennoReplicantAvatar": {
+    name: "Tenno Specter",
+    icon: "https://assets.wfhelper.com/icons/6e19b8c1a5f0f99a5ce2720e.png",
+    faction: "orokin",
+  },
+  "/Lotus/Types/Enemies/WF1999Infested/InfestedAncient/InfestedAncientWITWQuestAvatar": {
+    name: "????",
+    icon: "https://assets.wfhelper.com/icons/f934c09f3baaad2d83638e78.png",
+    faction: "techrot",
+  },
+  "/Lotus/Types/Enemies/WF1999Infested/InfestedJugulus/TechrotBoneBladeAvatar": {
+    name: "Techrot Scaart",
+    icon: "https://assets.wfhelper.com/icons/34b0291f53a31845c524dc74.png",
+    faction: "techrot",
+    eximusScans: 3,
+  },
+  "/Lotus/Types/Enemies/WF1999Infested/InfestedRunner/InfestedRunnerWITWQuestAvatar": {
+    name: "????",
+    icon: "https://assets.wfhelper.com/icons/9e341985398d4c9b448a7dc0.png",
+    faction: "techrot",
+  },
+  "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/InfestedCaptureMutalistAvatar": {
+    name: "Legacyte",
+    icon: "https://assets.wfhelper.com/icons/c918576bcb5dd62165c935bf.png",
+    faction: "techrot",
+  },
+  "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/InfestedCaptureMutalistAvatarClone":
+    {
+      name: "Legacyte",
+      icon: "https://assets.wfhelper.com/icons/c918576bcb5dd62165c935bf.png",
+      faction: "techrot",
+    },
+  "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/QuestApePrelateAvatar": {
+    name: "Legacyte",
+    icon: "https://assets.wfhelper.com/icons/c918576bcb5dd62165c935bf.png",
+    faction: "techrot",
+  },
+  "/Lotus/Types/Enemies/WF1999Lasrian/LasrianTank/LasrianTankQuestAvatar": {
+    name: "H-04 Efervon Tank",
+    icon: "https://assets.wfhelper.com/icons/b64a3ccc07180c0a06c631d6.png",
+    faction: "scaldra",
+    scans: 3,
+  },
+  "/Lotus/Types/Enemies/Zariman/Avatars/EtherealVoidAngelAvatar": {
+    name: "Ethereal Void Angel",
+    icon: "https://assets.wfhelper.com/icons/0c33db4973f2a3c956a08766.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Zariman/Avatars/VoidAngelAvatar": {
+    name: "Void Angel",
+    icon: "https://assets.wfhelper.com/icons/6a99923237197185764e0acf.png",
+    faction: "unaffiliated",
+  },
+  "/Lotus/Types/Enemies/Zariman/Avatars/VoidAngelReviveAvatar": {
+    name: "Void Angel",
+    icon: "https://assets.wfhelper.com/icons/6a99923237197185764e0acf.png",
+    faction: "unaffiliated",
   },
   "/Lotus/Types/EnvDangers/GrineerOcean/SharkMover": {
     name: "Lanx",

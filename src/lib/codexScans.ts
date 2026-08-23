@@ -1,4 +1,8 @@
-import { CODEX_EXTRA_INFO, CODEX_SCAN_REQUIREMENTS } from "../data/codexScanRequirements.js";
+import {
+  CODEX_EXTRA_INFO,
+  CODEX_SCAN_AVATARS,
+  CODEX_SCAN_REQUIREMENTS,
+} from "../data/codexScanRequirements.js";
 import type { CodexScanEntry } from "../../config/shared/codexTypes.js";
 
 export interface CodexRow {
@@ -77,19 +81,6 @@ const isLeaderType = (type: string): boolean => /(AvatarLeader|LeaderAvatar)$/i.
 const withoutLeader = (type: string): string =>
   type.replace(/AvatarLeader$/i, "Avatar").replace(/LeaderAvatar$/i, "Avatar");
 
-// The wiki's InternalName is frequently not the path DE records a scan against,
-// but its artwork filename usually is (Corrupted Heavy Gunner is
-// OrokinMinigunBombard on the wiki and OrokinHeavyFemaleAvatar in a profile).
-const artworkKeys = (value: string): Set<string> => {
-  const base = value.replace(/\.png$/i, "");
-  return new Set([base.toLowerCase(), base.replace(SUFFIX_RE, "").toLowerCase()].filter(Boolean));
-};
-
-const scanArtworkKeys = (scanType: string): string[] => {
-  const segment = withoutLeader(scanType).split("/").filter(Boolean).pop() || "";
-  return [segment.toLowerCase(), segment.replace(SUFFIX_RE, "").toLowerCase()];
-};
-
 const LEADER_SUFFIX = "#leader";
 
 function fallbackName(type: string): string {
@@ -141,47 +132,28 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
 
   const wikiScanned = new Map<string, number>();
   const wikiLeaderScanned = new Map<string, number>();
-  const credit = (target: string, entry: CodexScanEntry): void => {
-    const counts = isLeaderType(entry.type) ? wikiLeaderScanned : wikiScanned;
+  const credit = (target: string, eximus: boolean, entry: CodexScanEntry): void => {
+    const counts = eximus ? wikiLeaderScanned : wikiScanned;
     counts.set(target, Math.max(counts.get(target) ?? 0, entry.count));
   };
 
+  // DE's agent-to-avatar map is exact, so path shape only decides the leftovers.
   const pending: CodexScanEntry[] = [];
   for (const entry of scans) {
+    const mapped = CODEX_SCAN_AVATARS[entry.type.toLowerCase()];
+    if (mapped) {
+      credit(mapped.key, mapped.eximus === true, entry);
+      continue;
+    }
     const target = resolveWikiType(entry.type);
-    if (target) credit(target, entry);
+    if (target) credit(target, isLeaderType(entry.type), entry);
     else pending.push(entry);
   }
-
-  // Artwork is only a fallback, and only for entries the paths left unclaimed,
-  // so a filename two enemies share cannot take a count off the one that
-  // already matched. Still ambiguous after that means unusable, as elsewhere.
-  const claimedTypes = new Set([...wikiScanned.keys(), ...wikiLeaderScanned.keys()]);
-  const wikiByArtwork = new Map<string, string | null>();
-  for (const [type, requirement] of Object.entries(CODEX_SCAN_REQUIREMENTS)) {
-    if (claimedTypes.has(type) || !requirement.image) continue;
-    for (const key of artworkKeys(requirement.image)) {
-      const seen = wikiByArtwork.get(key);
-      wikiByArtwork.set(key, seen === undefined || seen === type ? type : null);
-    }
-  }
-  const resolveByArtwork = (scanType: string): string | null => {
-    for (const key of scanArtworkKeys(scanType)) {
-      const hit = wikiByArtwork.get(key);
-      if (hit) return hit;
-    }
-    return null;
-  };
 
   const looseScanned = new Map<string, number>();
   const unresolved: CodexScanEntry[] = [];
   for (const entry of pending) {
     const leader = isLeaderType(entry.type);
-    const target = resolveByArtwork(entry.type);
-    if (target) {
-      credit(target, entry);
-      continue;
-    }
     const key = canonicalKey(withoutLeader(entry.type)) + (leader ? LEADER_SUFFIX : "");
     looseScanned.set(key, Math.max(looseScanned.get(key) ?? 0, entry.count));
     unresolved.push(entry);
@@ -193,11 +165,20 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
     const row = (suffix: string, name: string, scanned: number): CodexRow =>
       makeRow(type + suffix, name, scanned, requirement.scans, requirement.faction, image);
     rows.push(row("", requirement.name, wikiScanned.get(type) ?? 0));
-    // The wiki lists no Eximus entries, but the codex gives every enemy that
-    // spawns them one, so derive it rather than dropping the leader's scans.
+    // The wiki lists no Eximus entries and they do not inherit the base count
+    // (Arid Butcher needs 20 scans, its Eximus 3), so the export states theirs.
     const leaderScanned = wikiLeaderScanned.get(type);
-    if (leaderScanned !== undefined) {
-      rows.push(row(LEADER_SUFFIX, `${requirement.name} Eximus`, leaderScanned));
+    if (leaderScanned !== undefined || requirement.eximusScans) {
+      rows.push(
+        makeRow(
+          type + LEADER_SUFFIX,
+          `${requirement.name} Eximus`,
+          leaderScanned ?? 0,
+          requirement.eximusScans ?? null,
+          requirement.faction,
+          image,
+        ),
+      );
     }
   }
 
@@ -212,6 +193,8 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
     name: string;
     scanned: number;
     leaderScanned: number | null;
+    eximusScans: number | null;
+    icon: string | null;
   }
   const extrasCovered = new Set<string>();
   const groups = new Map<string, ExtraGroup>();
@@ -226,26 +209,36 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
     const groupKey = `${extra.faction}|${name}|${extra.scans ?? ""}`;
     const merged = groups.get(groupKey);
     if (!merged) {
-      groups.set(groupKey, { type, name, scanned, leaderScanned });
+      groups.set(groupKey, {
+        type,
+        name,
+        scanned,
+        leaderScanned,
+        eximusScans: extra.eximusScans ?? null,
+        icon: extra.icon ?? null,
+      });
     } else {
       merged.scanned = Math.max(merged.scanned, scanned);
       if (leaderScanned !== null) {
         merged.leaderScanned = Math.max(merged.leaderScanned ?? 0, leaderScanned);
       }
+      // Only some of the merged paths state an Eximus requirement or carry art,
+      // so the group takes whichever member names one first.
+      merged.eximusScans ??= extra.eximusScans ?? null;
+      merged.icon ??= extra.icon ?? null;
     }
   }
-  for (const { type, name, scanned, leaderScanned } of groups.values()) {
+  for (const { type, name, scanned, leaderScanned, eximusScans, icon } of groups.values()) {
     const extra = CODEX_EXTRA_INFO[type];
     const required = extra.scans ?? (extra.faction === "wildlife" ? WILDLIFE_REQUIRED_SCANS : null);
-    const icon = extra.icon ?? null;
     rows.push(makeRow(type, name, scanned, required, extra.faction, icon));
-    if (leaderScanned !== null) {
+    if (leaderScanned !== null || eximusScans) {
       rows.push(
         makeRow(
           type + LEADER_SUFFIX,
           `${name} Eximus`,
-          leaderScanned,
-          required,
+          leaderScanned ?? 0,
+          eximusScans,
           extra.faction,
           icon,
         ),

@@ -103,16 +103,22 @@ describe("buildCodexRows", () => {
       { type: `${BUTCHER}AvatarLeader`, count: 3 },
     ]);
     expect(rows.find((row) => row.name === "Butcher")).toMatchObject({ scanned: 20 });
+    // An Eximus does not inherit the base requirement: Butcher needs 20 scans,
+    // its Eximus 3, which only ExportEnemies states.
     expect(rows.find((row) => row.name === "Butcher Eximus")).toMatchObject({
       scanned: 3,
-      required: 20,
-      complete: false,
+      required: 3,
+      complete: true,
     });
   });
 
-  it("omits the Eximus row when the profile reports no leader scans", () => {
+  it("lists an Eximus the profile has never scanned at zero", () => {
     const rows = buildCodexRows([{ type: `${BUTCHER}Avatar`, count: 20 }]);
-    expect(rows.some((row) => row.name === "Butcher Eximus")).toBe(false);
+    expect(rows.find((row) => row.name === "Butcher Eximus")).toMatchObject({
+      scanned: 0,
+      required: 3,
+      complete: false,
+    });
   });
 
   it("lists never-scanned enemies at zero", () => {
@@ -311,15 +317,22 @@ describe("wiki entries whose InternalName is not the scanned path", () => {
   const HEAVY_GUNNER_SCAN = "/Lotus/Types/Enemies/Orokin/OrokinHeavyFemaleAvatar";
   const WARDEN_SCAN = "/Lotus/Types/Enemies/Orokin/Gamemodes/CorruptedWardenAvatar";
 
-  it("credits a scan the wiki only matches by its artwork filename", () => {
+  it("credits a scan whose path shares nothing with the wiki InternalName", () => {
     const rows = buildCodexRows([
       { type: "/Lotus/Types/Enemies/Infested/AiWeek/Crawlers/CrawlerAvatar", count: 35 },
     ]);
     expect(rows.find((row) => row.name === "Crawler")).toMatchObject({ scanned: 35 });
   });
 
-  // Corrupted Warden and Corrupted Heavy Gunner both cite OrokinHeavyFemaleAvatar.png.
-  it("gives artwork to the entry left over once the rival matched by path", () => {
+  // The wiki calls this one OrokinMinigunBombard; only DE's own agent-to-avatar
+  // map pairs it with the OrokinHeavyFemaleAvatar path a profile reports.
+  it("credits a scan on its own, with no rival entry to disambiguate against", () => {
+    const rows = buildCodexRows([{ type: HEAVY_GUNNER_SCAN, count: 464 }]);
+    expect(rows.find((row) => row.name === "Corrupted Heavy Gunner")?.scanned).toBe(464);
+    expect(rows.find((row) => row.name === "Corrupted Warden")?.scanned).toBe(0);
+  });
+
+  it("keeps two entries that share one artwork file apart", () => {
     const rows = buildCodexRows([
       { type: WARDEN_SCAN, count: 3 },
       { type: HEAVY_GUNNER_SCAN, count: 464 },
@@ -327,11 +340,30 @@ describe("wiki entries whose InternalName is not the scanned path", () => {
     expect(rows.find((row) => row.name === "Corrupted Warden")?.scanned).toBe(3);
     expect(rows.find((row) => row.name === "Corrupted Heavy Gunner")?.scanned).toBe(464);
   });
+});
 
-  it("credits neither while both artwork claimants are still unmatched", () => {
-    const rows = buildCodexRows([{ type: HEAVY_GUNNER_SCAN, count: 464 }]);
-    expect(rows.find((row) => row.name === "Corrupted Heavy Gunner")?.scanned).toBe(0);
-    expect(rows.find((row) => row.name === "Corrupted Warden")?.scanned).toBe(0);
+describe("scan requirements", () => {
+  // Verified in-game 2026-08-23: the wiki is right wherever the export says 5,
+  // which is the value DE writes when an avatar states no requirement.
+  it("keeps the wiki count where the export states its placeholder", () => {
+    const rows = buildCodexRows([]);
+    expect(rows.find((row) => row.name === "Rana Del")?.required).toBe(3);
+    expect(rows.find((row) => row.name === "Terra Elite Embattor MOA")?.required).toBe(3);
+  });
+
+  it("reads the base and its Eximus as separate requirements", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Types/Enemies/Grineer/Desert/Avatars/BladeSawmanAvatarLeader", count: 3 },
+    ]);
+    expect(rows.find((row) => row.name === "Arid Butcher")).toMatchObject({
+      scanned: 0,
+      required: 20,
+    });
+    expect(rows.find((row) => row.name === "Arid Butcher Eximus")).toMatchObject({
+      scanned: 3,
+      required: 3,
+      complete: true,
+    });
   });
 });
 
@@ -360,5 +392,33 @@ describe("Eximus spellings", () => {
     const eximus = rows.filter((row) => row.scanned === 7 && row.name.endsWith("Eximus"));
     expect(eximus).toHaveLength(1);
     expect(eximus[0].name).toBe("Narmer Scorpion Eximus");
+  });
+});
+
+describe("codex extras that merge into one display row", () => {
+  // Of the merged Narmer paths only the PNW variant states an Eximus count.
+  it("takes the Eximus requirement from whichever merged path states one", () => {
+    const rows = buildCodexRows([{ type: SCORPION_LEADER_SCAN, count: 7 }]);
+    expect(rows.find((row) => row.name === "Narmer Scorpion Eximus")).toMatchObject({
+      scanned: 7,
+      required: 3,
+      complete: true,
+    });
+  });
+
+  it("takes the artwork from whichever merged path carries one", () => {
+    // No shipped group has an art-less first path, so inject that shape.
+    const FIRST = "/Lotus/Types/Enemies/Test/ZzMergeArtAvatar";
+    const SECOND = "/Lotus/Types/Enemies/Test/ZzMergeArtTwinAvatar";
+    CODEX_EXTRA_INFO[FIRST] = { name: "Zz Merge Art", faction: "grineer", eximusScans: 3 };
+    CODEX_EXTRA_INFO[SECOND] = { name: "Zz Merge Art", faction: "grineer", icon: "art.png" };
+    try {
+      const rows = buildCodexRows([]);
+      expect(rows.find((row) => row.name === "Zz Merge Art")?.image).toBe("art.png");
+      expect(rows.find((row) => row.name === "Zz Merge Art Eximus")?.image).toBe("art.png");
+    } finally {
+      delete CODEX_EXTRA_INFO[FIRST];
+      delete CODEX_EXTRA_INFO[SECOND];
+    }
   });
 });
