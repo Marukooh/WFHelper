@@ -210,3 +210,57 @@ describe("sortCodexRows", () => {
     );
   });
 });
+
+describe("codex entries whose scan lands on a world prop", () => {
+  // Real paths and counts from an affected player's profile: the in-game codex
+  // showed these fully scanned while the app reported 0.
+  it("credits an Ayatan sculpture scanned on its deco prop", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Objects/Gameplay/OroFusexADeco", count: 1 },
+      { type: "/Lotus/Objects/Gameplay/OroFusexBDeco", count: 3 },
+    ]);
+    expect(rows.find((row) => row.name === "Ayatan Sah Sculpture")).toMatchObject({
+      scanned: 1,
+      required: 1,
+      complete: true,
+    });
+    expect(rows.find((row) => row.name === "Ayatan Ayr Sculpture")).toMatchObject({
+      scanned: 3,
+      complete: true,
+    });
+  });
+
+  it("credits an Ayatan star scanned on its deco prop", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Objects/Gameplay/OroFusexOrnamentADeco", count: 5 },
+    ]);
+    expect(rows.find((row) => row.name === "Ayatan Cyan Star")).toMatchObject({
+      scanned: 5,
+      required: 5,
+      complete: true,
+    });
+    expect(rows.find((row) => row.name === "Ayatan Amber Star")?.scanned).toBe(0);
+  });
+
+  it("credits a lore fragment scanned on its deco prop", () => {
+    const rows = buildCodexRows([
+      {
+        type: "/Lotus/Types/Lore/Fragments/SolarisFragments/EudicoLoreFragmentBDeco",
+        count: 1,
+      },
+    ]);
+    const fragment = rows.find(
+      (row) => row.type === "/Lotus/Types/Lore/Fragments/SolarisFragments/EudicoLoreFragmentB",
+    );
+    expect(fragment).toMatchObject({ scanned: 1, complete: true });
+  });
+
+  it("leaves an unrelated gameplay prop alone", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Objects/Gameplay/CollectibleSeriesOneDeco", count: 4 },
+    ]);
+    const ayatan = rows.filter((row) => row.name.startsWith("Ayatan"));
+    expect(ayatan.length).toBeGreaterThan(0);
+    expect(ayatan.every((row) => row.scanned === 0)).toBe(true);
+  });
+});

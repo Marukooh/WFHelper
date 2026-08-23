@@ -47,11 +47,19 @@ export function enemyImageUrl(image: string | null): string | null {
 
 const SUFFIX_RE = /(AvatarLeader|Avatar|Agent)$/i;
 
-const canonicalKey = (type: string): string =>
-  type
-    .replace(SUFFIX_RE, "")
-    .replace(/\/Avatars\//i, "/")
-    .toLowerCase();
+// A scan lands on the world prop, which is the catalog path plus "Deco" for
+// lore fragments. Ayatan is worse: DE keys the codex entry by the inventory
+// item but records the scan against the world prop, so map both the six
+// sculptures and the two stars back to /FusionTreasures/.
+const PROP_SUFFIX_RE = /Deco$/i;
+const AYATAN_PROP_RE = /^\/Lotus\/Objects\/Gameplay\/(OroFusex(?:Ornament)?[A-Z])$/i;
+
+const canonicalKey = (type: string): string => {
+  const stripped = type.replace(SUFFIX_RE, "").replace(PROP_SUFFIX_RE, "");
+  const ayatan = AYATAN_PROP_RE.exec(stripped);
+  const catalog = ayatan ? `/Lotus/Types/Items/FusionTreasures/${ayatan[1]}` : stripped;
+  return catalog.replace(/\/Avatars\//i, "/").toLowerCase();
+};
 
 // The wiki stores Agent paths, the profile Avatar paths under an extra
 // /Avatars/ dir, but stripping can merge distinct entries (Lancer vs Trooper
