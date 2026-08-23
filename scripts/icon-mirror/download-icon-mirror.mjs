@@ -189,7 +189,24 @@ console.log(
   `[icon-mirror] complete: ${downloaded} downloaded, ${skipped} skipped, ${failures.length} failed`,
 );
 
-if (failures.length > 0 && process.env.ICON_MIRROR_ALLOW_FAILURES !== "1") {
+// A 404 means DE never published that texture, so no retry fixes it and one gap
+// must not block the deploy. A fallback retry appends its own reason, so a texture
+// missing from both hosts reads "HTTP 404; fallback: HTTP 404". Only an all-404
+// chain is a permanent gap; a flood of them means the path scheme moved.
+const isMissingUpstream = (entry) =>
+  String(entry.reason || "")
+    .split("; fallback: ")
+    .every((reason) => reason === "HTTP 404");
+const missing = failures.filter(isMissingUpstream);
+const broken = failures.filter((entry) => !isMissingUpstream(entry));
+const missingCap = Math.max(20, Math.ceil(entries.length * 0.01));
+if (missing.length > 0) {
+  console.warn(`[icon-mirror] ${missing.length} not published upstream (HTTP 404), skipped`);
+}
+if (
+  (broken.length > 0 || missing.length > missingCap) &&
+  process.env.ICON_MIRROR_ALLOW_FAILURES !== "1"
+) {
   console.error(`[icon-mirror] failures written to ${failuresPath}`);
   process.exitCode = 1;
 }
