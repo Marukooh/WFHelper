@@ -5406,6 +5406,61 @@ export const CODEX_EXTRA_INFO: Record<
     faction: "objects",
     scans: 5,
   },
+  "/Lotus/Types/Items/Plants/DayCommonPlant": {
+    name: "Sunlight Threshcone",
+    icon: "https://assets.wfhelper.com/icons/6827f41be258ec3b9418008b.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/DayRarePlant": {
+    name: "Sunlight Jadeleaf",
+    icon: "https://assets.wfhelper.com/icons/577ebdee4782023854e96cc3.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/DayUnCommonPlant": {
+    name: "Sunlight Dragonlily",
+    icon: "https://assets.wfhelper.com/icons/001ff40ff2c63dcbb309e3ad.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/GftPlantRuksClawMaturePlant": {
+    name: "Ruk's Claw",
+    icon: "https://assets.wfhelper.com/icons/e306206848c335a831e0e29e.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/MossGroundCoverAPlant": {
+    name: "Vestan Moss",
+    icon: "https://assets.wfhelper.com/icons/72bbe951cf84b512655c4034.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/NightCommonPlant": {
+    name: "Moonlight Threshcone",
+    icon: "https://assets.wfhelper.com/icons/6cf4cd959b0d00eb4dc9fa9f.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/NightRarePlant": {
+    name: "Moonlight Jadeleaf",
+    icon: "https://assets.wfhelper.com/icons/b5bcd51cc18476490f7f84cc.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/NightUnCommonPlant": {
+    name: "Moonlight Dragonlily",
+    icon: "https://assets.wfhelper.com/icons/66c7e78035d633dd35578a01.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/WildGingerBPlant": {
+    name: "Frostleaf",
+    icon: "https://assets.wfhelper.com/icons/ff5401314d90d08d721f5cb5.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/ZenCobraLotusPlant": {
+    name: "Dusklight Sarracenia",
+    icon: "https://assets.wfhelper.com/icons/f16effb83cbf1af80e51045d.png",
+    faction: "objects",
+  },
+  "/Lotus/Types/Items/Plants/ZenPitcherPlant": {
+    name: "Lunar Pitcher",
+    icon: "https://assets.wfhelper.com/icons/763f0e952d6e71d16ab9b9c1.png",
+    faction: "objects",
+  },
   "/Lotus/Types/LevelObjects/CorpusBreakableVent": {
     name: "Grate",
     icon: "https://assets.wfhelper.com/icons/5e2bb92cd3c3dec690914100.png",

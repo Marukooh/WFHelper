@@ -206,6 +206,32 @@ for (const [section, sectionEntries] of Object.entries(readPep("ExportCodex.json
   }
 }
 
+// DE records a plant scan against the world path but ships its name and icon on
+// the pickup item, and the two disagree on word order, so the pairing is spelled
+// out. No export or wiki source states a required scan count for plants.
+const PLANT_ITEM_BY_SCAN_NAME = {
+  DayCommonPlant: "CommonDayPlantItem",
+  DayRarePlant: "RareDayPlantItem",
+  DayUnCommonPlant: "UnCommonDayPlantItem",
+  GftPlantRuksClawMaturePlant: "GftPlantRuksClawMaturePlantItem",
+  MossGroundCoverAPlant: "MossGroundCoverAPlantItem",
+  NightCommonPlant: "CommonNightPlantItem",
+  NightRarePlant: "RareNightPlantItem",
+  NightUnCommonPlant: "UnCommonNightPlantItem",
+  WildGingerBPlant: "WildGingerBPlantItem",
+  ZenCobraLotusPlant: "ZenCobraLotusPlantItem",
+  ZenPitcherPlant: "ZenPitcherPlantItem",
+};
+const plantResources = readPep("ExportResources.json");
+for (const [scanName, itemName] of Object.entries(PLANT_ITEM_BY_SCAN_NAME)) {
+  const item = plantResources[`/Lotus/Types/Items/Plants/MiscItems/${itemName}`];
+  if (!item) {
+    console.warn(`[codex] plant item missing from ExportResources: ${itemName}`);
+    continue;
+  }
+  addExtra(`/Lotus/Types/Items/Plants/${scanName}`, item.name, item.icon, "objects", null);
+}
+
 const sorted = [...all.values()].sort((a, b) => a.internal.localeCompare(b.internal));
 const lines = sorted.map((e) => {
   const image = e.image ? `, image: ${JSON.stringify(e.image)}` : "";

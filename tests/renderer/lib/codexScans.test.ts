@@ -264,3 +264,42 @@ describe("codex entries whose scan lands on a world prop", () => {
     expect(ayatan.every((row) => row.scanned === 0)).toBe(true);
   });
 });
+
+describe("plants", () => {
+  it("names a plant scan from the pickup item it disagrees with", () => {
+    const rows = buildCodexRows([
+      { type: "/Lotus/Types/Items/Plants/NightCommonPlant", count: 670 },
+      { type: "/Lotus/Types/Items/Plants/DayRarePlant", count: 52 },
+    ]);
+    expect(rows.find((row) => row.name === "Moonlight Threshcone")).toMatchObject({
+      scanned: 670,
+      faction: "objects",
+    });
+    expect(rows.find((row) => row.name === "Sunlight Jadeleaf")).toMatchObject({ scanned: 52 });
+  });
+
+  it("leaves plant completion unknown, since no source states a requirement", () => {
+    const rows = buildCodexRows([]);
+    const plant = rows.find((row) => row.name === "Lunar Pitcher");
+    expect(plant).toMatchObject({ scanned: 0, required: null, complete: null });
+  });
+
+  it("lists every plant the in-game codex shows", () => {
+    const names = new Set(buildCodexRows([]).map((row) => row.name));
+    for (const plant of [
+      "Sunlight Threshcone",
+      "Moonlight Threshcone",
+      "Sunlight Dragonlily",
+      "Moonlight Dragonlily",
+      "Sunlight Jadeleaf",
+      "Moonlight Jadeleaf",
+      "Vestan Moss",
+      "Lunar Pitcher",
+      "Frostleaf",
+      "Dusklight Sarracenia",
+      "Ruk's Claw",
+    ]) {
+      expect(names.has(plant)).toBe(true);
+    }
+  });
+});
