@@ -77,6 +77,9 @@ Good to know:
   no window at all, so WFHelper notices, restarts on native Wayland and
   remembers it. Settings lets you pick the backend by hand. Wayland gives no
   app a way to force itself above another, so overlays are best-effort there.
+- **SteamOS is untested.** Desktop mode may work like any other distro. Game
+  mode is not supported: gamescope only displays the game it launched, so
+  forcing the app into it can freeze the session.
 - **Screen capture asks once per session.** The first overlay scan opens your
   desktop's screen-share dialog. Pick the monitor Warframe runs on.
 - **Instant overlays need one launch option.** Add `PROTON_LOG=1 %command%` to
