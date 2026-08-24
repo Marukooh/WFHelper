@@ -1,12 +1,20 @@
 import { withScope } from "./logger";
 import { normalizeErrorMessage } from "../config/shared/errors";
-import type { WorldStateRaw, WorldStateDate } from "./types/gameData";
+import type { AlertRaw, SeasonChallengeRaw, WorldStateRaw, WorldStateDate } from "./types/gameData";
 
 import fs from "fs";
 import path from "path";
 
 import { WORLD_STATE_CONFIG } from "../config/runtime/worldState";
 import { toIconMirrorUrl } from "./itemDatabase";
+import {
+  factionLabel,
+  loadRegionTranslation,
+  localizedDictValue,
+  nodeLabel,
+  resolveDict,
+  titleCase,
+} from "./regionNames";
 import { fetchJsonWithTimeout, fetchWithTimeout } from "./worldStateFetch";
 import { computeSteelPathHonors } from "./worldStateSteelPath";
 
@@ -32,73 +40,49 @@ const POE_NIGHT_MS = WORLD_STATE_CONFIG.poeNightMs;
 const DUVIRI_MOOD_PERIOD_MS = WORLD_STATE_CONFIG.duviriMoodPeriodMs;
 const DUVIRI_MOODS = WORLD_STATE_CONFIG.duviriMoods;
 
-const EMPTY_LOOKUP: Record<string, string> = Object.freeze({});
+const REGION_TRANSLATION = loadRegionTranslation();
 
-function loadRegionTranslationData(): {
-  regions: Record<string, Record<string, unknown>>;
-  dict: Record<string, string>;
-} {
+/** Late-load one public-export table: package first, then its shipped JSON. */
+function loadPepExport(exportKey: string): Record<string, unknown> {
   try {
     const pep = require("warframe-public-export-plus");
-    if (pep?.ExportRegions && pep?.dict_en) {
-      return {
-        regions: pep.ExportRegions as Record<string, Record<string, unknown>>,
-        dict: pep.dict_en as Record<string, string>,
-      };
-    }
-  } catch (err) {
-    log.warn(
-      "[WorldState] failed to load region data from package export:",
-      normalizeErrorMessage(err),
-    );
+    const data = pep?.[exportKey];
+    if (data && typeof data === "object") return data as Record<string, unknown>;
+  } catch {
+    /* fall through to the on-disk copy */
   }
-
   try {
-    const pkgPath = require.resolve("warframe-public-export-plus/package.json");
-    const pkgDir = path.dirname(pkgPath);
-    const regions = JSON.parse(
-      fs.readFileSync(path.join(pkgDir, "ExportRegions.json"), "utf8"),
-    ) as Record<string, Record<string, unknown>>;
-    const dict = JSON.parse(fs.readFileSync(path.join(pkgDir, "dict.en.json"), "utf8")) as Record<
-      string,
-      string
-    >;
-    return { regions, dict };
-  } catch (err) {
-    log.warn(
-      "[WorldState] failed to load region data from disk fallback:",
-      normalizeErrorMessage(err),
-    );
+    const pkgDir = path.dirname(require.resolve("warframe-public-export-plus/package.json"));
+    const data = JSON.parse(fs.readFileSync(path.join(pkgDir, `${exportKey}.json`), "utf8"));
+    if (data && typeof data === "object") return data as Record<string, unknown>;
+  } catch {
+    log.warn(`[WorldState] failed to load ${exportKey}`);
   }
-
-  return {
-    regions: EMPTY_LOOKUP as unknown as Record<string, Record<string, unknown>>,
-    dict: EMPTY_LOOKUP,
-  };
+  return {};
 }
 
-const REGION_TRANSLATION = loadRegionTranslationData();
+interface ChallengeExportEntry {
+  name?: string;
+  requiredCount?: number;
+  standing?: number;
+}
 
-/** Lazy-loaded challenge lookup: maps Lotus challenge paths -> { requiredCount } from ExportChallenges */
-let _challengeLookup: Record<string, { requiredCount?: number }> | null = null;
-function getChallengeLookup(): Record<string, { requiredCount?: number }> {
-  if (_challengeLookup) return _challengeLookup;
-  _challengeLookup = {};
-  try {
-    const pep = require("warframe-public-export-plus");
-    if (pep?.ExportChallenges && typeof pep.ExportChallenges === "object") {
-      Object.assign(_challengeLookup, pep.ExportChallenges);
-    }
-  } catch {
-    try {
-      const pkgDir = path.dirname(require.resolve("warframe-public-export-plus/package.json"));
-      const data = JSON.parse(fs.readFileSync(path.join(pkgDir, "ExportChallenges.json"), "utf8"));
-      if (data && typeof data === "object") Object.assign(_challengeLookup, data);
-    } catch {
-      log.warn("[WorldState] failed to load challenge data");
-    }
+/** Lazy-loaded challenge lookup: Lotus challenge path -> ExportChallenges entry */
+let _challengeLookup: Record<string, ChallengeExportEntry> | null = null;
+function getChallengeLookup(): Record<string, ChallengeExportEntry> {
+  if (!_challengeLookup) {
+    _challengeLookup = loadPepExport("ExportChallenges") as Record<string, ChallengeExportEntry>;
   }
   return _challengeLookup;
+}
+
+/** Lazy-loaded MT_ lookup: mission type -> ExportMissionTypes entry */
+let _missionTypeLookup: Record<string, { name?: string }> | null = null;
+function getMissionTypeLookup(): Record<string, { name?: string }> {
+  if (!_missionTypeLookup) {
+    _missionTypeLookup = loadPepExport("ExportMissionTypes") as Record<string, { name?: string }>;
+  }
+  return _missionTypeLookup;
 }
 
 /** Browse.wf icon overrides for items missing from public exports */
@@ -221,6 +205,9 @@ export function emptyWorldState(): Record<string, unknown> {
     voidTrader: null,
     vaultTrader: null,
     sortie: null,
+    archonHunt: null,
+    nightwave: null,
+    alerts: [],
     steelPath: computeSteelPathHonors(),
     duviriCycle: null,
     earthCycle: null,
@@ -283,6 +270,44 @@ const MISSION_TYPE: Record<string, string> = {
   MT_VOID_FLOOD: "Void Flood",
 };
 
+// Sortie modifiers have no dictionary entry of any language, so these stay the
+// English community labels; anything unmapped degrades to its title-cased tail.
+const SORTIE_MODIFIER: Record<string, string> = {
+  SORTIE_MODIFIER_ARMOR: "Enhanced Enemy Armor",
+  SORTIE_MODIFIER_SHIELDS: "Augmented Enemy Shields",
+  SORTIE_MODIFIER_HEALTH: "Enhanced Enemy Health",
+  SORTIE_MODIFIER_EXIMUS: "Eximus Stronghold",
+  SORTIE_MODIFIER_LOW_ENERGY: "Energy Reduction",
+  SORTIE_MODIFIER_LOW_GRAVITY: "Low Gravity",
+  SORTIE_MODIFIER_HIGH_GRAVITY: "High Gravity",
+  SORTIE_MODIFIER_RADIATION: "Enemy Elemental Enhancement: Radiation",
+  SORTIE_MODIFIER_VIRAL: "Enemy Elemental Enhancement: Viral",
+  SORTIE_MODIFIER_CORROSIVE: "Enemy Elemental Enhancement: Corrosive",
+  SORTIE_MODIFIER_MAGNETIC: "Enemy Elemental Enhancement: Magnetic",
+  SORTIE_MODIFIER_GAS: "Enemy Elemental Enhancement: Gas",
+  SORTIE_MODIFIER_EXPLOSION: "Enemy Elemental Enhancement: Blast",
+  SORTIE_MODIFIER_FIRE: "Enemy Elemental Enhancement: Heat",
+  SORTIE_MODIFIER_FREEZE: "Enemy Elemental Enhancement: Cold",
+  SORTIE_MODIFIER_ELECTRICITY: "Enemy Elemental Enhancement: Electricity",
+  SORTIE_MODIFIER_POISON: "Enemy Elemental Enhancement: Toxin",
+  SORTIE_MODIFIER_IMPACT: "Enemy Physical Enhancement: Impact",
+  SORTIE_MODIFIER_PUNCTURE: "Enemy Physical Enhancement: Puncture",
+  SORTIE_MODIFIER_SLASH: "Enemy Physical Enhancement: Slash",
+  SORTIE_MODIFIER_SECONDARY_ONLY: "Secondary Only",
+  SORTIE_MODIFIER_RIFLE_ONLY: "Assault Rifle Only",
+  SORTIE_MODIFIER_SHOTGUN_ONLY: "Shotgun Only",
+  SORTIE_MODIFIER_SNIPER_ONLY: "Sniper Only",
+  SORTIE_MODIFIER_BOW_ONLY: "Bow Only",
+  SORTIE_MODIFIER_MELEE_ONLY: "Melee Only",
+  SORTIE_MODIFIER_HAZARD_RADIATION: "Radiation Hazard",
+  SORTIE_MODIFIER_HAZARD_MAGNETIC: "Magnetic Anomaly",
+  SORTIE_MODIFIER_HAZARD_FIRE: "Fire Hazard",
+  SORTIE_MODIFIER_HAZARD_ICE: "Cryogenic Leakage",
+  SORTIE_MODIFIER_HAZARD_COLD: "Cryogenic Leakage",
+  SORTIE_MODIFIER_HAZARD_ELECTRICITY: "Electromagnetic Anomalies",
+  SORTIE_MODIFIER_HAZARD_FOG: "Dense Fog",
+};
+
 const HUB_NODE: Record<string, string> = {
   SaturnHUB: "Kronia Relay (Saturn)",
   MarsHUB: "Strata Relay (Mars)",
@@ -301,13 +326,7 @@ const HUB_NODE: Record<string, string> = {
 };
 
 function resolveDictValue(value: unknown): string | null {
-  if (typeof value !== "string" || value.length === 0) {
-    return null;
-  }
-  if (!value.startsWith("/")) {
-    return value;
-  }
-  return REGION_TRANSLATION.dict[value] || null;
+  return resolveDict(REGION_TRANSLATION.dict, value);
 }
 
 function formatNodeLabel(nodeId: string): string {
@@ -347,6 +366,37 @@ function railjackMissionLabel(nodeId: string): string {
   const name = resolveDictValue(REGION_TRANSLATION.regions[nodeId]?.missionName);
   if (!name) return "Railjack";
   return name.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+}
+
+/** Strip an enum prefix and title-case the tail: SORTIE_BOSS_VAY_HEK -> "Vay Hek". */
+function enumTailLabel(value: string, prefix: string): string {
+  const tail = value.startsWith(prefix) ? value.slice(prefix.length) : value;
+  return tail ? titleCase(tail.replace(/_/g, " ")) : "Unknown";
+}
+
+function sortieModifierLabel(modifier: string): string {
+  return SORTIE_MODIFIER[modifier] || enumTailLabel(modifier, "SORTIE_MODIFIER_");
+}
+
+/** Empty rather than "Unknown" so a boss-less payload hides the line. */
+function bossLabel(boss: string | undefined): string {
+  return boss ? enumTailLabel(boss, "SORTIE_BOSS_") : "";
+}
+
+// Sorties, archon hunts and alerts override the mission a node normally runs,
+// so DE's own MT_ table wins over the node entry and the hand map comes last.
+function missionTypeLabel(missionType: string, nodeId: string): string {
+  const fromExport = localizedDictValue(getMissionTypeLookup()[missionType]?.name);
+  if (fromExport) return titleCase(fromExport);
+  const fromNode = localizedDictValue(REGION_TRANSLATION.regions[nodeId]?.missionName);
+  if (fromNode) return titleCase(fromNode);
+  return MISSION_TYPE[missionType] || enumTailLabel(missionType, "MT_");
+}
+
+/** Readable tail of a Lotus path: ".../SeasonDailyAimGlide" -> "Season Daily Aim Glide". */
+function prettifyPathSlug(value: string): string {
+  const slug = value.split("/").pop() || value;
+  return slug.replace(/([a-z0-9])([A-Z])/g, "$1 $2").trim();
 }
 
 function computeVallisCycle(nowMs: number = Date.now()): {
@@ -1015,6 +1065,80 @@ export async function fetchAndParse(): Promise<Record<string, unknown>> {
   };
 }
 
+/** StoreItems paths mirror the real item path, one segment up. */
+function storeItemPath(itemPath: string | undefined): string {
+  return (itemPath || "").replace(/^\/Lotus\/StoreItems/, "/Lotus");
+}
+
+/** DE occasionally ships a scalar where an array belongs; one bad field must
+ * not cost the whole world state. */
+function asList<T>(value: T[] | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+/** DE ships these singly or as an array: take the live entry, else the first. */
+function activeEntry<T extends { Expiry?: WorldStateDate }>(
+  value: T | T[] | undefined,
+  nowMs: number,
+): T | null {
+  const list = Array.isArray(value) ? value : value ? [value] : [];
+  return (
+    list.find((entry) => Number(entry.Expiry?.["$date"]?.["$numberLong"] || 0) > nowMs) ||
+    list[0] ||
+    null
+  );
+}
+
+/** Resolve one Nightwave act through ExportChallenges and the language dict. */
+function parseNightwaveChallenge(raw: SeasonChallengeRaw) {
+  const challengePath = raw.Challenge || "";
+  const entry = getChallengeLookup()[challengePath];
+  const requiredCount = Number(entry?.requiredCount) || 0;
+  const title = localizedDictValue(entry?.name) || prettifyPathSlug(challengePath) || "Unknown";
+  // The description key is the name key with its _Name tail swapped. Roughly one
+  // act in ten has no description value, and then the title stands alone.
+  const description = localizedDictValue(entry?.name?.replace(/_Name$/, "_Description"));
+  return {
+    id: raw._id?.$oid || "",
+    title,
+    description: description ? cleanChallengeText(description, undefined, requiredCount) : title,
+    standing: Number(entry?.standing) || 0,
+    requiredCount,
+    isDaily: raw.Daily === true,
+    isElite: challengePath.includes("/WeeklyHard/"),
+    activation: deDate(raw.Activation),
+    expiry: deDate(raw.Expiry),
+  };
+}
+
+function parseAlert(raw: AlertRaw) {
+  const info = raw.MissionInfo || {};
+  const nodeId = info.location || "";
+  const reward = info.missionReward || {};
+  const items = [
+    ...asList(reward.countedItems).map((counted) => ({
+      name: resolveItemName(storeItemPath(counted.ItemType)),
+      count: Number(counted.ItemCount) || 1,
+    })),
+    ...asList(reward.items).map((itemPath) => ({
+      name: resolveItemName(storeItemPath(itemPath)),
+      count: 1,
+    })),
+  ];
+  return {
+    id: raw._id?.$oid || "",
+    activation: deDate(raw.Activation),
+    expiry: deDate(raw.Expiry),
+    node: nodeLabel(REGION_TRANSLATION, nodeId),
+    mission: missionTypeLabel(info.missionType || "", nodeId),
+    faction: factionLabel(info.faction),
+    minLevel: Number(info.minEnemyLevel) || 0,
+    maxLevel: Number(info.maxEnemyLevel) || 0,
+    credits: Number(reward.credits) || 0,
+    items,
+  };
+}
+
 export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | null {
   if (!raw) return null;
   const nowMs = Date.now();
@@ -1075,7 +1199,7 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
         inventory: (baroRaw.Manifest || [])
           .filter((i) => !(i.ItemType || "").includes("BaroTreasureBox"))
           .map((i) => {
-            const un = (i.ItemType || "").replace(/^\/Lotus\/StoreItems/, "/Lotus");
+            const un = storeItemPath(i.ItemType);
             return {
               uniqueName: un,
               item: resolveItemName(un),
@@ -1096,17 +1220,61 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
         expiry: deDate(varziaRaw.Expiry),
         location: HUB_NODE[varziaRaw.Node] || varziaRaw.Node || "Varzia",
         inventory: (varziaRaw.Manifest || []).map((i) => ({
-          uniqueName: (i.ItemType || "").replace(/^\/Lotus\/StoreItems/, "/Lotus"),
+          uniqueName: storeItemPath(i.ItemType),
           item: (i.ItemType || "").split("/").pop() || "",
         })),
       }
     : null;
 
-  const sortieArr = Array.isArray(raw.Sorties) ? raw.Sorties : raw.Sorties ? [raw.Sorties] : [];
-  const sortieRaw =
-    sortieArr.find((s) => Number(s.Expiry?.["$date"]?.["$numberLong"] || 0) > nowMs) ||
-    sortieArr[0];
-  const sortie = sortieRaw ? { expiry: deDate(sortieRaw.Expiry) } : null;
+  const sortieRaw = activeEntry(raw.Sorties, nowMs);
+  const sortie = sortieRaw
+    ? {
+        activation: deDate(sortieRaw.Activation),
+        expiry: deDate(sortieRaw.Expiry),
+        boss: bossLabel(sortieRaw.Boss),
+        missions: asList(sortieRaw.Variants).map((variant) => ({
+          node: nodeLabel(REGION_TRANSLATION, variant.node || ""),
+          mission: missionTypeLabel(variant.missionType || "", variant.node || ""),
+          modifier: sortieModifierLabel(variant.modifierType || ""),
+        })),
+      }
+    : null;
+
+  const archonRaw = activeEntry(raw.LiteSorties, nowMs);
+  const archonHunt = archonRaw
+    ? {
+        activation: deDate(archonRaw.Activation),
+        expiry: deDate(archonRaw.Expiry),
+        boss: bossLabel(archonRaw.Boss),
+        missions: asList(archonRaw.Missions).map((mission) => ({
+          node: nodeLabel(REGION_TRANSLATION, mission.node || ""),
+          mission: missionTypeLabel(mission.missionType || "", mission.node || ""),
+        })),
+      }
+    : null;
+
+  const seasonRaw = raw.SeasonInfo;
+  const nightwave = seasonRaw
+    ? {
+        activation: deDate(seasonRaw.Activation),
+        expiry: deDate(seasonRaw.Expiry),
+        season: Number(seasonRaw.Season) || 0,
+        phase: Number(seasonRaw.Phase) || 0,
+        // DE leaves finished acts in ActiveChallenges, which would render a
+        // negative countdown. A missing expiry keeps the act rather than risking
+        // an empty board on a malformed field.
+        challenges: asList(seasonRaw.ActiveChallenges)
+          .filter((challenge) => {
+            const exp = Number(challenge.Expiry?.["$date"]?.["$numberLong"] || 0);
+            return exp === 0 || exp > nowMs;
+          })
+          .map(parseNightwaveChallenge),
+      }
+    : null;
+
+  const alerts = asList(raw.Alerts)
+    .filter((alert) => Number(alert.Expiry?.["$date"]?.["$numberLong"] || 0) > nowMs)
+    .map(parseAlert);
 
   const descentArr = Array.isArray(raw.Descents) ? raw.Descents : [];
   const descentRaw =
@@ -1189,7 +1357,7 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
   const dailyDeals = (raw.DailyDeals || [])
     .filter((d) => Number(d.Expiry?.["$date"]?.["$numberLong"] || 0) > nowMs)
     .map((d) => {
-      const un = (d.StoreItem || "").replace(/^\/Lotus\/StoreItems/, "/Lotus");
+      const un = storeItemPath(d.StoreItem);
       return {
         uniqueName: un,
         item: resolveItemName(un),
@@ -1208,6 +1376,9 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
     voidTrader,
     vaultTrader,
     sortie,
+    archonHunt,
+    nightwave,
+    alerts,
     steelPath: computeSteelPathHonors(),
     duviriCycle,
     earthCycle: null,

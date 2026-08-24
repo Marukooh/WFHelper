@@ -39,6 +39,7 @@
   import CollapsibleSection from "../components/CollapsibleSection.svelte";
   import HeaderTabs from "../components/HeaderTabs.svelte";
   import ArbiSchedule from "../components/world/ArbiSchedule.svelte";
+  import DailiesTracker from "../components/world/DailiesTracker.svelte";
   import { tr, type Translator } from "../lib/i18n.js";
   import InvasionItem from "../components/world/InvasionItem.svelte";
   import BaroInventoryCard from "../components/world/BaroInventoryCard.svelte";
@@ -60,11 +61,15 @@
     collapsed = toggleCollapsedSection(collapsed, key);
   }
 
-  // Sub-tab (world overview vs arbitration schedule) - persisted to localStorage
-  let worldTab: "world" | "arbis" =
-    localStorage.getItem("world-tab") === "arbis" ? "arbis" : "world";
+  // Sub-tab (world overview, arbitration schedule, dailies) - persisted to localStorage
+  const WORLD_TABS = ["world", "arbis", "dailies"] as const;
+  type WorldTab = (typeof WORLD_TABS)[number];
+  const asWorldTab = (key: string | null): WorldTab =>
+    WORLD_TABS.includes(key as WorldTab) ? (key as WorldTab) : "world";
+
+  let worldTab: WorldTab = asWorldTab(localStorage.getItem("world-tab"));
   function setWorldTab(key: string) {
-    worldTab = key === "arbis" ? "arbis" : "world";
+    worldTab = asWorldTab(key);
     try {
       localStorage.setItem("world-tab", worldTab);
     } catch {
@@ -74,6 +79,7 @@
   $: worldTabOptions = [
     { key: "world", label: $tr("common.world") },
     { key: "arbis", label: $tr("common.arbitrations") },
+    { key: "dailies", label: $tr("dailies.tab") },
   ];
 
   const nowClock = clockStore(1000);
@@ -264,6 +270,8 @@
 
   {#if worldTab === "arbis"}
     <ArbiSchedule />
+  {:else if worldTab === "dailies"}
+    <DailiesTracker />
   {:else if !wd && $worldLoading}
     <div class="empty-state"><p>{$tr("world.loading")}</p></div>
   {:else if !wd}

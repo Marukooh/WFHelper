@@ -251,7 +251,11 @@
             : "unveiled";
       selectTourTab('[data-tour="riven-view-tabs"]', rivenTab);
     } else if ($currentView === "world") {
-      selectTourTab("#content", saved["world-tab"] === "arbis" ? "arbis" : "world");
+      const worldTab = saved["world-tab"];
+      selectTourTab(
+        "#content",
+        worldTab === "arbis" || worldTab === "dailies" ? worldTab : "world",
+      );
     }
 
     for (const [key, value] of savedTabPreferences) {

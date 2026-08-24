@@ -113,8 +113,69 @@ interface VaultTraderRaw {
   Manifest?: { ItemType: string }[];
 }
 
+interface SortieVariantRaw {
+  missionType?: string;
+  modifierType?: string;
+  node?: string;
+}
+
 interface SortieRaw {
-  Expiry: WorldStateDate;
+  Activation?: WorldStateDate;
+  Expiry?: WorldStateDate;
+  Boss?: string;
+  Variants?: SortieVariantRaw[];
+}
+
+interface LiteSortieMissionRaw {
+  missionType?: string;
+  node?: string;
+}
+
+/** Archon hunt: same envelope as a sortie, with plain missions and no modifiers. */
+interface LiteSortieRaw {
+  Activation?: WorldStateDate;
+  Expiry?: WorldStateDate;
+  Boss?: string;
+  Missions?: LiteSortieMissionRaw[];
+}
+
+/** Nightwave act. `Daily` is absent, not false, on weeklies. */
+export interface SeasonChallengeRaw {
+  _id?: { $oid?: string };
+  Daily?: boolean;
+  Activation?: WorldStateDate;
+  Expiry?: WorldStateDate;
+  Challenge?: string;
+}
+
+interface SeasonInfoRaw {
+  Activation?: WorldStateDate;
+  Expiry?: WorldStateDate;
+  AffiliationTag?: string;
+  Season?: number;
+  Phase?: number;
+  ActiveChallenges?: SeasonChallengeRaw[];
+}
+
+interface AlertRewardRaw {
+  credits?: number;
+  countedItems?: { ItemType?: string; ItemCount?: number }[];
+  /** Plain uniqueName strings, quantity one. */
+  items?: string[];
+}
+
+export interface AlertRaw {
+  _id?: { $oid?: string };
+  Activation?: WorldStateDate;
+  Expiry?: WorldStateDate;
+  MissionInfo?: {
+    location?: string;
+    missionType?: string;
+    faction?: string;
+    minEnemyLevel?: number;
+    maxEnemyLevel?: number;
+    missionReward?: AlertRewardRaw;
+  };
 }
 
 interface SyndicateMissionJobRaw {
@@ -183,6 +244,9 @@ export interface WorldStateRaw {
   VoidTraders?: VoidTraderRaw | VoidTraderRaw[];
   PrimeVaultTraders?: VaultTraderRaw | VaultTraderRaw[];
   Sorties?: SortieRaw | SortieRaw[];
+  LiteSorties?: LiteSortieRaw | LiteSortieRaw[];
+  SeasonInfo?: SeasonInfoRaw;
+  Alerts?: AlertRaw[];
   Descents?: DescentRaw[];
   EndlessXpChoices?: EndlessXpChoice[];
   EndlessXpSchedule?: EndlessXpScheduleEntry[];

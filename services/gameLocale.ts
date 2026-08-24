@@ -96,6 +96,11 @@ export function localizeName(nameKey: string | null | undefined, fallback: strin
   return activeNames[nameKey] || fallback;
 }
 
+/** Active game language code, for callers that pick a whole DE dictionary. */
+export function getGameLocale(): string {
+  return activeLocale;
+}
+
 /** True while the active locale can actually change a name. */
 export function isLocalizingNames(): boolean {
   return activeLocale !== DEFAULT_GAME_LOCALE && Object.keys(activeNames).length > 0;

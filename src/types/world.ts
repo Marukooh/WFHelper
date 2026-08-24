@@ -102,6 +102,70 @@ export interface SteelPathHonors {
   evergreens: SteelPathReward[];
 }
 
+interface SortieMission {
+  node: string;
+  mission: string;
+  modifier: string;
+}
+
+export interface Sortie {
+  activation?: string | null;
+  expiry?: string | null;
+  boss?: string;
+  missions?: SortieMission[];
+}
+
+interface ArchonHuntMission {
+  node: string;
+  mission: string;
+}
+
+export interface ArchonHunt {
+  activation: string | null;
+  expiry: string | null;
+  boss: string;
+  missions: ArchonHuntMission[];
+}
+
+export interface NightwaveChallenge {
+  id: string;
+  title: string;
+  /** Falls back to the title for the few acts DE ships without a description. */
+  description: string;
+  standing: number;
+  requiredCount: number;
+  isDaily: boolean;
+  isElite: boolean;
+  activation: string | null;
+  expiry: string | null;
+}
+
+interface Nightwave {
+  activation: string | null;
+  expiry: string | null;
+  season: number;
+  phase: number;
+  challenges: NightwaveChallenge[];
+}
+
+interface AlertReward {
+  name: string;
+  count: number;
+}
+
+export interface WorldAlert {
+  id: string;
+  activation: string | null;
+  expiry: string | null;
+  node: string;
+  mission: string;
+  faction: string;
+  minLevel: number;
+  maxLevel: number;
+  credits: number;
+  items: AlertReward[];
+}
+
 interface DailyDeal {
   uniqueName?: string;
   item?: string;
@@ -123,7 +187,10 @@ export interface WorldState {
   vallisCycle?: CycleData;
   cambionCycle?: CycleData;
   duviriCycle?: DuviriCycle;
-  sortie?: { expiry?: string; [key: string]: unknown };
+  sortie?: Sortie | null;
+  archonHunt?: ArchonHunt | null;
+  nightwave?: Nightwave | null;
+  alerts?: WorldAlert[];
   steelPath?: SteelPathHonors | null;
   fissures?: Fissure[];
   invasions?: Invasion[];

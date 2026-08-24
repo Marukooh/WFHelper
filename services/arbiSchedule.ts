@@ -1,9 +1,15 @@
-import path from "node:path";
 import fs from "node:fs";
 import { withScope } from "./logger";
 import { userDataPath } from "./userDataPath";
 import { writeFileAtomicSync } from "./atomicFile";
 import { fetchWithTimeout } from "./worldStateFetch";
+import {
+  factionLabel,
+  loadRegionTranslation,
+  missionLabel,
+  nodeLabel,
+  type RegionTranslation,
+} from "./regionNames";
 import { normalizeErrorMessage } from "../config/shared/errors";
 import type {
   ArbiScheduleAlerts,
@@ -36,28 +42,7 @@ const MAX_LEAD_MINUTES = 120;
 const DEFAULT_LEAD_MINUTES = 5;
 const STORE_SCHEMA_VERSION = 1;
 
-/** Community labels where the raw dict name reads wrong for arbitrations. */
-const FACTION_LABELS: Record<string, string> = {
-  FC_GRINEER: "Grineer",
-  FC_CORPUS: "Corpus",
-  FC_INFESTATION: "Infested",
-  FC_OROKIN: "Corrupted",
-  FC_SENTIENT: "Sentient",
-  FC_NARMER: "Narmer",
-};
-
-type RegionEntry = {
-  name?: unknown;
-  systemName?: unknown;
-  missionName?: unknown;
-  missionType?: unknown;
-  faction?: unknown;
-};
-
-export interface RegionTranslation {
-  regions: Record<string, RegionEntry>;
-  dict: Record<string, string>;
-}
+export type { RegionTranslation };
 
 interface ArbiScheduleRow {
   epoch: number;
@@ -93,47 +78,18 @@ export function parseArbysText(text: string): ArbiScheduleRow[] {
   return rows;
 }
 
-function resolveDict(dict: Record<string, string>, value: unknown): string | null {
-  if (typeof value !== "string" || !value) return null;
-  if (!value.startsWith("/")) return value;
-  return dict[value] || null;
-}
-
-function titleCase(value: string): string {
-  return value.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
-}
-
-function missionLabel(translation: RegionTranslation, region: RegionEntry | undefined): string {
-  // Per-node mission name from DE's own data (localization dict values are
-  // uppercase, e.g. "INFESTED SALVAGE") - truer than a hand-kept MT_ map.
-  const resolved = resolveDict(translation.dict, region?.missionName);
-  if (resolved) return titleCase(resolved);
-  const mt = typeof region?.missionType === "string" ? region.missionType : "";
-  if (mt.startsWith("MT_")) return titleCase(mt.slice(3).replace(/_/g, " "));
-  return "Unknown";
-}
-
-function factionLabel(translation: RegionTranslation, region: RegionEntry | undefined): string {
-  const fc = typeof region?.faction === "string" ? region.faction : "";
-  if (FACTION_LABELS[fc]) return FACTION_LABELS[fc];
-  if (fc.startsWith("FC_")) return titleCase(fc.slice(3).replace(/_/g, " "));
-  return "Unknown";
-}
-
 export function buildScheduleEntries(
   rows: ArbiScheduleRow[],
   translation: RegionTranslation,
 ): ArbiScheduleEntry[] {
   return rows.map((row) => {
     const region = translation.regions[row.nodeId];
-    const nodeName = resolveDict(translation.dict, region?.name) || row.nodeId;
-    const systemName = resolveDict(translation.dict, region?.systemName) || "";
     return {
       epochMs: row.epoch * 1000,
       nodeId: row.nodeId,
-      node: systemName ? `${nodeName} (${systemName})` : nodeName,
+      node: nodeLabel(translation, row.nodeId),
       mission: missionLabel(translation, region),
-      faction: factionLabel(translation, region),
+      faction: factionLabel(region?.faction),
     };
   });
 }
@@ -176,38 +132,6 @@ export function pruneAlertKeys(keys: string[], nowMs: number): string[] {
     const epochMs = Number(key.split(":")[0]);
     return Number.isFinite(epochMs) && epochMs >= nowMs - FIRED_RETENTION_MS;
   });
-}
-
-let _translation: RegionTranslation | null = null;
-
-function loadRegionTranslation(): RegionTranslation {
-  if (_translation) return _translation;
-  try {
-    const pep = require("warframe-public-export-plus");
-    if (pep?.ExportRegions && pep?.dict_en) {
-      _translation = {
-        regions: pep.ExportRegions as Record<string, RegionEntry>,
-        dict: pep.dict_en as Record<string, string>,
-      };
-      return _translation;
-    }
-  } catch (err) {
-    log.warn("region data package export failed:", normalizeErrorMessage(err));
-  }
-
-  try {
-    const pkgDir = path.dirname(require.resolve("warframe-public-export-plus/package.json"));
-    _translation = {
-      regions: JSON.parse(fs.readFileSync(path.join(pkgDir, "ExportRegions.json"), "utf8")),
-      dict: JSON.parse(fs.readFileSync(path.join(pkgDir, "dict.en.json"), "utf8")),
-    };
-    return _translation;
-  } catch (err) {
-    log.warn("region data disk fallback failed:", normalizeErrorMessage(err));
-  }
-
-  _translation = { regions: {}, dict: {} };
-  return _translation;
 }
 
 interface ArbiScheduleDeps {
@@ -460,7 +384,6 @@ export function _resetArbiScheduleForTest(): void {
     minutesBefore: DEFAULT_LEAD_MINUTES,
     firedKeys: [],
   };
-  _translation = null;
 }
 
 /** Test-only: run one alert sweep synchronously. */
