@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { withoutFoundryPending } from "../../../config/shared/foundryPending.js";
 import { parseFoundry, parseInventory, parseResources } from "../../../src/lib/inventory.js";
-import { buildFullSetItems } from "../../../src/lib/inventory/fullSets.js";
+import { buildFullSetItems, setRootOf } from "../../../src/lib/inventory/fullSets.js";
 import { shouldHydrateMetrics } from "../../../src/lib/inventoryMarket.js";
 import { gameRefKey } from "../../../src/lib/marketNaming.js";
 import type {
@@ -284,6 +284,43 @@ describe("inventory parsing", () => {
     const mag = buildFullSetItems(itemDb, owned).find((s) => s.name === "Mag Prime Set");
 
     expect(mag?.displayName).toBe("매그 프라임 Set");
+  });
+
+  // The set marker is minted in one place; the views must strip it with the
+  // exported helper rather than a regex of their own.
+  it("round-trips the synthesized set key back to its root uniqueName", () => {
+    const root = "/Lotus/Powersuits/Mag/MagPrime";
+    const itemDb: Record<string, ItemDbEntry> = {
+      [root]: {
+        name: "Mag Prime",
+        category: "Warframes",
+        isPrime: true,
+        components: [
+          {
+            uniqueName: "/Lotus/Types/Recipes/WarframeRecipes/MagPrimeBlueprint",
+            itemCount: 1,
+            tradable: true,
+            name: "Blueprint",
+          },
+          {
+            uniqueName: "/Lotus/Types/Recipes/WarframeRecipes/MagPrimeChassisComponent",
+            itemCount: 1,
+            tradable: true,
+            name: "Chassis",
+          },
+        ],
+      },
+    };
+    const owned = new Map<string, number>([
+      ["/Lotus/Types/Recipes/WarframeRecipes/MagPrimeBlueprint", 1],
+      ["/Lotus/Types/Recipes/WarframeRecipes/MagPrimeChassisBlueprint", 1],
+    ]);
+
+    const mag = buildFullSetItems(itemDb, owned).find((s) => s.name === "Mag Prime Set");
+
+    expect(mag?.internalName).not.toBe(root);
+    expect(setRootOf(mag?.internalName ?? "")).toBe(root);
+    expect(setRootOf(root)).toBe(root);
   });
 
   it("excludes unlisted blueprints and resources from non-prime weapon sets", () => {

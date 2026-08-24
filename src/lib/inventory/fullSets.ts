@@ -9,6 +9,17 @@ import {
 } from "./itemClassification.js";
 import { FULL_SET_OVERRIDES, getFullSetOverride } from "./fullSetOverrides.js";
 
+// Set rows are synthesized, so they key off the root uniqueName plus a marker
+// that cannot collide with a real DE path.
+const FULL_SET_SUFFIX = "#set";
+
+/** Undoes the suffix minted below; a non-set internalName passes through. */
+export function setRootOf(internalName: string): string {
+  return internalName.endsWith(FULL_SET_SUFFIX)
+    ? internalName.slice(0, -FULL_SET_SUFFIX.length)
+    : internalName;
+}
+
 function isGenericSetComponent(
   component: ComponentInfo,
   itemDb: Record<string, ItemDbEntry>,
@@ -172,7 +183,7 @@ export function buildFullSetItems(
     const common = {
       name: setName,
       ...(setDisplayName ? { displayName: setDisplayName } : {}),
-      internalName: `${uniqueName}#set`,
+      internalName: `${uniqueName}${FULL_SET_SUFFIX}`,
       rank: 0,
       maxRank: 1,
       imageUrl: resolved.imageUrl ?? null,

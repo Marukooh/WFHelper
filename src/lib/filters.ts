@@ -86,24 +86,24 @@ function isMastered(item: FilterableItem): boolean {
   return false;
 }
 
-function matchesSearch(item: FilterableItem, search: string): boolean {
+function includesQuery(field: string | undefined, query: string): boolean {
+  return typeof field === "string" && field.toLowerCase().includes(query);
+}
+
+/** The one search rule for every row shape; sparse rows (resources) just miss fields. */
+export function matchesSearch(item: FilterableItem, search: string): boolean {
   const query = search.trim().toLowerCase();
   if (!query) return true;
 
   // Both names: the list shows the localized one but traders search in English.
-  const fields: string[] = [
-    item.name,
-    item.displayName || "",
-    item.category || "",
-    item.categoryLabel || "",
-    item.internalName || "",
-  ];
-
-  if (Array.isArray(item.keywords)) {
-    fields.push(...item.keywords);
-  }
-
-  return fields.some((field) => field.toLowerCase().includes(query));
+  // Field by field rather than an array so a thousands-row list allocates nothing.
+  if (includesQuery(item.name, query)) return true;
+  if (includesQuery(item.displayName, query)) return true;
+  if (includesQuery(item.category, query)) return true;
+  if (includesQuery(item.categoryLabel, query)) return true;
+  if (includesQuery(item.internalName, query)) return true;
+  if (!Array.isArray(item.keywords)) return false;
+  return item.keywords.some((keyword) => includesQuery(keyword, query));
 }
 
 function matchesYesNo(
@@ -205,8 +205,7 @@ export function matchesSharedFilters(item: FilterableItem, filters: SharedFilter
   // claim and a blueprint whose parts are all owned - and leaves the rest.
   if (filters.foundryState === "claimable" && item.foundryState !== "claimable") return false;
   if (filters.foundryState === "buildable" && item.foundryState !== "buildable") return false;
-  // A whole set you can start now: the parent blueprint is buildable and the
-  // part blueprints that make it up are hidden rather than listed alongside.
+  // A whole set you can start now: the parent blueprint, not its parts.
   if (
     filters.foundryState === "buildable_sets" &&
     (item.foundryState !== "buildable" || item.looseComponent === true)

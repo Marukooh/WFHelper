@@ -9,6 +9,7 @@
   import { masteryProjectionSubtext } from "../lib/masteryProjection.js";
   import { buildMasteryRoadmap, estimateMasteryPurchaseCost } from "../lib/masteryRoadmap.js";
   import { getLookupByName } from "../lib/inventoryMarket.js";
+  import { setRootOf } from "../lib/inventory/fullSets.js";
   import { parseOwnedRelics } from "../lib/relic.js";
   import { activeItem, activeComponent } from "../stores/modals.js";
   import { hideFounderMasteryItems } from "../stores/preferences.js";
@@ -440,7 +441,7 @@
       .filter((entry) => entry.inventoryGroup === "incomplete_sets")
       .map((entry) => {
         const status =
-          setStatusLookup.byUniqueName.get(entry.internalName.replace(/#set$/, "")) ??
+          setStatusLookup.byUniqueName.get(setRootOf(entry.internalName)) ??
           setStatusLookup.byName.get(normalizeLookupKey(entry.name.replace(/\s+Set$/i, "")));
         return {
           ...entry,

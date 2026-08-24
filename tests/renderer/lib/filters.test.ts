@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applySharedFiltersAndSort,
   defaultSortDirection,
+  matchesSearch,
   matchesSharedFilters,
 } from "../../../src/lib/filters.js";
 import type { SharedFiltersState } from "../../../src/types/filters.js";
@@ -28,6 +29,50 @@ function defaultFilters(): SharedFiltersState {
     foundryState: "all",
   };
 }
+
+describe("matchesSearch", () => {
+  // Resource rows carry only name/displayName/internalName, and the Everything
+  // tab runs them through the same search box as full inventory rows.
+  const resource = {
+    name: "Orokin Cell",
+    displayName: "Orokinzelle",
+    imageUrl: null,
+    internalName: "/Lotus/Types/Items/MiscItems/OrokinCell",
+    count: 42,
+  };
+
+  it("applies every field of the rule to sparse resource rows", () => {
+    expect(matchesSearch(resource, "orokin cell")).toBe(true);
+    expect(matchesSearch(resource, "orokinzelle")).toBe(true);
+    expect(matchesSearch(resource, "MiscItems")).toBe(true);
+    expect(matchesSearch(resource, "")).toBe(true);
+    expect(matchesSearch(resource, "  ")).toBe(true);
+    expect(matchesSearch(resource, "argon")).toBe(false);
+  });
+
+  it("covers category, label and keywords on rows that carry them", () => {
+    const item = {
+      name: "Lith A1 Relic",
+      category: "relics",
+      categoryLabel: "Relic",
+      internalName: "/Lotus/Types/Game/Projections/T1VoidProjectionAssaultRifleAExceptional",
+      keywords: ["braton prime blueprint"],
+    };
+
+    expect(matchesSearch(item, "RELIC")).toBe(true);
+    expect(matchesSearch(item, "relics")).toBe(true);
+    expect(matchesSearch(item, "braton prime")).toBe(true);
+    expect(matchesSearch(item, "soma")).toBe(false);
+  });
+
+  it("stays consistent with the shared filter entry point", () => {
+    for (const query of ["orokin", "orokinzelle", "MiscItems", "argon"]) {
+      expect(matchesSharedFilters(resource, { ...defaultFilters(), search: query })).toBe(
+        matchesSearch(resource, query),
+      );
+    }
+  });
+});
 
 describe("shared filters", () => {
   it("searches the localized name and the English one alike", () => {

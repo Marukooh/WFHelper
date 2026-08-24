@@ -19,7 +19,8 @@
     EQUIPMENT_CATEGORY_ORDER,
     classifyForFoundry,
   } from "../lib/inventory/foundryResources.js";
-  import { applySharedFiltersAndSort } from "../lib/filters.js";
+  import { applySharedFiltersAndSort, matchesSearch } from "../lib/filters.js";
+  import { setRootOf } from "../lib/inventory/fullSets.js";
   import {
     EVERYTHING_DEFAULT_SOURCES,
     EVERYTHING_SOURCES,
@@ -57,9 +58,16 @@
   const HOTSET_REFRESH_LIMIT = 12;
 
   const FILTER_TAB_KEY = "wf_inventory_tab";
-  const EVERYTHING_SOURCES_KEY = "wf_inventory_everything_sources";
-  // Stored as the hidden set so a category the game adds later shows up by default.
+  // Both chip rows store the HIDDEN keys, so a source or category a later
+  // release adds shows up by default instead of being silently missing.
+  const EVERYTHING_HIDDEN_KEY = "wf_inventory_everything_hidden_sources";
   const FULL_SETS_HIDDEN_KEY = "wf_inventory_full_sets_hidden_categories";
+  /** Legacy key: held the ENABLED sources; read only to seed the hidden set. */
+  const LEGACY_EVERYTHING_SOURCES_KEY = "wf_inventory_everything_sources";
+
+  const EVERYTHING_HIDDEN_BY_DEFAULT = EVERYTHING_SOURCES.filter(
+    (source) => !EVERYTHING_DEFAULT_SOURCES.includes(source),
+  );
 
   function restoreFilterTab(): InventoryFilterTab {
     const raw = readStorage(FILTER_TAB_KEY);
@@ -67,17 +75,23 @@
     return known ? (raw as InventoryFilterTab) : "all_parts";
   }
 
-  function restoreEverythingSources(): InventoryFilterTab[] {
-    const raw = readStorage(EVERYTHING_SOURCES_KEY);
-    if (raw == null) return [...EVERYTHING_DEFAULT_SOURCES];
-    // An empty saved list is a real choice (everything hidden), so only an
-    // absent key falls back to the defaults.
-    const saved = raw
-      .split(",")
-      .filter((key): key is InventoryFilterTab =>
-        EVERYTHING_SOURCES.includes(key as InventoryFilterTab),
-      );
-    return saved;
+  function parseKeyList(raw: string | null): string[] {
+    return (raw ?? "").split(",").filter((entry) => entry.length > 0);
+  }
+
+  function restoreHiddenEverythingSources(): string[] {
+    const stored = readStorage(EVERYTHING_HIDDEN_KEY);
+    if (stored != null) return parseKeyList(stored);
+
+    const legacy = readStorage(LEGACY_EVERYTHING_SOURCES_KEY);
+    if (legacy == null) return [...EVERYTHING_HIDDEN_BY_DEFAULT];
+    // Invert the old enabled list once and persist it: an empty legacy value was
+    // a real choice (all off), and re-deriving it on every mount would freeze out
+    // a source added after the upgrade.
+    const wasEnabled = new Set(parseKeyList(legacy));
+    const hidden = EVERYTHING_SOURCES.filter((source) => !wasEnabled.has(source));
+    writeStorage(EVERYTHING_HIDDEN_KEY, hidden.join(","));
+    return hidden;
   }
 
   // Only sorts the active tab can actually compute; anything else would
@@ -107,10 +121,8 @@
   } as Partial<Record<InventoryFilterTab, Array<[SharedSortKey, string]>>>;
 
   let filter: InventoryFilterTab = restoreFilterTab();
-  let everythingSources: InventoryFilterTab[] = restoreEverythingSources();
-  let hiddenSetCategories: string[] = (readStorage(FULL_SETS_HIDDEN_KEY) ?? "")
-    .split(",")
-    .filter((entry) => entry.length > 0);
+  let hiddenEverythingSources: string[] = restoreHiddenEverythingSources();
+  let hiddenSetCategories: string[] = parseKeyList(readStorage(FULL_SETS_HIDDEN_KEY));
   let missingIconsOnly = false;
   let showFilterPanel = false;
   // Full Sets lists sellable spares; this folds in the sets still missing parts.
@@ -154,11 +166,16 @@
     }
   }
 
-  function toggleEverythingSource(source: InventoryFilterTab): void {
-    everythingSources = everythingSources.includes(source)
-      ? everythingSources.filter((entry) => entry !== source)
-      : [...everythingSources, source];
-    writeStorage(EVERYTHING_SOURCES_KEY, everythingSources.join(","));
+  function toggleHidden(key: string, hidden: string[], entry: string): string[] {
+    const next = hidden.includes(entry)
+      ? hidden.filter((other) => other !== entry)
+      : [...hidden, entry];
+    writeStorage(key, next.join(","));
+    return next;
+  }
+
+  function toggleEverythingSource(source: string): void {
+    hiddenEverythingSources = toggleHidden(EVERYTHING_HIDDEN_KEY, hiddenEverythingSources, source);
   }
 
   function toggleIncompleteSets(): void {
@@ -279,7 +296,7 @@
 
   /** Sets carry "Full Set" as their label, so bucket them by the root item instead. */
   function setCategoryFor(item: InventoryBaseItem, db: typeof $itemDb): string {
-    const root = item.internalName.replace(/#set$/, "");
+    const root = setRootOf(item.internalName);
     return classifyForFoundry(root, root, db);
   }
 
@@ -289,10 +306,7 @@
   }
 
   function toggleSetCategory(category: string): void {
-    hiddenSetCategories = hiddenSetCategories.includes(category)
-      ? hiddenSetCategories.filter((entry) => entry !== category)
-      : [...hiddenSetCategories, category];
-    writeStorage(FULL_SETS_HIDDEN_KEY, hiddenSetCategories.join(","));
+    hiddenSetCategories = toggleHidden(FULL_SETS_HIDDEN_KEY, hiddenSetCategories, category);
   }
 
   function limitToEnabledSources(
@@ -343,8 +357,10 @@
     const labelKey = FILTERS.find((entry) => entry.key === source)?.labelKey;
     return labelKey ? [{ key: source as string, label: $tr(labelKey) }] : [];
   });
-  $: enabledEverythingSources = new Set<string>(everythingSources);
-  // Categories are data values, not UI copy, so they stay untranslated here too.
+  $: enabledEverythingSources = new Set<string>(
+    EVERYTHING_SOURCES.filter((source) => !hiddenEverythingSources.includes(source)),
+  );
+  // Untranslated for the same reason as the foundry category tabs.
   $: fullSetCategoryOptions =
     filter === "full_sets"
       ? orderedSetCategories(tabBaseItems, $itemDb).map((key) => ({ key, label: key }))
@@ -430,12 +446,10 @@
     list: typeof resourceList,
     filters: typeof $inventoryFilters,
   ): typeof resourceList {
-    const search = filters.search.trim().toLowerCase();
-    const searched = search
-      ? list.filter(
-          (r) =>
-            r.name.toLowerCase().includes(search) || r.internalName.toLowerCase().includes(search),
-        )
+    // Same rule as every other row, so one search box means one behaviour; the
+    // no-query skip keeps a thousands-row account from re-filtering for nothing.
+    const searched = filters.search.trim()
+      ? list.filter((resource) => matchesSearch(resource, filters.search))
       : list;
     const gated =
       filters.minimumAmount > 0
@@ -512,7 +526,7 @@
             label={$tr("inventory.everythingInclude")}
             options={everythingSourceOptions}
             enabled={enabledEverythingSources}
-            onToggle={(key) => toggleEverythingSource(key as InventoryFilterTab)}
+            onToggle={toggleEverythingSource}
           />
         {/if}
         {#if filter === "full_sets"}
