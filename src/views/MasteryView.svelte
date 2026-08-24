@@ -472,50 +472,53 @@
 
     <!-- Stats overview -->
     <div class="grid gap-3 mb-3.5">
-      <SummaryStrip items={masterySummaryItems} variant="mastery">
-        <!-- The ring sits inside the panel now, so it drives the strip height;
-             92px keeps that height at the pre-alignment size. -->
-        <svg slot="leading" class="h-[92px] w-[92px] shrink-0" viewBox="0 0 120 120">
-          <circle
-            cx="60"
-            cy="60"
-            r={RING_R}
-            fill="none"
-            stroke="rgba(255,255,255,0.06)"
-            stroke-width="8"
-          />
-          <circle
-            cx="60"
-            cy="60"
-            r={RING_R}
-            fill="none"
-            stroke="var(--accent-blue)"
-            stroke-width="8"
-            stroke-dasharray={RING_C}
-            stroke-dashoffset={RING_C * (1 - stats.mastered / Math.max(stats.total, 1))}
-            stroke-linecap="round"
-            transform="rotate(-90 60 60)"
-          />
-          <text
-            x="60"
-            y="57"
-            text-anchor="middle"
-            fill="var(--text-primary)"
-            font-size="26"
-            font-weight="700"
-            font-family="Rajdhani">{masteredPct}%</text
-          >
-          <text
-            class="ring-caption"
-            x="60"
-            y="76"
-            text-anchor="middle"
-            fill="var(--text-muted)"
-            font-size="13"
-            font-family="Barlow">{$tr("common.mastered")}</text
-          >
-        </svg>
-      </SummaryStrip>
+      <!-- Ring sits beside the panel, which hugs its own cells instead of
+           stretching; 92px keeps the ring at the compact scale. -->
+      <div class="flex items-center gap-3.5" data-mastery-summary>
+        <div class="shrink-0">
+          <svg class="h-[92px] w-[92px]" viewBox="0 0 120 120">
+            <circle
+              cx="60"
+              cy="60"
+              r={RING_R}
+              fill="none"
+              stroke="rgba(255,255,255,0.06)"
+              stroke-width="8"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r={RING_R}
+              fill="none"
+              stroke="var(--accent-blue)"
+              stroke-width="8"
+              stroke-dasharray={RING_C}
+              stroke-dashoffset={RING_C * (1 - stats.mastered / Math.max(stats.total, 1))}
+              stroke-linecap="round"
+              transform="rotate(-90 60 60)"
+            />
+            <text
+              x="60"
+              y="57"
+              text-anchor="middle"
+              fill="var(--text-primary)"
+              font-size="26"
+              font-weight="700"
+              font-family="Rajdhani">{masteredPct}%</text
+            >
+            <text
+              class="ring-caption"
+              x="60"
+              y="76"
+              text-anchor="middle"
+              fill="var(--text-muted)"
+              font-size="13"
+              font-family="Barlow">{$tr("common.mastered")}</text
+            >
+          </svg>
+        </div>
+        <SummaryStrip items={masterySummaryItems} variant="mastery" />
+      </div>
 
       {#if viewTab === "collection"}
         <CollapsibleSection

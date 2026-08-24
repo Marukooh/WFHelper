@@ -30,17 +30,13 @@
 
 <ThemedPanel
   className={variant === "mastery"
-    ? "flex w-full min-w-0 flex-wrap items-stretch px-5 py-3"
+    ? "flex w-fit max-w-full min-w-0 flex-wrap items-stretch px-5 py-3"
     : variant === "grid"
       ? "grid [grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))] gap-x-8 gap-y-4 px-6 py-4"
       : "flex flex-wrap items-stretch gap-y-2 px-4 py-3"}
 >
-  {#if $$slots.leading && variant !== "grid"}
-    <div class="flex shrink-0 items-center pr-4"><slot name="leading" /></div>
-  {/if}
-
   {#each items as item, index (item.key)}
-    {#if (index > 0 || $$slots.leading) && variant !== "grid"}
+    {#if index > 0 && variant !== "grid"}
       <span class="self-stretch w-px bg-[color:var(--ui-panel-border)]" aria-hidden="true"></span>
     {/if}
 
@@ -66,8 +62,8 @@
         {/if}
       </div>
     {:else if variant === "mastery"}
-      <!-- Full-width strip: cells stay compact so a fullscreen row does not
-           blow the numbers up past the cards it sits above. -->
+      <!-- The strip hugs its cells at the compact scale so a fullscreen row does
+           not blow the numbers up past the cards it sits above. -->
       <div class="flex flex-col justify-center gap-1 px-4">
         <div class="flex items-center gap-3">
           <span class="font-display text-3xl font-bold leading-none {toneClass(item.tone)}"

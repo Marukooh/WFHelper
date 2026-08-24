@@ -48,12 +48,25 @@ test.describe("Mastery subsumed filter", () => {
 
   test("summary strip stays compact at full width", async () => {
     await page.locator("#content .view.active select[data-subsumed]").selectOption("all");
-    const ring = page.locator('#content .view.active svg[viewBox="0 0 120 120"]').first();
+    const row = page.locator("#content .view.active [data-mastery-summary]");
+    await expect(row).toBeVisible();
+    const ring = row.locator('svg[viewBox="0 0 120 120"]');
     await expect(ring).toBeVisible();
-    // The ring lives inside the strip panel, so an oversized ring or cell font
-    // shows up here as a taller row.
-    const box = await ring.locator("xpath=ancestor::div[2]").boundingBox();
+
+    // The ring drives the row height, so an oversized ring or cell font shows up
+    // here as a taller row.
+    const box = await row.boundingBox();
     expect(box?.height ?? 0).toBeLessThan(130);
     expect(box?.width ?? 0).toBeGreaterThan(600);
+
+    // Ring outside the panel: the panel starts right of the ring and stops well
+    // short of the card grid's right edge, which is the fit-content proof.
+    const ringBox = await ring.boundingBox();
+    const panelBox = await row.locator(":scope > div").nth(1).boundingBox();
+    const gridBox = await page.locator("#content .view.active .item-grid").boundingBox();
+    expect(panelBox?.x ?? 0).toBeGreaterThanOrEqual((ringBox?.x ?? 0) + (ringBox?.width ?? 0));
+    const panelRight = (panelBox?.x ?? 0) + (panelBox?.width ?? 0);
+    const gridRight = (gridBox?.x ?? 0) + (gridBox?.width ?? 0);
+    expect(gridRight - panelRight).toBeGreaterThanOrEqual(40);
   });
 });
