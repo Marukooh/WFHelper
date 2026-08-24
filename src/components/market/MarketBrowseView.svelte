@@ -116,7 +116,8 @@
 
   $: suggestions = buildSuggestions(catalog, query);
   $: suggestionsOpen = showSuggestions && suggestions.length > 0;
-  // A fresh list starts on its top hit, so Tab/Enter always have a target.
+  // A new query builds a new list, so the highlight must not stay on the index
+  // it held for the old one.
   $: if (suggestions) activeSuggestion = 0;
 
   function buildSuggestions(items: BrowseItem[], rawQuery: string): BrowseItem[] {
