@@ -79,7 +79,14 @@ export function parseInventory(
     if (shouldHide(internalName, dbEntry, resolved, marketListed)) return;
     if (isResourceItem(internalName, dbEntry, resolved)) return;
 
-    const group = deriveGroup(sourceKey, internalName, dbEntry, resolved);
+    let group = deriveGroup(sourceKey, internalName, dbEntry, resolved);
+    // With the catalog loaded, an unlisted recipe row is a crafted component
+    // nobody can sell. The parts tab would still price it through a display
+    // name collision with the blueprint, so it moves out of the group instead.
+    const recipePath = /\/Types\/Recipes\//i.test(internalName);
+    if (group === "all_parts" && recipePath && marketGameRefs.size > 0 && !marketListed) {
+      group = "misc";
+    }
     let finalCat = inferCategory(internalName, defaultCat, dbEntry);
     let finalLabel = CATEGORIES.find((c) => c.cat === finalCat)?.label || defaultLabel;
 
@@ -159,9 +166,16 @@ export function parseInventory(
       partType: resolved.isPrime ? "prime" : "normal",
       masteryReq: resolved.masteryReq ?? 0,
       vaulted: resolved.vaulted ?? false,
-      tradable:
-        isMarketListedMissionKey(internalName, marketListed) ||
-        (dbEntry.tradable ?? resolved.isPrime ?? false),
+      // For recipe paths the catalog is the authority: WFM lists the exact
+      // uniqueName it trades (frame parts only as ...Blueprint, weapon parts
+      // bare), so a crafted ...Component never shows as sellable. The item-DB
+      // flag covers the row until the catalog has loaded.
+      tradable: recipePath
+        ? marketGameRefs.size > 0
+          ? marketListed
+          : (dbEntry.tradable ?? resolved.isPrime ?? false)
+        : isMarketListedMissionKey(internalName, marketListed) ||
+          (dbEntry.tradable ?? resolved.isPrime ?? false),
       amount,
       inventoryGroup: group,
       leveledUp: rank > 0 || leveledSignal,

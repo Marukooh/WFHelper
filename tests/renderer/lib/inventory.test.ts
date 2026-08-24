@@ -1207,6 +1207,44 @@ describe("inventory parsing", () => {
     expect(fromMisc?.categoryLabel).toBe("Key");
   });
 
+  it("marks a crafted frame part untradable once the catalog is loaded", () => {
+    const component = "/Lotus/Types/Recipes/WarframeRecipes/AtlasPrimeSystemsComponent";
+    const blueprint = "/Lotus/Types/Recipes/WarframeRecipes/AtlasPrimeSystemsBlueprint";
+    const barrel = "/Lotus/Types/Recipes/Weapons/WeaponParts/BratonPrimeBarrel";
+    const db: Record<string, ItemDbEntry> = {
+      [component]: { name: "Atlas Prime Systems Blueprint", category: "Misc", tradable: true },
+      [blueprint]: { name: "Atlas Prime Systems Blueprint", category: "Misc", tradable: true },
+      [barrel]: { name: "Braton Prime Barrel", category: "Misc", tradable: true },
+    };
+    const data: RawInventoryData = {
+      MiscItems: [
+        { ItemType: component, ItemCount: 1 },
+        { ItemType: blueprint, ItemCount: 1 },
+        { ItemType: barrel, ItemCount: 1 },
+      ],
+    };
+
+    // WFM trades the blueprint and the bare weapon part, never the crafted part.
+    const refs = new Set([gameRefKey(blueprint), gameRefKey(barrel)]);
+    const items = parseInventory(data, db, refs);
+    expect(items.find((item) => item.internalName === component)?.tradable).toBe(false);
+    expect(items.find((item) => item.internalName === blueprint)?.tradable).toBe(true);
+    expect(items.find((item) => item.internalName === barrel)?.tradable).toBe(true);
+
+    // The crafted part also leaves the parts tab, or a display-name collision
+    // with the blueprint would still price it there.
+    expect(items.find((item) => item.internalName === component)?.inventoryGroup).toBe("misc");
+    expect(items.find((item) => item.internalName === blueprint)?.inventoryGroup).toBe("all_parts");
+    expect(items.find((item) => item.internalName === barrel)?.inventoryGroup).toBe("all_parts");
+
+    // Without the catalog the item-DB flag stands, so nothing flips on startup.
+    const fallback = parseInventory(data, db);
+    expect(fallback.find((item) => item.internalName === component)?.tradable).toBe(true);
+    expect(fallback.find((item) => item.internalName === component)?.inventoryGroup).toBe(
+      "all_parts",
+    );
+  });
+
   it("ignores noisy auxiliary inventory collections", () => {
     const db: Record<string, ItemDbEntry> = {
       "/Lotus/Types/Items/MiscItems/Forma": { name: "Forma", category: "Misc" },
