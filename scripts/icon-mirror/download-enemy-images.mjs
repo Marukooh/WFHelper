@@ -18,6 +18,10 @@ const delayMs = Math.max(0, Number(process.env.ICON_MIRROR_DELAY_MS) || 250);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+if (!fs.existsSync(listPath)) {
+  console.error(`missing ${listPath}; run scripts/codex-scans/build-codex-scan-data.mjs first`);
+  process.exit(1);
+}
 const names = JSON.parse(fs.readFileSync(listPath, "utf-8"));
 fs.mkdirSync(outDir, { recursive: true });
 
