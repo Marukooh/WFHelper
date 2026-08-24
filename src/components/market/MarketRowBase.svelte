@@ -58,12 +58,13 @@
           {badgeLabel}
         </span>
       {/if}
-      <span
-        class="min-w-0 flex-1 truncate font-display text-sm font-bold text-text-primary"
-        {title}
-      >
-        {title}
-        <slot name="titleMeta" />
+      <!-- Meta chips sit outside the truncating span so a long name clips
+           before it can push them out of the header. -->
+      <span class="flex min-w-0 flex-1 items-baseline">
+        <span class="min-w-0 truncate font-display text-sm font-bold text-text-primary" {title}>
+          {title}
+        </span>
+        <span class="flex shrink-0 items-baseline"><slot name="titleMeta" /></span>
       </span>
       {#each rankBadges as label}
         <span class="shrink-0 rounded-sm bg-accent/20 px-1 py-0.5 text-xs font-bold text-accent">
@@ -111,14 +112,16 @@
         <div class="{fullImageClass} bg-white/5"></div>
       {/if}
       <div class={fullContentClass}>
-        <span class="order-item-name">
-          {title}
-          {#each rankBadges as label}
-            <span class="ml-1 rounded-sm bg-accent/20 px-1 py-0.5 text-xs font-bold text-accent">
-              {label}
-            </span>
-          {/each}
-          <slot name="titleMeta" />
+        <span class="flex min-w-0 items-baseline">
+          <span class="order-item-name min-w-0 truncate" {title}>{title}</span>
+          <span class="flex shrink-0 items-baseline">
+            {#each rankBadges as label}
+              <span class="ml-1 rounded-sm bg-accent/20 px-1 py-0.5 text-xs font-bold text-accent">
+                {label}
+              </span>
+            {/each}
+            <slot name="titleMeta" />
+          </span>
         </span>
         <slot name="fullBody" />
       </div>

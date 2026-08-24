@@ -126,11 +126,6 @@
       <span class="ml-1.5 text-xs font-semibold text-text-muted"
         >{$tr("market.ownedCount", { count: ownedCount })}</span
       >
-      {#if warning}
-        <span class="listing-warning ml-1.5" data-order-warning title={warning.title}
-          >{warning.label}</span
-        >
-      {/if}
     </svelte:fragment>
     <svelte:fragment slot="headerEnd">
       {#if order.modRank != null}
@@ -173,6 +168,11 @@
           </span>
         </div>
         <MarketOrderSummary {isRankedListing} {summaryRank} {wtsLabel} {wtbLabel} {medianLabel} />
+        {#if warning}
+          <span class="listing-warning self-start" data-order-warning title={warning.title}
+            >{warning.label}</span
+          >
+        {/if}
       </div>
     </svelte:fragment>
     <svelte:fragment slot="compactActions">
@@ -189,6 +189,7 @@
         <button
           class="btn-sm btn-secondary h-7 px-2 text-xs"
           title={$tr("market.edit")}
+          data-order-edit
           on:click={stopAndEdit}>{$tr("market.edit")}</button
         >
         <button
@@ -224,14 +225,18 @@
       <span class="ml-2 text-xs font-semibold text-text-muted"
         >{$tr("market.ownedCount", { count: ownedCount })}</span
       >
-      {#if warning}
-        <span class="listing-warning ml-2" data-order-warning title={warning.title}
-          >{warning.label}</span
-        >
-      {/if}
     </svelte:fragment>
     <svelte:fragment slot="fullBody">
-      <MarketOrderSummary {isRankedListing} {summaryRank} {wtsLabel} {wtbLabel} {medianLabel} />
+      <!-- fullContentClass is "contents", so fullBody is one grid cell: keep the
+           summary and the warning in a single wrapper. -->
+      <div class="flex min-w-0 flex-col gap-1">
+        <MarketOrderSummary {isRankedListing} {summaryRank} {wtsLabel} {wtbLabel} {medianLabel} />
+        {#if warning}
+          <span class="listing-warning self-start" data-order-warning title={warning.title}
+            >{warning.label}</span
+          >
+        {/if}
+      </div>
     </svelte:fragment>
     <svelte:fragment slot="fullActions">
       <div class="flex shrink-0 items-center gap-2">
@@ -281,7 +286,7 @@
             on:click={stopAndApply}>&check;</button
           >
         {/if}
-        <button class="btn-sm btn-secondary h-7 px-2 text-xs" on:click={stopAndEdit}
+        <button class="btn-sm btn-secondary h-7 px-2 text-xs" data-order-edit on:click={stopAndEdit}
           >{$tr("market.edit")}</button
         >
         <button
