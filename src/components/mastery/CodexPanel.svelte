@@ -17,17 +17,14 @@
 
   import { locale, tr } from "../../lib/i18n.js";
   import { invoke } from "../../lib/ipc.js";
-  import {
-    CODEX_FACTIONS,
-    buildCodexRows,
-    enemyImageUrl,
-    sortCodexRows,
-    type CodexRow,
-    type CodexSortKey,
-  } from "../../lib/codexScans.js";
+  import type { CodexRow, CodexSortKey } from "../../lib/codexScans.js";
+  import { loadCodexScans } from "../../lib/codexScansLazy.js";
   import { devMode } from "../../stores/devMode.js";
   import SearchBox from "../SearchBox.svelte";
 
+  type CodexScans = Awaited<ReturnType<typeof loadCodexScans>>;
+
+  let codex: CodexScans | null = null;
   let rows: CodexRow[] = [];
   let fetchedAt: number | null = null;
   let error: "no-account" | "fetch-failed" | "no-data" | null = null;
@@ -47,13 +44,18 @@
     if (loading) return;
     loading = true;
     try {
-      const result = await invoke("getCodexScans", refresh);
+      // A rejected chunk load lands in the catch below, so Refresh retries it.
+      const [mod, result] = await Promise.all([
+        codex ?? loadCodexScans(),
+        invoke("getCodexScans", refresh),
+      ]);
+      codex = mod;
       if ("error" in result) {
         error = result.error;
       } else {
         error = null;
         fetchedAt = result.fetchedAt;
-        rows = buildCodexRows(result.scans);
+        rows = mod.buildCodexRows(result.scans);
         // A refresh can carry icons that were still missing when a URL last 404'd.
         if (refresh) resetImageProbes();
       }
@@ -95,27 +97,29 @@
   }
 
   function imageFor(row: CodexRow, _tick: number): string | null {
-    return brokenImages.has(row.type) ? null : enemyImageUrl(row.image);
+    if (!codex || brokenImages.has(row.type)) return null;
+    return codex.enemyImageUrl(row.image);
   }
 
   function imageProbedOk(type: string, _tick: number): boolean {
     return loadedImages.has(type);
   }
 
-  $: shownFactions = CODEX_FACTIONS.filter((faction) =>
-    rows.some((row) => row.faction === faction.key),
-  );
+  $: shownFactions =
+    codex?.CODEX_FACTIONS.filter((faction) => rows.some((row) => row.faction === faction.key)) ??
+    [];
   $: query = search.trim().toLowerCase();
-  $: filtered = sortCodexRows(
-    rows.filter((row) => {
-      if (factionFilter !== "all" && row.faction !== factionFilter) return false;
-      if (incompleteOnly && row.complete !== false) return false;
-      if (missingIconsOnly && imageProbedOk(row.type, brokenTick)) return false;
-      if (query && !row.name.toLowerCase().includes(query)) return false;
-      return true;
-    }),
-    sortBy,
-  );
+  $: filtered =
+    codex?.sortCodexRows(
+      rows.filter((row) => {
+        if (factionFilter !== "all" && row.faction !== factionFilter) return false;
+        if (incompleteOnly && row.complete !== false) return false;
+        if (missingIconsOnly && imageProbedOk(row.type, brokenTick)) return false;
+        if (query && !row.name.toLowerCase().includes(query)) return false;
+        return true;
+      }),
+      sortBy,
+    ) ?? [];
   $: doneCount = rows.filter((row) => row.complete === true).length;
   $: knownCount = rows.filter((row) => row.complete !== null).length;
   $: updatedLabel = fetchedAt ? new Date(fetchedAt).toLocaleTimeString($locale) : null;
@@ -182,7 +186,10 @@
     </p>
   {/if}
 
-  {#if error === "no-data" && rows.length === 0}
+  {#if loading && rows.length === 0}
+    <!-- The scan table is a separate chunk now, so first open has a real wait. -->
+    <div class="empty-state"><p>{$tr("common.loading")}</p></div>
+  {:else if error === "no-data" && rows.length === 0}
     <div class="empty-state"><p>{$tr("codex.noData")}</p></div>
   {:else if error === "no-account" && rows.length === 0}
     <div class="empty-state"><p>{$tr("codex.noAccount")}</p></div>
