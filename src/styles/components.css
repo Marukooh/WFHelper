@@ -590,16 +590,24 @@
     cursor: pointer;
     color: inherit;
   }
-  /* SVG caret shares the section title line-height, so alignment is controlled once. */
+  /* SVG caret shares the section title line-height, so alignment is controlled once.
+     Sized well under 1lh: the caret is an affordance, the surrounding button keeps the
+     hit target. */
   .world-toggle-icon {
-    width: 1.12lh;
-    height: 1.12lh;
+    width: 0.75lh;
+    height: 0.75lh;
     flex: 0 0 auto;
     display: block;
 
     color: var(--text-secondary);
     transition: transform 0.15s ease;
     transform-origin: center;
+  }
+  /* Section headers carry the caret alone, so it has to read as the header control;
+     the in-row carets sit beside other icons and stay small. */
+  .world-section-toggle .world-toggle-icon {
+    width: 0.95lh;
+    height: 0.95lh;
   }
   .world-toggle-icon.collapsed {
     transform: rotate(-90deg);
