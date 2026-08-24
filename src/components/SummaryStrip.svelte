@@ -30,13 +30,13 @@
 
 <ThemedPanel
   className={variant === "mastery"
-    ? "flex w-full min-w-0 flex-wrap items-stretch px-7 py-5"
+    ? "flex w-full min-w-0 flex-wrap items-stretch px-5 py-3"
     : variant === "grid"
       ? "grid [grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))] gap-x-8 gap-y-4 px-6 py-4"
       : "flex flex-wrap items-stretch gap-y-2 px-4 py-3"}
 >
   {#if $$slots.leading && variant !== "grid"}
-    <div class="flex shrink-0 items-center pr-6"><slot name="leading" /></div>
+    <div class="flex shrink-0 items-center pr-4"><slot name="leading" /></div>
   {/if}
 
   {#each items as item, index (item.key)}
@@ -66,15 +66,17 @@
         {/if}
       </div>
     {:else if variant === "mastery"}
-      <div class="flex flex-col justify-center gap-1 px-6">
-        <div class="flex items-center gap-4">
-          <span class="font-display text-5xl font-bold leading-none {toneClass(item.tone)}"
+      <!-- Full-width strip: cells stay compact so a fullscreen row does not
+           blow the numbers up past the cards it sits above. -->
+      <div class="flex flex-col justify-center gap-1 px-4">
+        <div class="flex items-center gap-3">
+          <span class="font-display text-3xl font-bold leading-none {toneClass(item.tone)}"
             >{item.value}</span
           >
-          <span class="text-2xl font-semibold text-text-secondary">{item.label}</span>
+          <span class="text-base font-semibold text-text-secondary">{item.label}</span>
         </div>
         {#if item.subtext}
-          <span class="text-lg font-semibold {subtextToneClass(item.subtextTone)}"
+          <span class="text-sm font-semibold {subtextToneClass(item.subtextTone)}"
             >{item.subtext}</span
           >
         {/if}
