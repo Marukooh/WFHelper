@@ -37,7 +37,13 @@ with `--no-verify`.
 
 ## Conventions
 
-- Commit messages: `[tag] - short lowercase summary` (e.g. `[fix] - relic modal blur`).
+- Commit messages: one line, `[tag] - lowercase short phrase`, max 72 characters,
+  no body (e.g. `[fix] - relic modal blur`). Only the phrase's **first** character
+  must be lowercase; proper nouns keep their case, so `[fix] - fix Warframe crash`
+  is fine. Valid tags: `build`, `chore`, `ci`, `cleanup`, `deps`, `docs`, `feat`,
+  `fix`, `lint`, `perf`, `refactor`, `release`, `security`, `style`, `test`,
+  `tooling`, `types`, `ui`, `worker`. The `commit-msg` hook and the `commit-style`
+  CI job enforce this.
 - Keep `services/` as CommonJS unless a migration is already in progress.
 - Renderer imports use relative paths with a `.js` suffix.
 - New Svelte components use runes (`$state`, `$derived`, `$props`). A component

@@ -75,8 +75,12 @@ describe("commit subject policy", () => {
     expect(result.output).toContain("commit message rejected");
   });
 
-  it("rejects uppercase letters anywhere in the phrase", () => {
-    const result = checkMessage("[fix] - valid But uppercase\n");
+  it("accepts proper nouns after a lowercase start", () => {
+    expect(checkMessage("[docs] - note SteamOS support status\n").status).toBe(0);
+  });
+
+  it("rejects an uppercase first character", () => {
+    const result = checkMessage("[fix] - Valid but uppercase start\n");
     expect(result.status).toBe(1);
     expect(result.output).toContain("lowercase phrase");
   });
@@ -93,7 +97,7 @@ describe("CI range fallback", () => {
     const cwd = initRepo();
     git(cwd, ["checkout", "-b", "feature"]);
     stageSource(cwd, "export const feature = true;\n");
-    git(cwd, ["commit", "--no-verify", "-m", "[fix] - invalid Uppercase"]);
+    git(cwd, ["commit", "--no-verify", "-m", "[fix] - Invalid uppercase start"]);
 
     const result = runCheck(COMMIT_CHECK, ["--ci"], cwd, {
       BASE_REF: "",
@@ -101,7 +105,7 @@ describe("CI range fallback", () => {
       DEFAULT_BRANCH: "main",
     });
     expect(result.status).toBe(1);
-    expect(result.output).toContain("invalid Uppercase");
+    expect(result.output).toContain("Invalid uppercase start");
   });
 
   it("retains the normal push and pull-request ranges", () => {
@@ -109,7 +113,7 @@ describe("CI range fallback", () => {
     const before = git(cwd, ["rev-parse", "HEAD"]);
     git(cwd, ["checkout", "-b", "feature"]);
     stageSource(cwd, "export const feature = true;\n");
-    git(cwd, ["commit", "--no-verify", "-m", "[fix] - invalid Uppercase"]);
+    git(cwd, ["commit", "--no-verify", "-m", "[fix] - Invalid uppercase start"]);
 
     const push = runCheck(COMMIT_CHECK, ["--ci"], cwd, {
       BASE_REF: "",
@@ -126,7 +130,7 @@ describe("CI range fallback", () => {
   });
 
   it("checks HEAD when the default-branch range is empty", () => {
-    const cwd = initRepo("[fix] - invalid Uppercase");
+    const cwd = initRepo("[fix] - Invalid uppercase start");
     const env = {
       BASE_REF: "",
       BEFORE_SHA: "0000000000000000000000000000000000000000",

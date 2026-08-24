@@ -47,8 +47,9 @@ function auditMessage(message, label, problems) {
   if (PASSTHROUGH_RE.test(subject)) return;
 
   const errors = [];
+  // SUBJECT_RE already forces a lowercase first character; proper nouns keep their case.
   const match = SUBJECT_RE.exec(subject);
-  if (!match || match[1] !== match[1].toLowerCase()) {
+  if (!match) {
     errors.push(`must read "[tag] - lowercase phrase" - tags: ${TAGS.join(", ")}`);
   }
   if (subject.length > MAX_SUBJECT) {
