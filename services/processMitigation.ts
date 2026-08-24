@@ -8,7 +8,10 @@ import path from "node:path";
 import { withScope } from "./logger";
 import { peekPreviousSessionEnd } from "./sessionHealth";
 import { normalizeErrorMessage } from "../config/shared/errors";
-import { OVERLAY_SETTINGS_DEFAULTS } from "../config/runtime/overlaySettings";
+import {
+  OVERLAY_SETTINGS_DEFAULTS,
+  OVERLAY_SETTINGS_FILE_NAME,
+} from "../config/runtime/overlaySettings";
 
 const log = withScope("processMitigation");
 
@@ -57,7 +60,7 @@ export function applyInjectionGuard(enabled: boolean): InjectionGuardResult {
 export function injectionGuardEnabled(userDataPath: string): boolean {
   const fallback = OVERLAY_SETTINGS_DEFAULTS.blockThirdPartyInjection;
   try {
-    const file = path.join(userDataPath, "overlay-settings.json");
+    const file = path.join(userDataPath, OVERLAY_SETTINGS_FILE_NAME);
     if (!fs.existsSync(file)) return fallback;
     const saved = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
     return typeof saved.blockThirdPartyInjection === "boolean"

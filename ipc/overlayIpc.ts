@@ -31,6 +31,7 @@ import {
   isRivenOverlayEnabled,
   isTradeNotificationOverlayEnabled,
   OVERLAY_SETTINGS_DEFAULTS,
+  OVERLAY_SETTINGS_FILE_NAME,
   type OverlaySettings,
   type OverlayWindowKey,
 } from "../config/runtime/overlaySettings";
@@ -252,7 +253,7 @@ function onRelicRewardTrigger(source = "manual", stalenessMs = 0): void {
   );
 }
 
-const OVERLAY_SETTINGS_FILE = userDataPath("overlay-settings.json");
+const OVERLAY_SETTINGS_FILE = userDataPath(OVERLAY_SETTINGS_FILE_NAME);
 
 const settingsController = createOverlaySettingsController({
   log,

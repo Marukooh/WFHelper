@@ -67,6 +67,10 @@ export interface OverlaySettings {
   overlayDragHintDismissed: boolean;
 }
 
+// The injection guard reads this file straight off disk before the settings
+// controller exists, so the name has two readers and must only be typed once.
+export const OVERLAY_SETTINGS_FILE_NAME = "overlay-settings.json";
+
 export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   autoTriggerEnabled: true,
   hotkeyEnabled: true,
