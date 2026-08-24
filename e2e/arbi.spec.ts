@@ -103,13 +103,10 @@ describeArbi("Arbitration schedule + post-run overlay", () => {
   });
 
   test("world view exposes the arbitration schedule sub-tab", async () => {
-    await page.locator("#sidebar").getByText("World", { exact: true }).click();
-    await page
-      .locator("#content")
-      .getByRole("button", { name: "Arbitrations", exact: true })
-      .click();
+    await page.locator('#sidebar [data-view="world"]').click();
+    await page.locator('#content [data-tour-tab="arbis"]').click();
 
-    await expect(page.getByPlaceholder("search nodes: Alator Callisto")).toBeVisible();
+    await expect(page.locator('[data-tour="arbi-schedule"] [data-search-focus]')).toBeVisible();
     // Shows either the fetched schedule ("Entries: N") or the offline state.
     await expect(page.locator("text=/Entries: \\d+|Schedule unavailable/").first()).toBeVisible({
       timeout: 30_000,
@@ -117,7 +114,7 @@ describeArbi("Arbitration schedule + post-run overlay", () => {
   });
 
   test("backfills squad names onto a pre-update run and shows them", async () => {
-    await page.locator("#sidebar").getByText("Arbitrations", { exact: true }).click();
+    await page.locator('#sidebar [data-view="arbi"]').click();
     await page.locator("#content").getByText("Casta Defense (Ceres)").first().click();
     await expect(page.locator("#content").getByText("HostPlayer, ClientOne").first()).toBeVisible({
       timeout: 15_000,
@@ -128,8 +125,8 @@ describeArbi("Arbitration schedule + post-run overlay", () => {
     // Leave the Arbitrations view first: the run has to reach the store through
     // the app-lifetime push, not a listener that only exists while that view is
     // mounted, or the Details deep-link below lands on a stale list.
-    await page.locator("#sidebar").getByText("Inventory", { exact: true }).click();
-    await expect(page.locator("#content").getByText("Arbitration Runs")).toHaveCount(0);
+    await page.locator('#sidebar [data-view="inventory"]').click();
+    await expect(page.locator("#content [data-arbi-runs]")).toHaveCount(0);
 
     const fixture = fs.readFileSync(
       path.resolve("tests/fixtures/arbi/stoefler-defense-ee.log"),

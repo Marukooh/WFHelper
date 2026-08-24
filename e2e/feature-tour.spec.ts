@@ -50,7 +50,7 @@ test.describe("Feature tour", () => {
   });
 
   test("walks every available step without replacing saved sub-tabs", async () => {
-    await page.locator("#sidebar").getByText("Settings", { exact: true }).click();
+    await page.locator('#sidebar [data-view="settings"]').click();
     await page.getByRole("button", { name: "Show feature tour" }).click();
 
     const card = page.locator("[data-tour-card]");
@@ -72,7 +72,7 @@ test.describe("Feature tour", () => {
 
     await expectStep(1, "Inventory shows");
     await expect(
-      page.locator('[data-tour="inventory-tabs"]').getByRole("button", { name: "All Parts" }),
+      page.locator('[data-tour="inventory-tabs"] [data-tour-tab="all_parts"]'),
     ).toHaveAttribute("data-active", "true");
 
     await next.click();
@@ -80,7 +80,7 @@ test.describe("Feature tour", () => {
     await next.click();
     await expectStep(3, "Mastery tracks");
     await expect(
-      page.locator('[data-tour="mastery-view-tabs"]').getByRole("button", { name: "Collection" }),
+      page.locator('[data-tour="mastery-view-tabs"] [data-tour-tab="collection"]'),
     ).toHaveAttribute("data-active", "true");
 
     await next.click();
@@ -88,13 +88,12 @@ test.describe("Feature tour", () => {
     await next.click();
     await expectStep(5, "MR Roadmap suggests");
     await expect(
-      page.locator('[data-tour="mastery-view-tabs"]').getByRole("button", { name: "MR Roadmap" }),
+      page.locator('[data-tour="mastery-view-tabs"] [data-tour-tab="roadmap"]'),
     ).toHaveAttribute("data-active", "true");
-    await expect(page.getByRole("button", { name: "With Platinum" })).toHaveAttribute(
-      "data-active",
-      "true",
-    );
-    await page.getByRole("button", { name: "From Relics" }).click();
+    await expect(
+      page.locator('[data-tour="mastery-roadmap"] [data-tour-tab="platinum"]'),
+    ).toHaveAttribute("data-active", "true");
+    await page.locator('[data-tour="mastery-roadmap"] [data-tour-tab="relics"]').click();
 
     const remainingSteps = [
       "Stats tracks resources",
@@ -115,17 +114,15 @@ test.describe("Feature tour", () => {
       await expectStep(offset + 6, text);
       if (text.startsWith("Use these tabs")) {
         await expect(
-          page
-            .locator('[data-tour="riven-view-tabs"]')
-            .getByRole("button", { name: /^Unveiled \(\d+\)$/ }),
+          page.locator('[data-tour="riven-view-tabs"] [data-tour-tab="unveiled"]'),
         ).toHaveAttribute("data-active", "true");
       }
       if (text.startsWith("Relics can")) {
-        await expect(page.getByRole("button", { name: "Axi", exact: true })).toHaveAttribute(
+        await expect(page.locator('[data-relic-tier-tabs] [data-tour-tab="Axi"]')).toHaveAttribute(
           "data-active",
           "true",
         );
-        await page.getByRole("button", { name: "Lith", exact: true }).click();
+        await page.locator('[data-relic-tier-tabs] [data-tour-tab="Lith"]').click();
       }
     }
 
@@ -153,35 +150,33 @@ test.describe("Feature tour", () => {
         world: "world",
       });
 
-    await page.locator("#sidebar").getByText("Market", { exact: true }).click();
-    await expect(page.getByRole("button", { name: "Buy Orders" })).toHaveAttribute(
+    await page.locator('#sidebar [data-view="market"]').click();
+    await expect(page.locator('#content [data-tour-tab="buy"]')).toHaveAttribute(
       "data-active",
       "true",
     );
-    await page.locator("#sidebar").getByText("Relics", { exact: true }).click();
-    await expect(page.getByRole("button", { name: "Axi", exact: true })).toHaveAttribute(
+    await page.locator('#sidebar [data-view="relics"]').click();
+    await expect(page.locator('[data-relic-tier-tabs] [data-tour-tab="Axi"]')).toHaveAttribute(
       "data-active",
       "true",
     );
-    await page.locator("#sidebar").getByText("Mastery", { exact: true }).click();
-    await expect(page.getByRole("button", { name: "MR Roadmap" })).toHaveAttribute(
-      "data-active",
-      "true",
-    );
-    await expect(page.getByRole("button", { name: "With Platinum" })).toHaveAttribute(
-      "data-active",
-      "true",
-    );
+    await page.locator('#sidebar [data-view="mastery"]').click();
+    await expect(
+      page.locator('[data-tour="mastery-view-tabs"] [data-tour-tab="roadmap"]'),
+    ).toHaveAttribute("data-active", "true");
+    await expect(
+      page.locator('[data-tour="mastery-roadmap"] [data-tour-tab="platinum"]'),
+    ).toHaveAttribute("data-active", "true");
 
     for (const exit of ["Skip tour", "Escape"] as const) {
-      await page.locator("#sidebar").getByText("Settings", { exact: true }).click();
+      await page.locator('#sidebar [data-view="settings"]').click();
       await page.getByRole("button", { name: "Show feature tour" }).click();
       await expect(card).toBeVisible();
       if (exit === "Escape") await page.keyboard.press("Escape");
       else await card.getByRole("button", { name: exit }).click();
       await expect(card).toHaveCount(0);
       await expect(
-        page.locator('[data-tour="inventory-tabs"]').getByRole("button", { name: "Resources" }),
+        page.locator('[data-tour="inventory-tabs"] [data-tour-tab="resources"]'),
       ).toHaveAttribute("data-active", "true");
       expect(
         await page.evaluate(() => [

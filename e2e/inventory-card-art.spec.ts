@@ -17,8 +17,9 @@ function inventory() {
   };
 }
 
+// Tab labels are translated; data-tour-tab carries the stable filter key.
 async function tabImages(page: ElectronTestHarness["page"], tab: string): Promise<string[]> {
-  await page.getByText(tab, { exact: true }).first().click();
+  await page.locator(`[data-tour="inventory-tabs"] [data-tour-tab="${tab}"]`).click();
   await expect(page.locator(".item-name").first()).toBeVisible({ timeout: 15_000 });
   return page
     .locator(".item-img")
@@ -34,11 +35,11 @@ test("mods and arcanes render the framed wiki card, not the market thumbnail", a
     await page.locator('#sidebar [data-view="inventory"]').click();
 
     // The WFM thumb used to win for ranked listings, which is every mod and arcane.
-    const mods = await tabImages(page, "Mods");
+    const mods = await tabImages(page, "mods");
     expect(mods.some((src) => src.includes("/mod-art/AcceleratedIsotopeMod.webp"))).toBe(true);
     expect(mods.some((src) => src.includes("/wfm/"))).toBe(false);
 
-    const arcanes = await tabImages(page, "Arcanes");
+    const arcanes = await tabImages(page, "arcanes");
     expect(arcanes.some((src) => src.includes("/mod-art/ArcaneBellicose.webp"))).toBe(true);
     expect(arcanes.some((src) => src.includes("/wfm/"))).toBe(false);
   } finally {

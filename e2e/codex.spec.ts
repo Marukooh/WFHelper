@@ -54,11 +54,8 @@ test.describe("Mastery codex tab", () => {
   });
 
   test("renders cached scan progress joined with requirements", async () => {
-    await page.locator("#sidebar").getByText("Mastery", { exact: true }).click();
-    await page
-      .locator("#content .view.active")
-      .getByRole("button", { name: "Codex", exact: true })
-      .click();
+    await page.locator('#sidebar [data-view="mastery"]').click();
+    await page.locator('#content .view.active [data-tour-tab="codex"]').click();
 
     const list = page.locator('[data-tour="mastery-codex-list"]');
     await expect(list).toBeVisible({ timeout: 30_000 });

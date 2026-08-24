@@ -49,15 +49,15 @@ test("every inventory panel reads its names in the game language", async () => {
     await selectGameLanguage(page, "ko");
 
     await page.locator('#sidebar [data-view="inventory"]').click();
-    await page.getByText("Equipment", { exact: true }).first().click();
+    await page.locator('[data-tour="inventory-tabs"] [data-tour-tab="equipment"]').click();
     await expect(page.locator(".item-name").first()).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".item-name").filter({ hasText: "아크리드" })).toHaveCount(1);
 
     // "Set" is our word; only the item half of the label follows the language.
-    await page.getByText("Full Sets", { exact: true }).first().click();
+    await page.locator('[data-tour="inventory-tabs"] [data-tour-tab="full_sets"]').click();
     await expect(page.locator(".item-name").filter({ hasText: "매그 프라임 Set" })).toHaveCount(1);
 
-    await page.getByText("Resources", { exact: true }).first().click();
+    await page.locator('[data-tour="inventory-tabs"] [data-tour-tab="resources"]').click();
     await expect(page.locator(".resource-name").filter({ hasText: "아드라말륨" })).toHaveCount(1);
 
     await page.locator('#sidebar [data-view="foundry"]').click();
@@ -72,7 +72,7 @@ test("every inventory panel reads its names in the game language", async () => {
 
     // The roadmap builds its own rows off the mastery payload, so it needs its
     // own check.
-    await page.getByText("MR Roadmap", { exact: true }).first().click();
+    await page.locator('[data-tour="mastery-view-tabs"] [data-tour-tab="roadmap"]').click();
     await expect(page.getByText("아크리드", { exact: false }).first()).toBeVisible({
       timeout: 30_000,
     });

@@ -90,7 +90,7 @@ test.describe("Market tab (fixture mode)", () => {
       throw err;
     }
 
-    await page.locator("#sidebar").getByText("Market", { exact: true }).click();
+    await page.locator('#sidebar [data-view="market"]').click();
     await expect(page.getByRole("heading", { name: "My Orders" })).toBeVisible({
       timeout: 20_000,
     });
@@ -170,14 +170,11 @@ test.describe("Market tab (fixture mode)", () => {
   });
 
   test("Riven contracts only offer meaningful sort fields", async () => {
-    await page.locator("#content").getByRole("button", { name: "Rivens", exact: true }).click();
+    await page.locator('#content [data-tour-tab="rivens"]').click();
     const sortSelect = page.locator(".sort-control-select");
     await expect(sortSelect.locator('option[value="count"]')).toHaveCount(0);
     await expect(sortSelect.locator('option[value="rerolls"]')).toHaveCount(1);
-    await page
-      .locator("#content")
-      .getByRole("button", { name: "Sell Orders", exact: true })
-      .click();
+    await page.locator('#content [data-tour-tab="sell"]').click();
   });
 
   test("order-book panel is sticky and height-capped while the list scrolls", async () => {

@@ -24,13 +24,14 @@ test.describe("World dailies tracker", () => {
     await closeElectronTestHarness(harness);
   });
 
-  async function openView(label: string): Promise<void> {
-    await page.locator("#sidebar").getByText(label, { exact: true }).click();
+  // Sidebar labels are translated, so navigate by data-view.
+  async function openView(view: string): Promise<void> {
+    await page.locator(`#sidebar [data-view="${view}"]`).click();
     await page.waitForTimeout(300);
   }
 
   async function openDailies(): Promise<void> {
-    await openView("World");
+    await openView("world");
     await page.locator('[data-tour-tab="dailies"]').click();
     await expect(page.locator('[data-task-meta="daily"]')).toBeVisible();
   }
@@ -51,8 +52,8 @@ test.describe("World dailies tracker", () => {
   }
 
   test("the World tab offers the tracker as its own sub-tab", async () => {
-    await openView("World");
-    await expect(page.locator('[data-tour-tab="dailies"]')).toHaveText("Dailies/Weeklies");
+    await openView("world");
+    await expect(page.locator('[data-tour-tab="dailies"]')).toBeVisible();
   });
 
   test("ticks a task and keeps it across view switches", async () => {
@@ -62,7 +63,7 @@ test.describe("World dailies tracker", () => {
     await task("clem").check();
     await expect(task("clem")).toBeChecked();
 
-    await openView("Settings");
+    await openView("settings");
     await openDailies();
     await expect(task("clem")).toBeChecked();
   });
@@ -71,11 +72,11 @@ test.describe("World dailies tracker", () => {
     await openDailies();
     const row = taskRow("netracells");
 
-    await row.getByRole("button", { name: "Increase progress" }).click();
+    await row.locator("[data-task-inc]").click();
     await expect(row).toContainText("1/5");
     await expect(task("netracells")).not.toBeChecked();
 
-    await row.getByRole("button", { name: "Decrease progress" }).click();
+    await row.locator("[data-task-dec]").click();
     await expect(row).toContainText("0/5");
 
     await task("netracells").check();
@@ -107,17 +108,14 @@ test.describe("World dailies tracker", () => {
     await openDailies();
     await setEditing(true);
 
-    await page.getByPlaceholder("New task name").fill("Kuva farm");
-    await page.getByRole("button", { name: "Add task" }).click();
+    await page.locator("[data-task-name]").fill("Kuva farm");
+    await page.locator("[data-task-add]").click();
 
     const custom = page.locator('[data-task^="custom:"]');
     await expect(custom).toHaveCount(1);
     await expect(custom.locator("xpath=ancestor::div[1]")).toContainText("Kuva farm");
 
-    await custom
-      .locator("xpath=ancestor::div[1]")
-      .getByRole("button", { name: "Remove task" })
-      .click();
+    await custom.locator("xpath=ancestor::div[1]").locator("[data-task-remove]").click();
     await expect(custom).toHaveCount(0);
   });
 
@@ -125,7 +123,7 @@ test.describe("World dailies tracker", () => {
     await openDailies();
     await setEditing(true);
 
-    await taskRow("clem").getByRole("button", { name: "Hide task" }).click();
+    await taskRow("clem").locator("[data-task-hide]").click();
     await setEditing(false);
 
     await expect(task("clem")).toHaveCount(0);
@@ -160,6 +158,6 @@ test.describe("World dailies tracker", () => {
     if (await task("netracells").isChecked()) await task("netracells").uncheck();
     const row = taskRow("netracells");
     await expect(row).toContainText("2/5");
-    await expect(row.getByRole("button", { name: "Decrease progress" })).toBeDisabled();
+    await expect(row.locator("[data-task-dec]")).toBeDisabled();
   });
 });

@@ -41,11 +41,8 @@ test.describe("Codex artwork fallback", () => {
   });
 
   test("a card whose artwork will not decode falls back to its initial", async () => {
-    await page.locator("#sidebar").getByText("Mastery", { exact: true }).click();
-    await page
-      .locator("#content .view.active")
-      .getByRole("button", { name: "Codex", exact: true })
-      .click();
+    await page.locator('#sidebar [data-view="mastery"]').click();
+    await page.locator('#content .view.active [data-tour-tab="codex"]').click();
     await expect(page.locator('[data-tour="mastery-codex-list"]')).toBeVisible({ timeout: 60_000 });
 
     // Only cards in the viewport: a lazy image that never scrolled into view has
