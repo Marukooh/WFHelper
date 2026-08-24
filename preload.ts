@@ -38,6 +38,7 @@ import {
   WFM_PRESENCE_STATE,
   WFM_NOTIFICATION,
   APP_UPDATE_CHECK,
+  SYSTEM_CONFIRM,
   APP_UPDATE_STATE,
   APP_UPDATE_DOWNLOAD,
   APP_UPDATE_INSTALL,
@@ -145,6 +146,7 @@ try {
     saveOverlayScale: inv<"saveOverlayScale">(OVERLAY_SAVE_SCALE),
     searchDrops: (query, mode): Ret<"searchDrops"> =>
       ipcRenderer.invoke(DROP_SEARCH, { query, mode }),
+    confirmDialog: inv<"confirmDialog">(SYSTEM_CONFIRM),
     checkForAppUpdates: inv<"checkForAppUpdates">(APP_UPDATE_CHECK),
     getAppUpdateState: inv<"getAppUpdateState">(APP_UPDATE_STATE),
     downloadAppUpdate: inv<"downloadAppUpdate">(APP_UPDATE_DOWNLOAD),

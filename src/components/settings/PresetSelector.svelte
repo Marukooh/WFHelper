@@ -1,6 +1,7 @@
 <script lang="ts">
   import { themeSettings } from "../../stores/theme.js";
   import { tr } from "../../lib/i18n.js";
+  import { confirmWithDialog } from "../../lib/ipc.js";
   import BuiltInThemeDropdown from "./BuiltInThemeDropdown.svelte";
   import ThemeDropdown from "./ThemeDropdown.svelte";
 
@@ -26,11 +27,15 @@
     customName = "";
   }
 
-  function deleteActiveCustomTheme(): void {
-    if (!activeCustomTheme) return;
-    const ok = confirm($tr("appearance.confirmDeleteTheme", { name: activeCustomTheme.label }));
+  async function deleteActiveCustomTheme(): Promise<void> {
+    const theme = activeCustomTheme;
+    if (!theme) return;
+    const ok = await confirmWithDialog(
+      $tr("appearance.confirmDeleteTheme", { name: theme.label }),
+      $tr,
+    );
     if (!ok) return;
-    themeSettings.deleteCustomTheme(activeCustomTheme.id);
+    themeSettings.deleteCustomTheme(theme.id);
   }
 </script>
 

@@ -54,6 +54,9 @@ export interface PreloadAPI {
     query: IpcInvokeMap["searchDrops"]["args"][0],
     mode: IpcInvokeMap["searchDrops"]["args"][1],
   ) => Promise<IpcInvokeMap["searchDrops"]["return"]>;
+  confirmDialog: (
+    payload: IpcInvokeMap["confirmDialog"]["args"][0],
+  ) => Promise<IpcInvokeMap["confirmDialog"]["return"]>;
   checkForAppUpdates: () => Promise<IpcInvokeMap["checkForAppUpdates"]["return"]>;
   getAppUpdateState: () => Promise<IpcInvokeMap["getAppUpdateState"]["return"]>;
   downloadAppUpdate: () => Promise<IpcInvokeMap["downloadAppUpdate"]["return"]>;

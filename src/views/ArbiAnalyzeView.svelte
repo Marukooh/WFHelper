@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { invoke } from "../lib/ipc.js";
+  import { confirmWithDialog, invoke } from "../lib/ipc.js";
   import { log } from "../lib/log.js";
   import { tr } from "../lib/i18n.js";
   import ThemedButton from "../components/ThemedButton.svelte";
@@ -103,7 +103,13 @@
 
   async function massDelete(): Promise<void> {
     if (massBusy || selectedIds.size === 0) return;
-    if (!confirm($tr("arbi.confirmDeleteRuns", { count: String(selectedIds.size) }))) return;
+    if (
+      !(await confirmWithDialog(
+        $tr("arbi.confirmDeleteRuns", { count: String(selectedIds.size) }),
+        $tr,
+      ))
+    )
+      return;
     massBusy = true;
     try {
       for (const id of selectedIds) await deleteArbiRun(id);

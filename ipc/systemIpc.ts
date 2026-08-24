@@ -12,7 +12,7 @@ import * as dropData from "../services/dropData";
 import * as autoUpdater from "../services/autoUpdater";
 import { normalizeErrorMessage } from "../config/shared/errors";
 import { isAllowedExternalHost } from "../config/runtime/security";
-import { app, shell } from "electron";
+import { app, BrowserWindow, dialog, shell } from "electron";
 import {
   DB_GET_ITEM_DATABASE,
   GAME_LOCALE_UPDATED,
@@ -23,6 +23,7 @@ import {
   DB_GET_RELIC_DATABASE,
   DROP_SEARCH,
   APP_UPDATE_CHECK,
+  SYSTEM_CONFIRM,
   APP_UPDATE_STATE,
   APP_UPDATE_DOWNLOAD,
   APP_UPDATE_INSTALL,
@@ -98,6 +99,30 @@ function register(): void {
       log.warn("[Drops] ensureLoaded failed:", normalizeErrorMessage(error));
     }
     return dropData.searchDrops(query, mode);
+  });
+
+  // window.confirm leaves renderer keyboard input dead on Windows after it
+  // closes (Chromium bug), so destructive confirmations use the native dialog.
+  handleAuthorized(SYSTEM_CONFIRM, assertMainRendererSender, async (event, payload: unknown) => {
+    const p = (payload ?? {}) as { message?: unknown; okLabel?: unknown; cancelLabel?: unknown };
+    const message = typeof p.message === "string" ? p.message.slice(0, 500) : "";
+    if (!message) return false;
+    const okLabel = typeof p.okLabel === "string" && p.okLabel ? p.okLabel.slice(0, 60) : "OK";
+    const cancelLabel =
+      typeof p.cancelLabel === "string" && p.cancelLabel ? p.cancelLabel.slice(0, 60) : "Cancel";
+    const options = {
+      type: "question" as const,
+      buttons: [okLabel, cancelLabel],
+      defaultId: 0,
+      cancelId: 1,
+      message,
+      noLink: true,
+    };
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const { response } = win
+      ? await dialog.showMessageBox(win, options)
+      : await dialog.showMessageBox(options);
+    return response === 0;
   });
 
   handleAuthorized(APP_UPDATE_CHECK, assertMainRendererSender, () =>

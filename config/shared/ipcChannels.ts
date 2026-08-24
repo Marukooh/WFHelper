@@ -41,6 +41,7 @@ export const APP_UPDATE_DOWNLOAD = "app:update-download";
 export const APP_UPDATE_INSTALL = "app:update-install";
 export const APP_UPDATE_STATUS = "app-update-status";
 export const APP_RUNTIME_INFO = "app:runtime-info";
+export const SYSTEM_CONFIRM = "system:confirm";
 export const SCAN_DEBUG_OPEN_FOLDER = "scan-debug:open-folder";
 export const LOGS_OPEN_FOLDER = "logs:open-folder";
 

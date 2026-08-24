@@ -1,4 +1,5 @@
 import type { IpcEventMap, IpcInvokeMap, IpcSendMap } from "../types/ipc.js";
+import type { Translator } from "./i18n.js";
 
 type InvokeKey = keyof IpcInvokeMap;
 type TradeInvokeKey =
@@ -46,6 +47,16 @@ export function invoke<K extends ReadOnlyInvokeKey>(
     ...a: IpcInvokeMap[K]["args"]
   ) => Promise<IpcInvokeMap[K]["return"]>;
   return fn(...args);
+}
+
+/** Native main-process confirm; window.confirm freezes keyboard input on
+ *  Windows after closing, which is why no call site may use it directly. */
+export function confirmWithDialog(message: string, t: Translator): Promise<boolean> {
+  return invoke("confirmDialog", {
+    message,
+    okLabel: t("common.confirm"),
+    cancelLabel: t("common.cancel"),
+  });
 }
 
 export function tradeInvoke<K extends TradeInvokeKey>(

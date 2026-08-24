@@ -3,6 +3,7 @@
   import { tr as t } from "../../lib/i18n.js";
   import type { ArbiRunRecord } from "../../types/ipc.js";
   import { deleteArbiRun, deleteArbiRunLog } from "../../stores/arbiRuns.js";
+  import { confirmWithDialog } from "../../lib/ipc.js";
   import {
     formatBytes,
     formatDuration,
@@ -35,7 +36,7 @@
 
   async function onDeleteRun(e: MouseEvent, id: string): Promise<void> {
     e.stopPropagation();
-    if (!confirm($t("arbi.confirmDeleteRun"))) return;
+    if (!(await confirmWithDialog($t("arbi.confirmDeleteRun"), $t))) return;
     await deleteArbiRun(id);
   }
 

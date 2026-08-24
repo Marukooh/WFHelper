@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { toBlob } from "html-to-image";
 
-  import { invoke } from "../../lib/ipc.js";
+  import { confirmWithDialog, invoke } from "../../lib/ipc.js";
   import { locale, tr } from "../../lib/i18n.js";
   import { log } from "../../lib/log.js";
   import { clockStore } from "../../lib/timers.js";
@@ -136,7 +136,7 @@
     saveSelectedNodeIds(selected);
   }
 
-  function savePreset(): void {
+  async function savePreset(): Promise<void> {
     const name = presetName.trim();
     if (!name) {
       presetStatus = $tr("arbisched.presetNameMissing");
@@ -145,7 +145,10 @@
     const existing = presets.findIndex((p) => p.name.toLowerCase() === name.toLowerCase());
     if (
       existing >= 0 &&
-      !confirm($tr("arbisched.presetOverwrite", { name: presets[existing].name }))
+      !(await confirmWithDialog(
+        $tr("arbisched.presetOverwrite", { name: presets[existing].name }),
+        $tr,
+      ))
     ) {
       return;
     }
@@ -173,13 +176,16 @@
     presetStatus = $tr("arbisched.presetLoaded", { name: preset.name });
   }
 
-  function deletePreset(): void {
+  async function deletePreset(): Promise<void> {
     const preset = presets.find((p) => p.name === presetSelected);
     if (!preset) {
       presetStatus = $tr("arbisched.presetSelectFirst");
       return;
     }
-    if (!confirm($tr("arbisched.presetDeleteConfirm", { name: preset.name }))) return;
+    if (
+      !(await confirmWithDialog($tr("arbisched.presetDeleteConfirm", { name: preset.name }), $tr))
+    )
+      return;
     presets = presets.filter((p) => p.name !== preset.name);
     saveSelectionPresets(presets);
     presetSelected = "";

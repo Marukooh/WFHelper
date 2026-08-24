@@ -279,6 +279,10 @@ export interface IpcInvokeMap {
     args: [settings: Partial<OverlaySettings>];
     return: OverlaySettings;
   };
+  confirmDialog: {
+    args: [payload: { message: string; okLabel: string; cancelLabel: string }];
+    return: boolean;
+  };
   checkForAppUpdates: {
     args: [];
     return: AppUpdateCheckResult;

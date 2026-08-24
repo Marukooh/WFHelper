@@ -37,7 +37,7 @@
     ownedCountForMarketOrder,
   } from "../lib/marketOrderInventory.js";
   import { invalidateMarketOrdersRefresh, refreshMarketOrders } from "../lib/marketOrdersSync.js";
-  import { invoke, on, send, tradeInvoke } from "../lib/ipc.js";
+  import { confirmWithDialog, invoke, on, send, tradeInvoke } from "../lib/ipc.js";
   import { startupPriceCacheReady } from "../lib/startupLoader.js";
   import { marketDensity } from "../stores/uiDensity.js";
   import { getInventoryHydrationController } from "../stores/inventoryHydration.js";
@@ -481,7 +481,7 @@
   }
 
   async function removeContract(contract: WfmContract): Promise<void> {
-    if (!confirm($tr("market.riven.confirmRemove"))) return;
+    if (!(await confirmWithDialog($tr("market.riven.confirmRemove"), $tr))) return;
     contractBusyIds = [...contractBusyIds, contract.id];
     try {
       const result = await tradeInvoke("deleteRivenAuction", { auctionId: contract.id });
@@ -564,7 +564,7 @@
   }
 
   async function deleteOrder(orderId: string): Promise<void> {
-    if (!confirm($tr("market.confirmDeleteOrder"))) return;
+    if (!(await confirmWithDialog($tr("market.confirmDeleteOrder"), $tr))) return;
     const result = await tradeInvoke("wfmDeleteOrder", orderId);
     if (hasError(result)) {
       alert($tr("market.deleteFailed", { error: result.error }));
@@ -591,7 +591,8 @@
     if (!isOrdersTab($marketViewState.typeTab)) return;
     const ids = [...$marketSelected];
     if (!ids.length) return;
-    if (!confirm($tr("market.confirmDeleteOrders", { count: ids.length }))) return;
+    if (!(await confirmWithDialog($tr("market.confirmDeleteOrders", { count: ids.length }), $tr)))
+      return;
     for (const id of ids) {
       await tradeInvoke("wfmDeleteOrder", id);
     }

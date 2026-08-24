@@ -434,7 +434,7 @@
           {/if}
 
           <div class="mt-3 flex justify-end gap-2">
-            <ThemedButton type="button" onClick={close}>{$tr("orderModal.cancel")}</ThemedButton>
+            <ThemedButton type="button" onClick={close}>{$tr("common.cancel")}</ThemedButton>
             <button type="submit" class="btn-primary" disabled={submitting}>
               {submitting
                 ? isEdit

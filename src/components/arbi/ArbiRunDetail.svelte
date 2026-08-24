@@ -3,7 +3,7 @@
   import { toBlob } from "html-to-image";
 
   import { tr } from "../../lib/i18n.js";
-  import { invoke } from "../../lib/ipc.js";
+  import { confirmWithDialog, invoke } from "../../lib/ipc.js";
   import { log } from "../../lib/log.js";
   import ThemedButton from "../ThemedButton.svelte";
   import ThemedPanel from "../ThemedPanel.svelte";
@@ -151,7 +151,7 @@
   }
 
   async function onDelete(): Promise<void> {
-    if (!confirm($tr("arbi.confirmDeleteRun"))) return;
+    if (!(await confirmWithDialog($tr("arbi.confirmDeleteRun"), $tr))) return;
     await deleteArbiRun(run.id);
     onBack();
   }
