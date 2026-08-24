@@ -61,6 +61,7 @@
   let statusTimer: ReturnType<typeof setTimeout> | null = null;
 
   const isLinux = getPlatform() === "linux";
+  const isWindows = getPlatform() === "win32";
 
   async function openFolder(
     channel: "openScanDebugFolder" | "openLogFolder",
@@ -171,6 +172,7 @@
     "arbiTrackingEnabled",
     "autoInventorySyncEnabled",
     "ocrDebugImagesEnabled",
+    "blockThirdPartyInjection",
     "hotkeyEnabled",
     "hotkey",
     "interactionHotkeyEnabled",
@@ -502,6 +504,27 @@
           </SettingsRow>
         </div>
       </SettingsSection>
+
+      {#if isWindows}
+        <SettingsSection
+          title={$tr("settings.compatibilityTitle")}
+          description={$tr("settings.compatibilityDesc")}
+        >
+          <div class="mt-2.5 grid gap-1">
+            <SettingsRow
+              label={$tr("settings.blockInjection")}
+              hint={$tr("settings.blockInjectionHint")}
+            >
+              <input
+                type="checkbox"
+                bind:checked={form.blockThirdPartyInjection}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
+          </div>
+        </SettingsSection>
+      {/if}
 
       <SettingsSection
         title={$tr("settings.sidebarTabsTitle")}

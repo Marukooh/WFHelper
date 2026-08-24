@@ -106,7 +106,12 @@ import * as inventorySync from "./services/inventorySync";
 import { disposeLinuxStreamCapture } from "./services/linuxStreamCapture";
 import { loadMainWindowState, saveMainWindowState } from "./services/mainWindowState";
 import { WIN_APP_USER_MODEL_ID } from "./config/shared/appMeta";
-import { describeKnownInjectors, listForeignModules } from "./services/processMitigation";
+import {
+  applyInjectionGuardForStartup,
+  describeKnownInjectors,
+  listForeignModules,
+  type InjectionGuardResult,
+} from "./services/processMitigation";
 import {
   beginSession,
   crashDumpsFromPreviousSession,
@@ -115,6 +120,11 @@ import {
 
 // Keep native crash dumps local under userData\Crashes.
 crashReporter.start({ uploadToServer: false });
+
+// Applied at the top of the ready handler, before any window: a hooked DLL that
+// is already inside cannot be evicted. A second instance never gets here, and
+// must not, since loading koffi only to quit again fast-fails on teardown.
+let injectionGuard: InjectionGuardResult = "off";
 
 // Suppress noisy Chromium/DevTools internal logging in terminal.
 app.commandLine.appendSwitch("disable-logging");
@@ -319,6 +329,8 @@ function logStartupPaths(profileStage: ProfileStage): void {
 // judged by what it left behind. Named injectors are only worth accusing once
 // something actually died.
 function reportSessionHealth(profileStage: ProfileStage): void {
+  log.info(`[Startup] injection guard: ${injectionGuard}`);
+
   const foreignStart = Date.now();
   const foreign = listForeignModules();
   profileStage("foreign-modules:scan", foreignStart);
@@ -548,6 +560,9 @@ void app.whenReady().then(async () => {
     log.info(`[StartupProfile][main] ${label}: ${Date.now() - startedAt}ms`);
   };
 
+  // Reads the previous outcome without claiming it, so it still has to run ahead
+  // of the beginSession() inside logStartupPaths().
+  injectionGuard = applyInjectionGuardForStartup(app.getPath("userData"));
   logStartupPaths(profileStage);
   initTrackersAndSettings(profileStage);
   registerIpcHandlers(profileStage);

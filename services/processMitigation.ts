@@ -2,13 +2,94 @@
  *  NahimicOSD.dll killed the main process this way, inside Chromium's window
  *  code, with no catchable error. */
 
+import fs from "node:fs";
 import path from "node:path";
 
 import { withScope } from "./logger";
+import { peekPreviousSessionEnd } from "./sessionHealth";
 import { normalizeErrorMessage } from "../config/shared/errors";
+import { OVERLAY_SETTINGS_DEFAULTS } from "../config/runtime/overlaySettings";
 
 const log = withScope("processMitigation");
 
+let _koffi: typeof import("koffi") | null = null;
+
+function koffi(): typeof import("koffi") {
+  if (!_koffi) _koffi = require("koffi") as typeof import("koffi");
+  return _koffi;
+}
+
+// Index into PROCESS_MITIGATION_POLICY. 8 is ProcessSignaturePolicy, whose bit 0
+// is MicrosoftSignedOnly: it takes the same 4-byte payload, so the call succeeds
+// and then refuses every unsigned native we load (sharp dies with error 577).
+export const PROCESS_EXTENSION_POINT_DISABLE_POLICY = 6;
+
+export type InjectionGuardResult = "applied" | "off" | "unsupported" | "failed" | "skipped";
+
+/** Refuses AppInit_DLLs, global SetWindowsHookEx DLLs, Winsock LSPs and legacy
+ *  IMEs. Must run before the first window: one already inside cannot be evicted. */
+export function applyInjectionGuard(enabled: boolean): InjectionGuardResult {
+  if (!enabled) return "off";
+  if (process.platform !== "win32") return "unsupported";
+
+  try {
+    const kernel32 = koffi().load("kernel32.dll");
+    const SetProcessMitigationPolicy = kernel32.func(
+      "__stdcall",
+      "SetProcessMitigationPolicy",
+      "int32",
+      ["int32", "void *", "size_t"],
+    );
+    const policy = Buffer.alloc(4);
+    policy.writeUInt32LE(1, 0); // DisableExtensionPoints
+    const applied = SetProcessMitigationPolicy(PROCESS_EXTENSION_POINT_DISABLE_POLICY, policy, 4);
+    return applied ? "applied" : "failed";
+  } catch (err) {
+    log.warn("[Mitigation] injection guard failed:", normalizeErrorMessage(err));
+    return "failed";
+  }
+}
+
+/**
+ * Read straight off disk because the guard runs before the settings controller
+ * exists, and one sync read is cheaper than being too late to matter.
+ */
+export function injectionGuardEnabled(userDataPath: string): boolean {
+  const fallback = OVERLAY_SETTINGS_DEFAULTS.blockThirdPartyInjection;
+  try {
+    const file = path.join(userDataPath, "overlay-settings.json");
+    if (!fs.existsSync(file)) return fallback;
+    const saved = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+    return typeof saved.blockThirdPartyInjection === "boolean"
+      ? saved.blockThirdPartyInjection
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** The guard can be what kills the process, and a process that dies at startup
+ *  never reaches Settings to untick it. One unclean exit disarms it for the next
+ *  run; a clean quit re-arms it. */
+function injectionGuardSkipReason(userDataPath: string): string | null {
+  if (process.env.WFHELPER_NO_INJECTION_GUARD === "1") return "WFHELPER_NO_INJECTION_GUARD=1";
+  if (peekPreviousSessionEnd(userDataPath) === "unclean") return "previous session ended unclean";
+  return null;
+}
+
+/** Startup decision: the saved setting, the escape hatch, and the last outcome. */
+export function applyInjectionGuardForStartup(userDataPath: string): InjectionGuardResult {
+  if (!injectionGuardEnabled(userDataPath)) return "off";
+
+  const skip = injectionGuardSkipReason(userDataPath);
+  if (skip) {
+    log.info(`[Mitigation] injection guard skipped: ${skip}`);
+    return "skipped";
+  }
+  return applyInjectionGuard(true);
+}
+
+/** Substring of a lowercased module path, and what to call it in a report. */
 const KNOWN_INJECTORS: Array<{ match: string; name: string }> = [
   { match: "nahimic", name: "Nahimic audio OSD (A-Volute)" },
   { match: "a-volute", name: "A-Volute audio suite" },

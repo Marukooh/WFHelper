@@ -54,6 +54,9 @@ export interface OverlaySettings {
   autoInventorySyncEnabled: boolean;
   /** Save failed-scan OCR images (riven crops, reward scan-debug bundles); on unless opted out. */
   ocrDebugImagesEnabled: boolean;
+  /** Refuse the legacy Windows injection vectors audio and overlay suites use.
+   *  Takes effect on the next start; also blocks legacy IMEs. */
+  blockThirdPartyInjection: boolean;
   /** Main-window zoom multiplier applied on top of the display-derived base. */
   uiScale: number;
   overlayScale: number;
@@ -99,6 +102,7 @@ export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   arbiTrackingEnabled: true,
   autoInventorySyncEnabled: true,
   ocrDebugImagesEnabled: true,
+  blockThirdPartyInjection: true,
   uiScale: 1,
   overlayScale: 1,
   overlayWindowScales: Object.freeze({}),

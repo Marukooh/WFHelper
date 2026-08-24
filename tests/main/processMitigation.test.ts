@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
+import path from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("electron", () => ({
@@ -9,9 +10,32 @@ vi.mock("electron", () => ({
   },
 }));
 
-import { describeKnownInjectors, listForeignModules } from "../../services/processMitigation";
+import {
+  applyInjectionGuard,
+  applyInjectionGuardForStartup,
+  describeKnownInjectors,
+  injectionGuardEnabled,
+  listForeignModules,
+  PROCESS_EXTENSION_POINT_DISABLE_POLICY,
+} from "../../services/processMitigation";
 
 const tempDirs: string[] = [];
+
+function tempUserData(settings?: Record<string, unknown>): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wfh-mitig-"));
+  tempDirs.push(dir);
+  if (settings) {
+    fs.writeFileSync(path.join(dir, "overlay-settings.json"), JSON.stringify(settings));
+  }
+  return dir;
+}
+
+function writeSessionState(dir: string, status: "running" | "clean"): void {
+  fs.writeFileSync(
+    path.join(dir, "session-state.json"),
+    JSON.stringify({ status, startedAt: Date.now() }),
+  );
+}
 
 const realPlatform = process.platform;
 
@@ -41,6 +65,86 @@ afterEach(() => {
 
 afterAll(() => {
   for (const dir of tempDirs) fs.rmSync(dir, { recursive: true, force: true });
+});
+
+describe("applyInjectionGuard", () => {
+  it("reports off without touching the platform when disabled", () => {
+    expect(applyInjectionGuard(false)).toBe("off");
+  });
+
+  // Index 8 (ProcessSignaturePolicy) takes the same payload and succeeds, then
+  // refuses every unsigned native; it shipped once and killed sharp with error 577.
+  it("keeps the policy index on ProcessExtensionPointDisablePolicy", () => {
+    expect(PROCESS_EXTENSION_POINT_DISABLE_POLICY).toBe(6);
+  });
+
+  // Guards against reintroducing ProcessSignaturePolicy: MicrosoftSignedOnly makes
+  // every unsigned native, sharp included, fail to load with Win32 error 577.
+  it.runIf(process.platform === "win32")("leaves unsigned native modules loadable", async () => {
+    expect(applyInjectionGuard(true)).toBe("applied");
+    await expect(import("sharp")).resolves.toBeDefined();
+  });
+});
+
+describe("injectionGuardEnabled", () => {
+  it("defaults to on when nothing is saved yet", () => {
+    expect(injectionGuardEnabled(tempUserData())).toBe(true);
+  });
+
+  it("honours an explicit opt-out", () => {
+    expect(injectionGuardEnabled(tempUserData({ blockThirdPartyInjection: false }))).toBe(false);
+    expect(injectionGuardEnabled(tempUserData({ blockThirdPartyInjection: true }))).toBe(true);
+  });
+
+  it("falls back to on for an unreadable or unrelated file", () => {
+    const dir = tempUserData();
+    fs.writeFileSync(path.join(dir, "overlay-settings.json"), "{ not json");
+    expect(injectionGuardEnabled(dir)).toBe(true);
+    expect(injectionGuardEnabled(tempUserData({ hotkey: "F8" }))).toBe(true);
+  });
+});
+
+// "unsupported" is the non-Windows tail of the normal path: it got past every skip.
+describe("applyInjectionGuardForStartup", () => {
+  it("applies the guard on an ordinary run", () => {
+    withPlatform("linux", () => {
+      expect(applyInjectionGuardForStartup(tempUserData())).toBe("unsupported");
+    });
+  });
+
+  it("stays off when the user unticked it", () => {
+    withPlatform("linux", () => {
+      expect(applyInjectionGuardForStartup(tempUserData({ blockThirdPartyInjection: false }))).toBe(
+        "off",
+      );
+    });
+  });
+
+  it("disarms itself after a session that never shut down", () => {
+    const dir = tempUserData();
+    writeSessionState(dir, "running");
+
+    withPlatform("linux", () => {
+      expect(applyInjectionGuardForStartup(dir)).toBe("skipped");
+    });
+  });
+
+  it("re-arms once a session quits cleanly", () => {
+    const dir = tempUserData();
+    writeSessionState(dir, "clean");
+
+    withPlatform("linux", () => {
+      expect(applyInjectionGuardForStartup(dir)).toBe("unsupported");
+    });
+  });
+
+  it("honours the escape hatch env var", () => {
+    vi.stubEnv("WFHELPER_NO_INJECTION_GUARD", "1");
+
+    withPlatform("linux", () => {
+      expect(applyInjectionGuardForStartup(tempUserData())).toBe("skipped");
+    });
+  });
 });
 
 describe("describeKnownInjectors", () => {

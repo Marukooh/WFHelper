@@ -239,6 +239,7 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
       arbiTrackingEnabled: booleanSetting("arbiTrackingEnabled"),
       autoInventorySyncEnabled: booleanSetting("autoInventorySyncEnabled"),
       ocrDebugImagesEnabled: booleanSetting("ocrDebugImagesEnabled"),
+      blockThirdPartyInjection: booleanSetting("blockThirdPartyInjection"),
       uiScale: normalizeOverlayScale(candidate.uiScale, defaults.uiScale),
       overlayScale: normalizeOverlayScale(candidate.overlayScale, defaults.overlayScale),
       overlayWindowScales: normalizeWindowScales(candidate.overlayWindowScales),
