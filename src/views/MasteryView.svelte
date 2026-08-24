@@ -322,10 +322,12 @@
         : Math.max(0, Math.min(100, Math.floor((item.rank / Math.max(item.maxRank, 1)) * 100)));
       const wfm = wfmLookup[item.name.toLowerCase()] || null;
       const foundryStatus = foundryStatusFor(item, foundry);
+      // undefined, not false, for anything that can never be fed to the
+      // Helminth: the strict tri-state filter drops those rows entirely.
       const isSubsumed =
-        item.category === "Warframes" &&
-        isSubsumableFrame(item.name) &&
-        isFrameSubsumed(item.name, subsumed);
+        item.category === "Warframes" && isSubsumableFrame(item.name)
+          ? isFrameSubsumed(item.name, subsumed)
+          : undefined;
       const components = (item.components || []).map((comp) => ({
         ...comp,
         // Sets name a part ...Component while the foundry builds ...Blueprint.
@@ -471,7 +473,9 @@
     <!-- Stats overview -->
     <div class="grid gap-3 mb-3.5">
       <SummaryStrip items={masterySummaryItems} variant="mastery">
-        <svg slot="leading" class="h-[120px] w-[120px] shrink-0" viewBox="0 0 120 120">
+        <!-- The ring sits inside the panel now, so it drives the strip height;
+             92px keeps that height at the pre-alignment size. -->
+        <svg slot="leading" class="h-[92px] w-[92px] shrink-0" viewBox="0 0 120 120">
           <circle
             cx="60"
             cy="60"
@@ -494,20 +498,20 @@
           />
           <text
             x="60"
-            y="55"
+            y="57"
             text-anchor="middle"
             fill="var(--text-primary)"
-            font-size="22"
+            font-size="26"
             font-weight="700"
             font-family="Rajdhani">{masteredPct}%</text
           >
           <text
             class="ring-caption"
             x="60"
-            y="72"
+            y="76"
             text-anchor="middle"
             fill="var(--text-muted)"
-            font-size="10"
+            font-size="13"
             font-family="Barlow">{$tr("common.mastered")}</text
           >
         </svg>
@@ -622,6 +626,7 @@
           scope="mastery"
           sortOptions={MASTERY_SORT_OPTIONS}
           showVaulted
+          showSubsumed
           showFoundryState
         />
         <div class="flex items-end border-b border-white/[0.09]">

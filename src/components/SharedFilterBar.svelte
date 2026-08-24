@@ -219,6 +219,7 @@
             <span class="shared-chip-label">{$tr("common.subsumed")}</span>
             <select
               class="shared-filter-select"
+              data-subsumed
               title={$tr("filters.subsumedTitle")}
               value={state.subsumed}
               on:change={(event) =>
