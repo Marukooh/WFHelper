@@ -5,7 +5,7 @@ import { onInventoryLoaded } from "./actions.js";
 import { tr } from "./i18n.js";
 import { handleWfmNotification } from "./wfmNotifications.js";
 import { statusText } from "../stores/app.js";
-import { pendingArbiRunId } from "../stores/arbiRuns.js";
+import { pendingArbiRunId, subscribeArbiRunSaved } from "../stores/arbiRuns.js";
 import { currentView } from "../stores/app.js";
 import { itemDb, parsedItems } from "../stores/data.js";
 import { masteryData } from "../stores/mastery.js";
@@ -17,6 +17,9 @@ import { applyUpdateState } from "../stores/updates.js";
  * App.svelte only calls this and disposes it; none of it is layout. */
 export function initRendererEvents(): () => void {
   const unsubscribes = [
+    // Runs land in the index even while the Arbitrations tab is unmounted.
+    subscribeArbiRunSaved(),
+
     on("inventory-updated", async (data) => {
       if (data && !(data as { error?: unknown }).error) {
         await onInventoryLoaded(data);

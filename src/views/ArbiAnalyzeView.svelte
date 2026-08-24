@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
 
-  import { invoke, on } from "../lib/ipc.js";
+  import { invoke } from "../lib/ipc.js";
   import { tr } from "../lib/i18n.js";
   import ThemedButton from "../components/ThemedButton.svelte";
   import ThemedPanel from "../components/ThemedPanel.svelte";
@@ -15,7 +15,6 @@
     loadArbiRuns,
     pendingArbiRunId,
     updateArbiTags,
-    upsertArbiRun,
   } from "../stores/arbiRuns.js";
   import {
     applyOverlaySettingsResponse,
@@ -27,7 +26,6 @@
   let selectedRunId: string | null = null;
   let importBusy = false;
   let importStatus = "";
-  let unsubRunSaved: (() => void) | null = null;
 
   let filterMinVitus: number | null = null;
   let filterTag = "";
@@ -133,19 +131,12 @@
   }
 
   onMount(() => {
-    unsubRunSaved = on("arbi-run-saved", (run) => {
-      upsertArbiRun(run);
-    });
     if (!$arbiRunsLoaded) void loadArbiRuns();
     if (!$overlaySettingsLoaded) {
       invoke("getOverlaySettings")
         .then((loaded) => loaded && applyOverlaySettingsResponse(loaded))
         .catch(() => {});
     }
-  });
-
-  onDestroy(() => {
-    unsubRunSaved?.();
   });
 
   async function importLog(): Promise<void> {

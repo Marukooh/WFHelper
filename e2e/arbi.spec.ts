@@ -125,6 +125,12 @@ describeArbi("Arbitration schedule + post-run overlay", () => {
   });
 
   test("post-run overlay pops after a multi-rotation arbitration", async () => {
+    // Leave the Arbitrations view first: the run has to reach the store through
+    // the app-lifetime push, not a listener that only exists while that view is
+    // mounted, or the Details deep-link below lands on a stale list.
+    await page.locator("#sidebar").getByText("Inventory", { exact: true }).click();
+    await expect(page.locator("#content").getByText("Arbitration Runs")).toHaveCount(0);
+
     const fixture = fs.readFileSync(
       path.resolve("tests/fixtures/arbi/stoefler-defense-ee.log"),
       "utf8",

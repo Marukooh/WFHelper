@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-import { invoke } from "../lib/ipc.js";
+import { invoke, on } from "../lib/ipc.js";
 import type { ArbiRunRecord } from "../types/ipc.js";
 
 export const arbiRuns = writable<ArbiRunRecord[]>([]);
@@ -16,8 +16,14 @@ export async function loadArbiRuns(): Promise<void> {
   arbiRunsLoaded.set(true);
 }
 
+/** Runs land in the index even when the Arbitrations tab is closed, so the
+ * push has to be bound for the app's lifetime, not the view's. */
+export function subscribeArbiRunSaved(): () => void {
+  return on("arbi-run-saved", (run) => upsertArbiRun(run));
+}
+
 /** Prepend or replace a run pushed from the main process. */
-export function upsertArbiRun(run: ArbiRunRecord): void {
+function upsertArbiRun(run: ArbiRunRecord): void {
   arbiRuns.update((runs) => {
     const idx = runs.findIndex((r) => r.id === run.id);
     if (idx >= 0) return [...runs.slice(0, idx), run, ...runs.slice(idx + 1)];
