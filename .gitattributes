@@ -15,3 +15,6 @@ src/i18n/*.json linguist-detectable=false
 
 # Generated from DE's own dictionaries; shipped, so tracked, but not our code.
 src/data/itemNames/*.json linguist-detectable=false linguist-generated=true
+
+# Generated from the wiki's enemy tables by build-codex-scan-data.mjs.
+src/data/codexScanRequirements.json linguist-detectable=false linguist-generated=true

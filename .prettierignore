@@ -9,3 +9,4 @@ backend/worker/worker-configuration.d.ts
 # produce a formatting diff.
 config/shared/wikiModArt.ts
 scripts/icon-mirror/wiki-mod-art.json
+src/data/codexScanRequirements.json
