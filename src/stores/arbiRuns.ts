@@ -9,11 +9,22 @@ export const arbiRunsLoaded = writable(false);
 /** Run id the Arbi view should open on next mount (set by the overlay's Details button). */
 export const pendingArbiRunId = writable<string | null>(null);
 
-export async function loadArbiRuns(): Promise<void> {
-  const payload = await invoke("getArbiRuns");
+async function fetchArbiRuns(channel: "getArbiRuns" | "refreshArbiRuns"): Promise<void> {
+  const payload = await invoke(channel);
   arbiRuns.set(payload.runs);
   arbiDiskUsageBytes.set(payload.diskUsageBytes);
   arbiRunsLoaded.set(true);
+}
+
+export function loadArbiRuns(): Promise<void> {
+  return fetchArbiRuns("getArbiRuns");
+}
+
+/** Refresh button: drains EE.log bytes already on disk before re-reading the
+ * index. That only helps past one poll tick's 2 MiB read cap - the engine's
+ * lazy flush is what usually delays fresh lines, and no poll shortens it. */
+export function refreshArbiRuns(): Promise<void> {
+  return fetchArbiRuns("refreshArbiRuns");
 }
 
 /** Runs land in the index even when the Arbitrations tab is closed, so the

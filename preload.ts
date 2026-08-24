@@ -83,6 +83,7 @@ import {
   RIVENS_DELETE_AUCTION,
   WORLD_STATE_FETCH_ERROR,
   ARBI_GET_RUNS,
+  ARBI_REFRESH_RUNS,
   ARBI_SET_VITUS,
   ARBI_SET_TAGS,
   ARBI_DELETE_RUN,
@@ -218,6 +219,7 @@ try {
     ),
 
     getArbiRuns: inv<"getArbiRuns">(ARBI_GET_RUNS),
+    refreshArbiRuns: inv<"refreshArbiRuns">(ARBI_REFRESH_RUNS),
     setArbiRunVitus: inv<"setArbiRunVitus">(ARBI_SET_VITUS),
     setArbiRunTags: inv<"setArbiRunTags">(ARBI_SET_TAGS),
     deleteArbiRun: inv<"deleteArbiRun">(ARBI_DELETE_RUN),

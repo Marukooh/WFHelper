@@ -288,6 +288,13 @@ function pollReadNewBytes(): void {
   }
 }
 
+/** Consume EE.log bytes already on disk now instead of waiting for the next 500ms
+ * tick. Only moves the needle on a backlog past one tick's 2 MiB read cap; the
+ * engine's lazy flush is what delays fresh lines, and no poll shortens that. */
+export function forceEeLogPoll(): void {
+  pollReadNewBytes();
+}
+
 function scheduleTrigger(
   type: "reward" | "relic_picker",
   source: "dbwin" | "file",

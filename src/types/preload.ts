@@ -126,6 +126,7 @@ export interface PreloadAPI {
     callback: (progress: IpcEventMap["helper-download-progress"]) => void,
   ) => () => void;
   getArbiRuns: () => Promise<IpcInvokeMap["getArbiRuns"]["return"]>;
+  refreshArbiRuns: () => Promise<IpcInvokeMap["refreshArbiRuns"]["return"]>;
   setArbiRunVitus: (
     id: IpcInvokeMap["setArbiRunVitus"]["args"][0],
     vitus: IpcInvokeMap["setArbiRunVitus"]["args"][1],

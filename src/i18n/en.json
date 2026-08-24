@@ -21,6 +21,8 @@
   "arbi.trackingDisabled": "Run tracking is turned off in Settings. New arbitrations are not being recorded.",
   "arbi.importResult": "Imported {imported}, skipped {skipped} (already known, client-side, or under 2 rotations)",
   "arbi.diskUsage": "Raw logs on disk: {size}",
+  "arbi.refreshTitle": "Re-read tracked runs from disk",
+  "arbi.refreshFailed": "Could not re-read the run list.",
   "arbi.runCount": "Runs: {count}",
   "arbi.col.date": "Date",
   "arbi.col.rotations": "Rot.",

@@ -113,6 +113,24 @@ describe("arbiRunTracker", () => {
     expect(tracker.getDiskUsageBytes()).toBe(run.logSizeBytes);
   });
 
+  it("settles pending saves when the run-saved callback throws", async () => {
+    const tracker = await freshTracker();
+    let calls = 0;
+    tracker.setArbiCallbacks({
+      onRunSaved: () => {
+        calls++;
+        throw new Error("webContents destroyed mid-send");
+      },
+    });
+    feedRun(tracker);
+    tracker.processArbiLine(missionLine(900, "Cetus (Earth)"), "file");
+
+    await expect(tracker.awaitPendingArbiSaves()).resolves.toBeUndefined();
+    expect(calls).toBe(1);
+    expect(tracker.getRuns()).toHaveLength(1);
+    expect(fs.existsSync(path.join(tmpDir, "arbi-runs.json"))).toBe(true);
+  });
+
   it("ignores lines while tracking is disabled, resumes when re-enabled", async () => {
     const tracker = await freshTracker();
     tracker.setArbiTrackingEnabled(false);
@@ -400,5 +418,21 @@ describe("arbiRunTracker", () => {
     const reloaded = await freshTracker();
     await reloaded.__arbiBackfillForTest();
     expect(reloaded.getRuns()[0]?.players).toEqual(["HostPlayer", "ClientOne"]);
+  });
+
+  it("awaitPendingArbiSaves resolves immediately when nothing is in flight", async () => {
+    const tracker = await freshTracker();
+    await expect(tracker.awaitPendingArbiSaves()).resolves.toBeUndefined();
+  });
+
+  it("awaitPendingArbiSaves resolves only after the finalized record lands in getRuns()", async () => {
+    const tracker = await freshTracker();
+    feedRun(tracker);
+    tracker.processArbiLine(missionLine(900, "Cetus (Earth)"), "file");
+    // The gzip pipeline is async - the record has not landed synchronously.
+    expect(tracker.getRuns()).toHaveLength(0);
+    await tracker.awaitPendingArbiSaves();
+    expect(tracker.getRuns()).toHaveLength(1);
+    expect(tracker.getRuns()[0].node).toBe("Casta Defense (Ceres)");
   });
 });

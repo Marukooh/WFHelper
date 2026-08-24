@@ -6,10 +6,12 @@ import { assertMainRendererSender, handleAuthorized } from "./ipcSecurity";
 import ctx from "./context";
 import * as arbiRunTracker from "../services/arbiRunTracker";
 import { importEeLog } from "../services/arbiLogImporter";
+import { forceEeLogPoll } from "../services/eeLogMonitor";
 import type { ArbiImportResult, ArbiRunsPayload } from "../config/shared/arbiTypes";
 import { normalizeArbiTags } from "../config/shared/arbiTypes";
 import {
   ARBI_GET_RUNS,
+  ARBI_REFRESH_RUNS,
   ARBI_SET_VITUS,
   ARBI_SET_TAGS,
   ARBI_DELETE_RUN,
@@ -27,6 +29,9 @@ const log = withScope("arbiIpc");
 const MAX_VITUS = 10_000_000;
 /** 20 MiB PNG cap for dashboard exports. */
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+/** Refresh must always answer: the record is on disk before the wait even starts,
+ * so a stuck gzip costs a stale disk-usage figure, not a dead button. */
+const REFRESH_WAIT_MS = 5000;
 
 function asRunId(raw: unknown): string | null {
   return typeof raw === "string" && raw.length > 0 && raw.length <= 64 ? raw : null;
@@ -39,14 +44,45 @@ function exportBaseName(id: string): string {
   return `${node.replace(/\s+/g, "_")}_${id}`;
 }
 
+function runsPayload(): ArbiRunsPayload {
+  return {
+    runs: arbiRunTracker.getRuns(),
+    diskUsageBytes: arbiRunTracker.getDiskUsageBytes(),
+  };
+}
+
+async function awaitPendingSavesBounded(): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<void>((resolve) => {
+    timer = setTimeout(() => {
+      log.warn(`[Arbi] Pending run saves did not settle within ${REFRESH_WAIT_MS}ms`);
+      resolve();
+    }, REFRESH_WAIT_MS);
+  });
+  try {
+    await Promise.race([arbiRunTracker.awaitPendingArbiSaves(), deadline]);
+  } catch (err) {
+    log.warn("[Arbi] Waiting for pending run saves failed:", normalizeErrorMessage(err));
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 function register(): void {
+  handleAuthorized(ARBI_GET_RUNS, assertMainRendererSender, (): ArbiRunsPayload => runsPayload());
+
   handleAuthorized(
-    ARBI_GET_RUNS,
+    ARBI_REFRESH_RUNS,
     assertMainRendererSender,
-    (): ArbiRunsPayload => ({
-      runs: arbiRunTracker.getRuns(),
-      diskUsageBytes: arbiRunTracker.getDiskUsageBytes(),
-    }),
+    async (): Promise<ArbiRunsPayload> => {
+      try {
+        forceEeLogPoll();
+      } catch (err) {
+        log.warn("[Arbi] Forced EE.log poll failed:", normalizeErrorMessage(err));
+      }
+      await awaitPendingSavesBounded();
+      return runsPayload();
+    },
   );
 
   handleAuthorized(

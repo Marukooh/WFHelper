@@ -389,6 +389,10 @@ export interface IpcInvokeMap {
     args: [];
     return: ArbiRunsPayload;
   };
+  refreshArbiRuns: {
+    args: [];
+    return: ArbiRunsPayload;
+  };
   setArbiRunVitus: {
     args: [id: string, vitus: number | null];
     return: ArbiRunRecord | null;

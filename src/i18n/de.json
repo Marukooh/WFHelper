@@ -27,6 +27,8 @@
   "arbi.trackingDisabled": "Run-Aufzeichnung ist in den Einstellungen deaktiviert. Neue Arbitrations werden nicht aufgezeichnet.",
   "arbi.importResult": "{imported} importiert, {skipped} übersprungen (bereits bekannt, Client-seitig oder unter 2 Rotationen)",
   "arbi.diskUsage": "Roh-Logs auf der Festplatte: {size}",
+  "arbi.refreshTitle": "Erfasste Runs neu von der Festplatte lesen",
+  "arbi.refreshFailed": "Die Run-Liste konnte nicht neu gelesen werden.",
   "arbi.runCount": "Runs: {count}",
   "arbi.col.date": "Datum",
   "arbi.col.rotations": "Rot.",

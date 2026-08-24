@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { invoke } from "../lib/ipc.js";
+  import { log } from "../lib/log.js";
   import { tr } from "../lib/i18n.js";
   import ThemedButton from "../components/ThemedButton.svelte";
   import ThemedPanel from "../components/ThemedPanel.svelte";
@@ -14,8 +15,10 @@
     deleteArbiRun,
     loadArbiRuns,
     pendingArbiRunId,
+    refreshArbiRuns,
     updateArbiTags,
   } from "../stores/arbiRuns.js";
+  import { addToast } from "../stores/toasts.js";
   import {
     applyOverlaySettingsResponse,
     overlaySettings,
@@ -26,6 +29,7 @@
   let selectedRunId: string | null = null;
   let importBusy = false;
   let importStatus = "";
+  let refreshBusy = false;
 
   let filterMinVitus: number | null = null;
   let filterTag = "";
@@ -131,13 +135,30 @@
   }
 
   onMount(() => {
-    if (!$arbiRunsLoaded) void loadArbiRuns();
+    if (!$arbiRunsLoaded) {
+      void loadArbiRuns().catch((err) => log.warn("[Arbi] initial load failed", String(err)));
+    }
     if (!$overlaySettingsLoaded) {
       invoke("getOverlaySettings")
         .then((loaded) => loaded && applyOverlaySettingsResponse(loaded))
         .catch(() => {});
     }
   });
+
+  async function refreshRuns(): Promise<void> {
+    if (refreshBusy) return;
+    refreshBusy = true;
+    try {
+      await refreshArbiRuns();
+    } catch (err) {
+      // ThemedButton drops the returned promise, so an escaping rejection would
+      // only ever surface as an unhandled renderer rejection.
+      log.warn("[Arbi] refresh failed", String(err));
+      addToast({ level: "error", message: $tr("arbi.refreshFailed") });
+    } finally {
+      refreshBusy = false;
+    }
+  }
 
   async function importLog(): Promise<void> {
     if (importBusy) return;
@@ -163,7 +184,7 @@
     {#if selectedRun}
       <ArbiRunDetail run={selectedRun} onBack={() => (selectedRunId = null)} />
     {:else}
-      <header class="view-header mb-0 items-end">
+      <header class="view-header mb-0 items-end" data-arbi-runs>
         <div class="flex flex-col gap-1">
           <h2>{$tr("arbi.title")}</h2>
           <p class="m-0 text-sm text-text-secondary">
@@ -175,6 +196,11 @@
           {#if importStatus}
             <span class="text-xs text-text-muted">{importStatus}</span>
           {/if}
+          <ThemedButton
+            onClick={refreshRuns}
+            disabled={refreshBusy}
+            title={$tr("arbi.refreshTitle")}>{$tr("common.refresh")}</ThemedButton
+          >
           <ThemedButton onClick={importLog} disabled={importBusy}>{$tr("arbi.import")}</ThemedButton
           >
         </div>
@@ -187,8 +213,11 @@
       {/if}
 
       {#if $arbiRuns.length === 0}
+        <!-- An empty store also means "first load still running", which "no runs yet" misreports. -->
         <ThemedPanel className="p-8">
-          <p class="m-0 text-center text-sm text-text-muted">{$tr("arbi.empty")}</p>
+          <p class="m-0 text-center text-sm text-text-muted">
+            {$arbiRunsLoaded ? $tr("arbi.empty") : $tr("common.loading")}
+          </p>
         </ThemedPanel>
       {:else}
         <div

@@ -59,6 +59,8 @@ let _callbacks: ArbiCallbacks = { onRunSaved: null };
 let _inactivityTimer: ReturnType<typeof setInterval> | null = null;
 let _initialized = false;
 let _trackingEnabled = true;
+/** In-flight finalizations; a refresh waits on these so it never returns a stale index. */
+const _pendingSaves = new Set<Promise<void>>();
 
 function _indexPath(): string {
   return userDataPath("arbi-runs.json");
@@ -274,9 +276,22 @@ function _finalizeRun(endReason: ArbiRunEndReason, sync: boolean): void {
     return;
   }
 
-  _gzipPartialAsync(run.partialPath, _gzPath(run.id), (size) => {
-    _addRecord(_buildRecord(run, parsed, endReason, size));
+  const pending = new Promise<void>((resolve) => {
+    _gzipPartialAsync(run.partialPath, _gzPath(run.id), (size) => {
+      try {
+        _addRecord(_buildRecord(run, parsed, endReason, size));
+      } catch (err) {
+        // The index write already happened; a throwing onRunSaved (destroyed
+        // webContents, overlay window failing during shutdown) must not strand
+        // this promise in _pendingSaves and kill Refresh for the session.
+        log.warn("[Arbi] Run-saved notification failed:", normalizeErrorMessage(err));
+      } finally {
+        resolve();
+      }
+    });
   });
+  _pendingSaves.add(pending);
+  void pending.finally(() => _pendingSaves.delete(pending));
 }
 
 function _startCapture(gameTimeSec: number, firstLine: string): void {
@@ -452,6 +467,13 @@ export function getRuns(): ArbiRunRecord[] {
   return _runs;
 }
 
+/** Resolve once every in-flight gzip and index write has landed. */
+export async function awaitPendingArbiSaves(): Promise<void> {
+  // Loop, not a single Promise.all: the 500ms EE.log poll can finalize another
+  // run while we await, adding to the set after the snapshot was taken.
+  while (_pendingSaves.size > 0) await Promise.all([..._pendingSaves]);
+}
+
 export function getDiskUsageBytes(): number {
   let total = 0;
   try {
@@ -590,6 +612,7 @@ export function __resetArbiTrackerForTest(): void {
   _active = null;
   _runs = [];
   _reservedIds.clear();
+  _pendingSaves.clear();
   _callbacks = { onRunSaved: null };
   _initialized = false;
   _trackingEnabled = true;

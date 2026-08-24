@@ -4,10 +4,17 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { makeEvent, makeWindowStub } from "./senderGuardHelpers";
+import { forceEeLogPoll } from "../../services/eeLogMonitor";
 
 type Handler = (event: unknown, ...args: unknown[]) => unknown;
 const handlers = new Map<string, Handler>();
 let tmpDir: string;
+
+// Factory mock, not importOriginal: the real module pulls in chokidar and the
+// koffi-backed DBWIN worker just to stub one exported function.
+vi.mock("../../services/eeLogMonitor", () => ({ forceEeLogPoll: vi.fn() }));
+
+const forceEeLogPollMock = vi.mocked(forceEeLogPoll);
 
 vi.mock("electron", () => ({
   ipcMain: {
@@ -27,6 +34,19 @@ vi.mock("electron", () => ({
 
 const MAIN_URL = "file:///D:/app/renderer/dist/index.html";
 
+const ARBI_CHANNELS = [
+  "arbi:get-runs",
+  "arbi:refresh-runs",
+  "arbi:set-vitus",
+  "arbi:set-tags",
+  "arbi:delete-run",
+  "arbi:delete-log",
+  "arbi:export-log",
+  "arbi:import-log",
+  "arbi:save-image",
+  "arbi:show-log-in-folder",
+] as const;
+
 async function setup() {
   const ctx = (await import("../../ipc/context")).default;
   const tracker = await import("../../services/arbiRunTracker");
@@ -39,8 +59,16 @@ async function setup() {
   return { ctx, tracker };
 }
 
+const missionLine = (ts: number, name: string) =>
+  `${ts.toFixed(3)} Script [Info]: ThemedSquadOverlay.lua: Mission name: ${name}`;
+const droneLine = (ts: number) =>
+  `${ts.toFixed(3)} Sys [Info]: OnAgentCreated /Npc/CorpusEliteShieldDroneAgent7`;
+const rewardLine = (ts: number) =>
+  `${ts.toFixed(3)} Sys [Info]: Created /Lotus/Interface/DefenseReward.swf`;
+
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "arbi-ipc-test-"));
+  forceEeLogPollMock.mockReset();
 });
 
 afterEach(async () => {
@@ -54,26 +82,19 @@ afterEach(async () => {
 describe("arbi IPC", () => {
   it("registers all arbi channels", async () => {
     await setup();
-    for (const channel of [
-      "arbi:get-runs",
-      "arbi:set-vitus",
-      "arbi:delete-run",
-      "arbi:delete-log",
-      "arbi:export-log",
-      "arbi:import-log",
-      "arbi:save-image",
-      "arbi:show-log-in-folder",
-    ]) {
+    for (const channel of ARBI_CHANNELS) {
       expect(handlers.get(channel), channel).toBeTypeOf("function");
     }
   });
 
-  it("rejects unauthorized senders", async () => {
+  it("rejects unauthorized senders on every channel", async () => {
     await setup();
     const badEvent = makeEvent(99, MAIN_URL);
-    await expect(handlers.get("arbi:get-runs")?.(badEvent)).rejects.toThrow(
-      "Unauthorized IPC sender",
-    );
+    for (const channel of ARBI_CHANNELS) {
+      await expect(handlers.get(channel)?.(badEvent), channel).rejects.toThrow(
+        "Unauthorized IPC sender",
+      );
+    }
   });
 
   it("returns runs payload for the authorized sender", async () => {
@@ -114,5 +135,65 @@ describe("arbi IPC", () => {
     expect(await handlers.get("arbi:delete-log")?.(event, "nope")).toBeNull();
     expect(await handlers.get("arbi:export-log")?.(event, "nope")).toEqual({ ok: false });
     expect(await handlers.get("arbi:show-log-in-folder")?.(event, "nope")).toEqual({ ok: false });
+  });
+
+  it("refresh forces an EE.log poll, awaits pending saves, and matches get-runs' payload shape", async () => {
+    const { tracker } = await setup();
+    const event = makeEvent(11, MAIN_URL);
+
+    // Two rotations feed the save gate; the trailing mission line ends the run via
+    // the async gzip pipeline, so it is still in flight when refresh is invoked.
+    tracker.processArbiLine(missionLine(100, "Arbitration: Casta Defense (Ceres)"), "file");
+    tracker.processArbiLine(droneLine(150), "file");
+    tracker.processArbiLine(droneLine(200), "file");
+    tracker.processArbiLine(rewardLine(400), "file");
+    tracker.processArbiLine(rewardLine(500), "file");
+    tracker.processArbiLine(missionLine(900, "Cetus (Earth)"), "file");
+
+    const refreshPayload = (await handlers.get("arbi:refresh-runs")?.(event)) as {
+      runs: unknown[];
+      diskUsageBytes: number;
+    };
+
+    expect(forceEeLogPollMock).toHaveBeenCalledTimes(1);
+    expect(refreshPayload.runs).toHaveLength(1);
+
+    const getRunsPayload = await handlers.get("arbi:get-runs")?.(event);
+    expect(refreshPayload).toEqual(getRunsPayload);
+  });
+
+  it("refresh still replies when the run-saved callback throws", async () => {
+    const { tracker } = await setup();
+    const event = makeEvent(11, MAIN_URL);
+    tracker.setArbiCallbacks({
+      onRunSaved: () => {
+        throw new Error("webContents destroyed mid-send");
+      },
+    });
+
+    tracker.processArbiLine(missionLine(100, "Arbitration: Casta Defense (Ceres)"), "file");
+    tracker.processArbiLine(droneLine(150), "file");
+    tracker.processArbiLine(droneLine(200), "file");
+    tracker.processArbiLine(rewardLine(400), "file");
+    tracker.processArbiLine(rewardLine(500), "file");
+    tracker.processArbiLine(missionLine(900, "Cetus (Earth)"), "file");
+
+    const payload = (await handlers.get("arbi:refresh-runs")?.(event)) as { runs: unknown[] };
+    expect(payload.runs).toHaveLength(1);
+  });
+
+  it("still returns the current runs when the forced poll throws", async () => {
+    await setup();
+    const event = makeEvent(11, MAIN_URL);
+    forceEeLogPollMock.mockImplementation(() => {
+      throw new Error("poll boom");
+    });
+
+    const payload = (await handlers.get("arbi:refresh-runs")?.(event)) as {
+      runs: unknown[];
+      diskUsageBytes: number;
+    };
+    expect(payload.runs).toEqual([]);
+    expect(payload.diskUsageBytes).toBe(0);
   });
 });
