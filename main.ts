@@ -106,6 +106,12 @@ import * as inventorySync from "./services/inventorySync";
 import { disposeLinuxStreamCapture } from "./services/linuxStreamCapture";
 import { loadMainWindowState, saveMainWindowState } from "./services/mainWindowState";
 import { WIN_APP_USER_MODEL_ID } from "./config/shared/appMeta";
+import { describeKnownInjectors, listForeignModules } from "./services/processMitigation";
+import {
+  beginSession,
+  crashDumpsFromPreviousSession,
+  endSessionCleanly,
+} from "./services/sessionHealth";
 
 // Keep native crash dumps local under userData\Crashes.
 crashReporter.start({ uploadToServer: false });
@@ -295,7 +301,7 @@ function createWindow(): void {
 
 type ProfileStage = (label: string, startedAt: number) => void;
 
-function logStartupPaths(): void {
+function logStartupPaths(profileStage: ProfileStage): void {
   log.info(
     `[Startup] userData: ${app.getPath("userData")}` +
       (process.env.WFHELPER_USER_DATA ? " (WFHELPER_USER_DATA override)" : ""),
@@ -305,6 +311,41 @@ function logStartupPaths(): void {
   log.info(`[Startup] logFile: ${getLogFilePath() || "unknown"}`);
   if (process.platform === "linux") {
     log.info(`[Startup] display=${DISPLAY_BACKEND} gpu=${GPU_ACCELERATION_ENABLED ? "on" : "off"}`);
+  }
+  reportSessionHealth(profileStage);
+}
+
+// A native crash leaves no error and no log line, so the previous run has to be
+// judged by what it left behind. Named injectors are only worth accusing once
+// something actually died.
+function reportSessionHealth(profileStage: ProfileStage): void {
+  const foreignStart = Date.now();
+  const foreign = listForeignModules();
+  profileStage("foreign-modules:scan", foreignStart);
+  // Names only: a full path carries the Windows username, and main.log is what
+  // users paste into support threads.
+  if (foreign.length > 0) {
+    log.info(
+      `[Startup] foreign modules loaded: ${foreign.map((f) => path.basename(f)).join(", ")}`,
+    );
+  }
+
+  const previous = beginSession(app.getPath("userData"));
+  if (previous !== "unclean") return;
+
+  const dumps = crashDumpsFromPreviousSession(app.getPath("crashDumps"));
+  log.warn(
+    `[Startup] previous session ended without shutting down` +
+      (dumps.length > 0 ? `; crash dump: ${dumps[0]}` : " (no crash dump)"),
+  );
+  if (foreign.length > 0) log.warn(`[Startup] foreign module paths: ${foreign.join(", ")}`);
+
+  const injectors = describeKnownInjectors(foreign);
+  if (injectors.length > 0) {
+    log.warn(
+      `[Startup] software known to crash its host is injected here: ${injectors.join(", ")}. ` +
+        "Disabling its overlay, or excluding WFHelper from it, is the fix.",
+    );
   }
 }
 
@@ -507,7 +548,7 @@ void app.whenReady().then(async () => {
     log.info(`[StartupProfile][main] ${label}: ${Date.now() - startedAt}ms`);
   };
 
-  logStartupPaths();
+  logStartupPaths(profileStage);
   initTrackersAndSettings(profileStage);
   registerIpcHandlers(profileStage);
   initDataSources(profileStage);
@@ -520,6 +561,9 @@ void app.whenReady().then(async () => {
     if (XWAYLAND_REEXEC_FAILED) {
       log.error("[Display] XWayland re-exec did not happen - relaunching on native Wayland");
       linuxDisplay.rememberXWaylandFailure();
+      // app.exit() skips will-quit, so the session marker has to be closed here
+      // or the relaunched instance reports this restart as a crash.
+      endSessionCleanly();
       app.relaunch();
       app.exit(0);
     } else if (JOINED_XWAYLAND) {
@@ -618,6 +662,7 @@ app.on("before-quit", () => {
 });
 
 app.on("will-quit", () => {
+  endSessionCleanly();
   try {
     globalShortcut.unregisterAll();
   } catch {
