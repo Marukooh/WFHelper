@@ -444,6 +444,7 @@
                             name={itemLabel(item)}
                             imageUrl={item.imageUrl}
                             owned={item.owned}
+                            subsumed={item.subsumed}
                             onClick={() => openItemDetail(item.uniqueName)}
                             size={80}
                             hoverScale={108}
@@ -461,6 +462,7 @@
                       name={itemLabel(item)}
                       imageUrl={item.imageUrl}
                       owned={item.owned}
+                      subsumed={item.subsumed}
                       onClick={() => openItemDetail(item.uniqueName)}
                       size={80}
                       hoverScale={108}

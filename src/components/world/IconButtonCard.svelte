@@ -4,6 +4,8 @@
   export let name: string;
   export let imageUrl: string | null | undefined = null;
   export let owned = false;
+  /** Fed to the Helminth. Still owned, but shown apart from a plain owned frame. */
+  export let subsumed: boolean | undefined = false;
   export let onClick: () => void;
   /** Image-frame size in px, applied to both width and height of the image box. */
   export let size: 80 | 100 = 100;
@@ -17,11 +19,13 @@
   $: hoverCls = hoverScale === 105 ? "hover:scale-105" : "hover:scale-[1.08]";
   $: radiusCls = size === 100 ? "rounded-[var(--radius-lg)]" : "rounded-[var(--radius-md)]";
   $: borderCls = borderWidth === "2" ? "border-2" : "border-[1.5px]";
-  $: glowCls = owned
-    ? size === 100
-      ? "border-success/50 shadow-[0_0_6px_rgba(74,222,128,0.15)]"
-      : "border-success/50 shadow-[0_0_5px_rgba(74,222,128,0.15)]"
-    : "border-border";
+  $: glowCls = subsumed
+    ? "border-info/60"
+    : owned
+      ? size === 100
+        ? "border-success/50 shadow-[0_0_6px_rgba(74,222,128,0.15)]"
+        : "border-success/50 shadow-[0_0_5px_rgba(74,222,128,0.15)]"
+      : "border-border";
   $: labelGap = size === 100 ? "gap-1" : "gap-0.5";
   const labelSize = "text-xs";
 </script>
@@ -31,14 +35,30 @@
   class="group flex shrink-0 flex-col items-center border-0 bg-transparent p-0 text-inherit cursor-pointer
          transition-transform duration-100 hover:z-[1] {labelGap} {hoverCls}"
   on:click={onClick}
+  data-subsumed={subsumed ? "true" : null}
   title={$tr("world.viewDetails", { name })}
 >
   <div
-    class="flex items-center justify-center overflow-hidden bg-black/30
+    class="relative flex items-center justify-center overflow-hidden bg-black/30
            {radiusCls} {sizeCls} {borderCls} {glowCls}"
+    class:subsumed-glow={subsumed}
   >
     {#if imageUrl}
       <img class="h-full w-full object-contain" src={imageUrl} alt={name} loading="lazy" />
+    {/if}
+    {#if subsumed}
+      <span class="absolute right-0.5 top-0.5 leading-none" title={$tr("common.subsumed")}>
+        <!-- Hexagon echoes the in-game Helminth segment, so it does not read as a download. -->
+        <svg viewBox="0 0 12 12" class="h-4 w-4">
+          <polygon
+            points="6,0.7 10.6,3.35 10.6,8.65 6,11.3 1.4,8.65 1.4,3.35"
+            class="fill-info stroke-bg-deep"
+            stroke-width="1.2"
+            stroke-linejoin="round"
+          />
+          <polygon points="6,4.1 7.6,5.05 7.6,6.95 6,7.9 4.4,6.95 4.4,5.05" class="fill-bg-deep" />
+        </svg>
+      </span>
     {/if}
   </div>
   <span
@@ -46,3 +66,10 @@
            {labelSize} {labelMaxW}">{name}</span
   >
 </button>
+
+<style>
+  /* color-mix keeps the subsumed glow on the --info token instead of a literal. */
+  .subsumed-glow {
+    box-shadow: 0 0 6px color-mix(in oklab, var(--info) 30%, transparent);
+  }
+</style>

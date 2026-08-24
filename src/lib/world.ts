@@ -234,6 +234,8 @@ export interface CircuitChoice {
   displayName?: string;
   imageUrl: string;
   owned: boolean;
+  /** Fed to the Helminth. Refines `owned`, never replaces it. */
+  subsumed?: boolean;
   uniqueName: string;
 }
 
@@ -318,9 +320,11 @@ export function resolveCircuitRotation(
 function buildOwnedSets(inventoryData: RawInventoryData | null): {
   ownedSuits: Set<string>;
   ownedWeapons: Set<string>;
+  subsumedSuits: Set<string>;
 } {
   const ownedSuits = new Set<string>();
   const ownedWeapons = new Set<string>();
+  const subsumedSuits = new Set<string>();
   if (inventoryData) {
     // Warframes currently in inventory
     for (const suit of (inventoryData.Suits || []) as Array<{ ItemType?: string }>) {
@@ -334,7 +338,9 @@ function buildOwnedSets(inventoryData: RawInventoryData | null): {
     )?.ConsumedSuits;
     if (Array.isArray(consumedSuits)) {
       for (const entry of consumedSuits) {
-        if (entry.s) ownedSuits.add(entry.s);
+        if (!entry.s) continue;
+        ownedSuits.add(entry.s);
+        subsumedSuits.add(entry.s);
       }
     }
     // Weapons
@@ -345,7 +351,7 @@ function buildOwnedSets(inventoryData: RawInventoryData | null): {
       }
     }
   }
-  return { ownedSuits, ownedWeapons };
+  return { ownedSuits, ownedWeapons, subsumedSuits };
 }
 
 const VENDOR_WARFRAME_CATS = new Set(["warframe", "warframes", "suits"]);
@@ -358,20 +364,20 @@ export function resolveVendorItems(
   inventoryData: RawInventoryData | null,
 ): CircuitChoice[] {
   if (!uniqueNames.length || !itemDb) return [];
-  const { ownedSuits, ownedWeapons } = buildOwnedSets(inventoryData);
+  const { ownedSuits, ownedWeapons, subsumedSuits } = buildOwnedSets(inventoryData);
   const resolved: CircuitChoice[] = [];
   for (const uniqueName of uniqueNames) {
     const entry = itemDb[uniqueName];
     if (!entry?.name || !entry.imageUrl) continue;
     const category = (entry.category || entry.productCategory || "").toLowerCase();
-    const owned = VENDOR_WARFRAME_CATS.has(category)
-      ? ownedSuits.has(uniqueName)
-      : ownedWeapons.has(uniqueName);
+    const isFrame = VENDOR_WARFRAME_CATS.has(category);
+    const owned = isFrame ? ownedSuits.has(uniqueName) : ownedWeapons.has(uniqueName);
     resolved.push({
       name: entry.name,
       ...(entry.displayName ? { displayName: entry.displayName } : {}),
       imageUrl: entry.imageUrl,
       owned,
+      ...(isFrame && subsumedSuits.has(uniqueName) ? { subsumed: true } : {}),
       uniqueName,
     });
   }
@@ -406,7 +412,7 @@ function circuitResolver(
     if (base && !incarnonArt.has(base)) incarnonArt.set(base, entry.imageUrl);
   }
 
-  const { ownedSuits, ownedWeapons } = buildOwnedSets(inventoryData);
+  const { ownedSuits, ownedWeapons, subsumedSuits } = buildOwnedSets(inventoryData);
 
   const WARFRAME_CATS = new Set(["warframe", "warframes", "suits"]);
 
@@ -425,6 +431,7 @@ function circuitResolver(
         ...(match.displayName ? { displayName: match.displayName } : {}),
         imageUrl,
         owned,
+        ...(isFrame && subsumedSuits.has(match.uniqueName) ? { subsumed: true } : {}),
         uniqueName: match.uniqueName,
       };
     });

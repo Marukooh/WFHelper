@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveCircuitChoices } from "../../../src/lib/world.js";
+import { resolveCircuitChoices, resolveVendorItems } from "../../../src/lib/world.js";
 import type { ItemDbEntry } from "../../../src/types/inventory.js";
 
 const TORID = "/Lotus/Weapons/Tenno/LongGuns/Torid";
@@ -64,5 +64,40 @@ describe("circuit choice art", () => {
     expect(ack.uniqueName).toBe(ACK);
     expect(ack.name).toBe("Ack & Brunt");
     expect(ack.imageUrl).toBe("ack.png");
+  });
+});
+
+const SUBSUMED_INVENTORY = {
+  InfestedFoundry: { ConsumedSuits: [{ s: EXCALIBUR }] },
+};
+
+describe("subsumed circuit frames", () => {
+  it("keeps a subsumed frame owned and flags it", () => {
+    const [frame] = resolveCircuitChoices(["Excalibur"], DB, SUBSUMED_INVENTORY);
+
+    expect(frame.owned).toBe(true);
+    expect(frame.subsumed).toBe(true);
+  });
+
+  it("leaves a frame held in Suits unflagged", () => {
+    const [frame] = resolveCircuitChoices(["Excalibur"], DB, {
+      Suits: [{ ItemType: EXCALIBUR }],
+    });
+
+    expect(frame.owned).toBe(true);
+    expect(frame.subsumed).toBeUndefined();
+  });
+
+  it("never flags a weapon", () => {
+    const [torid] = resolveCircuitChoices(["Torid"], DB, SUBSUMED_INVENTORY);
+
+    expect(torid.subsumed).toBeUndefined();
+  });
+
+  it("flags vendor stock the same way", () => {
+    const [frame] = resolveVendorItems([EXCALIBUR], DB, SUBSUMED_INVENTORY);
+
+    expect(frame.owned).toBe(true);
+    expect(frame.subsumed).toBe(true);
   });
 });
