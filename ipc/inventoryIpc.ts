@@ -166,12 +166,14 @@ function getInventoryStatus(): {
   path: string | null;
   found: boolean;
   source: InventorySource;
+  modifiedAt: number | null;
   lastError: InventoryReadError | null;
 } {
   return {
     path: ctx.currentInventoryPath,
     found: ctx.currentInventoryPath !== null,
     source: _trustedInventorySource,
+    modifiedAt: getLoadedInventoryModifiedAt(),
     lastError: _lastReadError,
   };
 }

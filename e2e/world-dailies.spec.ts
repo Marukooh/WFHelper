@@ -3,6 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 import {
   closeElectronTestHarness,
   launchElectronTestHarness,
+  writeHarnessInventory,
   type ElectronTestHarness,
 } from "./electronTestHarness";
 
@@ -129,5 +130,36 @@ test.describe("World dailies tracker", () => {
 
     await expect(task("clem")).toHaveCount(0);
     await expect(task("netracells")).toHaveCount(1);
+  });
+
+  test("syncs completion from the inventory", async () => {
+    const weekAhead = String(Date.now() + 7 * 86_400_000);
+    writeHarnessInventory(harness, {
+      Suits: [],
+      DailyAffiliation: 0,
+      DailyFocus: 125_000,
+      EntratiVaultCountLastPeriod: 2,
+      EntratiVaultCountResetDate: { $date: { $numberLong: weekAhead } },
+      PeriodicMissionCompletions: [
+        { date: { $date: { $numberLong: weekAhead } }, tag: "TreasureHuntD" },
+      ],
+    });
+
+    await openDailies();
+    // Capped standing ticks itself and turns the checkbox read-only.
+    await expect(task("syndicateStanding")).toBeChecked({ timeout: 30_000 });
+    await expect(task("syndicateStanding")).toBeDisabled();
+    // The weekly Ayatan hunt completion arrives via PeriodicMissionCompletions.
+    await expect(task("ayatanHunt")).toBeChecked();
+    await expect(task("ayatanHunt")).toBeDisabled();
+    // Focus is not capped: stays open and surfaces the remaining pool.
+    await expect(task("dailyFocus")).not.toBeChecked();
+    await expect(taskRow("dailyFocus")).toContainText(/125[.,\s]000/);
+
+    // Synced netracell runs are a floor the manual counter cannot go below.
+    if (await task("netracells").isChecked()) await task("netracells").uncheck();
+    const row = taskRow("netracells");
+    await expect(row).toContainText("2/5");
+    await expect(row.getByRole("button", { name: "Decrease progress" })).toBeDisabled();
   });
 });

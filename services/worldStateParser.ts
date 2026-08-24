@@ -1100,6 +1100,8 @@ function parseNightwaveChallenge(raw: SeasonChallengeRaw) {
   const description = localizedDictValue(entry?.name?.replace(/_Name$/, "_Description"));
   return {
     id: raw._id?.$oid || "",
+    // Path tail, e.g. "SeasonDailyAimGlide"; joins the inventory's ChallengeProgress.
+    name: challengePath.split("/").pop() || "",
     title,
     description: description ? cleanChallengeText(description, undefined, requiredCount) : title,
     standing: Number(entry?.standing) || 0,
@@ -1229,6 +1231,7 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
   const sortieRaw = activeEntry(raw.Sorties, nowMs);
   const sortie = sortieRaw
     ? {
+        id: sortieRaw._id?.$oid || "",
         activation: deDate(sortieRaw.Activation),
         expiry: deDate(sortieRaw.Expiry),
         boss: bossLabel(sortieRaw.Boss),
@@ -1243,6 +1246,7 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
   const archonRaw = activeEntry(raw.LiteSorties, nowMs);
   const archonHunt = archonRaw
     ? {
+        id: archonRaw._id?.$oid || "",
         activation: deDate(archonRaw.Activation),
         expiry: deDate(archonRaw.Expiry),
         boss: bossLabel(archonRaw.Boss),

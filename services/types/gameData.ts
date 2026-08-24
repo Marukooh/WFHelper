@@ -120,6 +120,7 @@ interface SortieVariantRaw {
 }
 
 interface SortieRaw {
+  _id?: { $oid?: string };
   Activation?: WorldStateDate;
   Expiry?: WorldStateDate;
   Boss?: string;
@@ -133,6 +134,7 @@ interface LiteSortieMissionRaw {
 
 /** Archon hunt: same envelope as a sortie, with plain missions and no modifiers. */
 interface LiteSortieRaw {
+  _id?: { $oid?: string };
   Activation?: WorldStateDate;
   Expiry?: WorldStateDate;
   Boss?: string;

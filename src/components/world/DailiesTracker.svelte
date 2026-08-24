@@ -5,7 +5,12 @@
   import { send } from "../../lib/ipc.js";
   import { clockStore } from "../../lib/timers.js";
   import { buildWikiUrl } from "../../lib/wikiUrl.js";
-  import { componentOwnership, inventoryData, itemDb } from "../../stores/data.js";
+  import {
+    componentOwnership,
+    inventoryData,
+    inventoryModifiedAt,
+    itemDb,
+  } from "../../stores/data.js";
   import { activeItem } from "../../stores/modals.js";
   import { buildParsedItemFromDb } from "../../lib/parsedItemFromDb.js";
   import { worldData } from "../../stores/world.js";
@@ -32,6 +37,7 @@
     type TrackerState,
     type TrackerUserPeriod,
   } from "../../lib/world/dailies.js";
+  import { autoTrackerState } from "../../lib/world/dailiesAuto.js";
   import { trackerExpiries, trackerLive } from "../../lib/world/dailiesLive.js";
   import { loadCollapsedSections, toggleCollapsedSection } from "../../lib/world/useWorldView.js";
 
@@ -59,6 +65,7 @@
   const now = $derived(new Date(nowMs));
   const wd = $derived($worldData);
   const expiries = $derived(trackerExpiries(wd));
+  const auto = $derived(autoTrackerState($inventoryData, wd, nowMs, $inventoryModifiedAt));
 
   interface Row {
     kind: "task" | "header";
@@ -69,11 +76,17 @@
     /** Circuit rewards, shown as an owned-marked icon strip when expanded. */
     circuit?: CircuitChoice[] | undefined;
     badge?: string | undefined;
+    /** Partial progress toward a requirement, synced from the inventory. */
+    progress?: { current: number; required: number } | undefined;
     group: TrackerGroup;
     periodKey: string | null;
     count: number;
     target: number;
     done: boolean;
+    /** Completion came from the inventory sync, so the checkbox is read-only. */
+    auto: boolean;
+    /** Runs the inventory sync accounts for; manual clicks cannot go below. */
+    autoCount: number;
     hidden: boolean;
     custom: boolean;
     /** Nightwave acts and alerts rotate away, so they are not customisable. */
@@ -87,12 +100,17 @@
 
   function taskRow(base: Partial<Row> & Pick<Row, "id" | "label" | "group" | "periodKey">): Row {
     const target = base.target ?? 1;
-    const count = trackerCount(tracker, base.id, base.periodKey);
+    const autoTask = auto[base.id];
+    const autoCount = autoTask?.count ?? 0;
+    const count = Math.max(trackerCount(tracker, base.id, base.periodKey, nowMs), autoCount);
     return {
       kind: "task",
       count,
       target,
       done: count >= target,
+      auto: autoCount >= target,
+      autoCount,
+      progress: autoTask?.progress,
       hidden: tracker.hidden.includes(base.id),
       custom: false,
       dynamic: false,
@@ -121,6 +139,7 @@
     return trackerList(tracker).map((task) => {
       const periodKey = trackerPeriodKey(task.period, now, expiries);
       const live = task.label ? {} : trackerLive(task.id, wd, t, nowMs);
+      const autoDetail = auto[task.id]?.detail;
       const row = taskRow({
         id: task.id,
         label: task.label ?? t(`dailies.task.${task.id}` as MessageKey),
@@ -138,7 +157,7 @@
         ...row,
         custom: Boolean(task.label),
         retimeable: task.period === "daily" || task.period === "weekly",
-        detail: live.detail,
+        detail: live.detail ?? (autoDetail ? t(autoDetail.key, autoDetail.params) : undefined),
         lines: live.lines?.length ? live.lines : undefined,
         circuit: circuit.length > 0 ? circuit : undefined,
         expiry: live.expiry,
@@ -216,7 +235,9 @@
   const liveIds = $derived(new Set(rows.filter((row) => row.kind === "task").map((row) => row.id)));
 
   function commit(next: TrackerState): void {
-    const pruned = pruneDynamicProgress(next, liveIds);
+    // No world state at all means the empty live lists prove nothing; a present
+    // one with no acts or alerts genuinely means those rows are gone.
+    const pruned = wd ? pruneDynamicProgress(next, liveIds) : next;
     tracker = pruned;
     saveTracker(pruned);
   }
@@ -237,11 +258,13 @@
   }
 
   function toggleDone(row: Row): void {
+    if (row.auto) return;
     commit(setTrackerCount(tracker, row.id, row.periodKey, row.done ? 0 : row.target));
   }
 
   function bump(row: Row, delta: number): void {
-    commit(setTrackerCount(tracker, row.id, row.periodKey, row.count + delta));
+    const next = Math.max(row.autoCount, Math.min(row.count + delta, row.target));
+    commit(setTrackerCount(tracker, row.id, row.periodKey, next));
   }
 
   function addDraft(): void {
@@ -261,30 +284,25 @@
     return date ? date.getTime() - nowMs : Number.POSITIVE_INFINITY;
   }
 
-  function groupMeta(group: TrackerGroup): string {
-    const parts: string[] = [];
+  function groupReset(group: TrackerGroup): string {
     if (group === "daily") {
-      parts.push($tr("dailies.resetsIn", { time: timeTo(nextDailyResetUtc(now), nowMs) }));
-    } else if (group === "weekly") {
-      parts.push($tr("dailies.resetsIn", { time: timeTo(nextWeeklyResetUtc(now), nowMs) }));
-    } else if (group === "nightwave" && wd?.nightwave) {
-      parts.push(
-        $tr("dailies.seasonEnds", {
-          season: String(wd.nightwave.season),
-          time: countdown(wd.nightwave.expiry),
-        }),
-      );
+      return $tr("dailies.resetsIn", { time: timeTo(nextDailyResetUtc(now), nowMs) });
     }
+    if (group === "weekly") {
+      return $tr("dailies.resetsIn", { time: timeTo(nextWeeklyResetUtc(now), nowMs) });
+    }
+    if (group === "nightwave" && wd?.nightwave) {
+      return $tr("dailies.seasonEnds", {
+        season: String(wd.nightwave.season),
+        time: countdown(wd.nightwave.expiry),
+      });
+    }
+    return "";
+  }
+
+  function groupStats(group: TrackerGroup): { done: number; total: number } {
     const shown = rows.filter((row) => row.kind === "task" && row.group === group && !row.hidden);
-    if (shown.length > 0) {
-      const done = shown.filter((row) => row.done).length;
-      parts.push(
-        done === shown.length
-          ? $tr("dailies.allDone")
-          : $tr("dailies.groupProgress", { done: String(done), total: String(shown.length) }),
-      );
-    }
-    return parts.join(" - ");
+    return { done: shown.filter((row) => row.done).length, total: shown.length };
   }
 </script>
 
@@ -292,180 +310,220 @@
   {@const list = groupRows(group)}
   {#if list.length > 0}
     {@const sectionHidden = tracker.hidden.includes(`section:${group}`)}
+    {@const stats = groupStats(group)}
+    {@const reset = groupReset(group)}
     <div class="dailies-section" class:dailies-section--off={sectionHidden}>
       <CollapsibleSection
         title={$tr(GROUP_TITLES[group])}
         collapsed={collapsed[`dailies-${group}`]}
         onToggle={() => toggleSection(`dailies-${group}`)}
       >
-        <div class="dailies-meta" data-task-meta={group}>
-          <span>{groupMeta(group)}</span>
-          {#if editing && (group === "nightwave" || group === "alerts")}
-            <button
-              class="dailies-icon"
-              title={sectionHidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
-              aria-label={sectionHidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
-              onclick={() => commit(toggleTrackerHidden(tracker, `section:${group}`))}
-              >{sectionHidden ? "+" : "x"}</button
+        <div class="dailies-card">
+          <div class="dailies-cardhead" data-task-meta={group}>
+            <span
+              class="dailies-count"
+              class:dailies-count--full={stats.total > 0 && stats.done === stats.total}
+              title={$tr("dailies.groupProgress", {
+                done: String(stats.done),
+                total: String(stats.total),
+              })}>{stats.done}/{stats.total}</span
             >
-          {/if}
-        </div>
-
-        {#each list as row (row.id)}
-          {#if row.kind === "header"}
-            <p class="dailies-subhead">{row.label}</p>
-          {:else}
-            {@const left = remainingMs(row.expiry)}
-            <div class="dailies-row" class:dailies-row--off={row.hidden}>
-              <label class="dailies-label">
-                <input
-                  type="checkbox"
-                  class="dailies-check"
-                  checked={row.done}
-                  data-task={row.id}
-                  onchange={() => toggleDone(row)}
-                />
-                <span class="min-w-0">
-                  <span class="dailies-name" class:dailies-name--done={row.done}>{row.label}</span>
-                  {#if row.detail}
-                    <span class="dailies-detail">{row.detail}</span>
-                  {/if}
-                </span>
-              </label>
-
-              {#if row.badge}
-                <span class="dailies-badge">{row.badge}</span>
-              {/if}
-
-              {#if row.target > 1}
-                <div class="flex shrink-0 items-center gap-1">
-                  <button
-                    class="dailies-step"
-                    title={$tr("dailies.decrement")}
-                    aria-label={$tr("dailies.decrement")}
-                    onclick={() => bump(row, -1)}>-</button
-                  >
-                  <span class="w-8 text-center font-display text-xs text-text-primary"
-                    >{row.count}/{row.target}</span
-                  >
-                  <button
-                    class="dailies-step"
-                    title={$tr("dailies.increment")}
-                    aria-label={$tr("dailies.increment")}
-                    onclick={() => bump(row, 1)}>+</button
-                  >
-                </div>
-              {/if}
-
-              {#if row.expiry}
-                <span
-                  class="dailies-time"
-                  class:dailies-time--warn={left < URGENT_MS}
-                  class:dailies-time--crit={left < CRITICAL_MS}>{countdown(row.expiry)}</span
-                >
-              {/if}
-
-              {#if row.lines || row.circuit}
-                <button
-                  class="dailies-icon"
-                  title={expanded[row.id] ? $tr("dailies.collapse") : $tr("dailies.expand")}
-                  aria-label={expanded[row.id] ? $tr("dailies.collapse") : $tr("dailies.expand")}
-                  aria-expanded={Boolean(expanded[row.id])}
-                  data-task-expand={row.id}
-                  onclick={() => (expanded = { ...expanded, [row.id]: !expanded[row.id] })}
-                >
-                  <WorldToggleIcon collapsed={!expanded[row.id]} />
-                </button>
-              {/if}
-
-              {#if row.wiki}
-                {@const page = row.wiki}
-                <button
-                  class="dailies-icon"
-                  title={$tr("dailies.openWiki")}
-                  aria-label={$tr("dailies.openWiki")}
-                  onclick={() => send("open-external", buildWikiUrl(page))}
-                >
-                  <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
-                    <path
-                      d="M9 2h5v5l-1.8-1.8L9 8.4 7.6 7l3.2-3.2L9 2zM4 4h3v1.5H4v7h7V9.5h1.5V13a.5.5 0 0 1-.5.5H3.5A.5.5 0 0 1 3 13V4.5A.5.5 0 0 1 3.5 4H4z"
-                    />
-                  </svg>
-                </button>
-              {/if}
-
-              {#if editing && !row.dynamic}
-                {#if row.retimeable}
-                  <select
-                    class="dailies-input"
-                    title={$tr("dailies.periodTitle")}
-                    value={row.period}
-                    onchange={(event) =>
-                      commit(
-                        setTrackerPeriod(
-                          tracker,
-                          row.id,
-                          event.currentTarget.value === "weekly" ? "weekly" : "daily",
-                        ),
-                      )}
-                  >
-                    <option value="daily">{$tr("dailies.groupDaily")}</option>
-                    <option value="weekly">{$tr("dailies.groupWeekly")}</option>
-                  </select>
-                {/if}
-                <button
-                  class="dailies-icon"
-                  title={row.hidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
-                  aria-label={row.hidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
-                  onclick={() => commit(toggleTrackerHidden(tracker, row.id))}
-                  >{row.hidden ? "+" : "x"}</button
-                >
-                {#if row.custom}
-                  <input
-                    class="dailies-input dailies-target"
-                    type="number"
-                    min="1"
-                    max="99"
-                    title={$tr("dailies.targetTitle")}
-                    value={row.target}
-                    onchange={(event) =>
-                      commit(setTrackerTarget(tracker, row.id, Number(event.currentTarget.value)))}
-                  />
-                  <button
-                    class="dailies-icon dailies-icon--danger"
-                    title={$tr("dailies.removeTask")}
-                    aria-label={$tr("dailies.removeTask")}
-                    onclick={() => commit(removeCustomTask(tracker, row.id))}>&#8722;</button
-                  >
-                {/if}
-              {/if}
+            <div class="dailies-bar">
+              <div
+                class="dailies-bar-fill"
+                style="width: {stats.total > 0 ? (stats.done / stats.total) * 100 : 0}%"
+              ></div>
             </div>
+            {#if reset}
+              <span class="dailies-reset">{reset}</span>
+            {/if}
+            {#if editing && (group === "nightwave" || group === "alerts")}
+              <button
+                class="dailies-icon"
+                title={sectionHidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
+                aria-label={sectionHidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
+                onclick={() => commit(toggleTrackerHidden(tracker, `section:${group}`))}
+                >{sectionHidden ? "+" : "x"}</button
+              >
+            {/if}
+          </div>
 
-            {#if expanded[row.id]}
-              {#if row.lines}
-                <ul class="dailies-sublist">
-                  {#each row.lines as line (line)}
-                    <li>{line}</li>
-                  {/each}
-                </ul>
-              {/if}
-              {#if row.circuit}
-                <div class="dailies-icons">
-                  {#each row.circuit as choice (choice.uniqueName)}
-                    <IconButtonCard
-                      name={choice.displayName ?? choice.name}
-                      imageUrl={choice.imageUrl}
-                      owned={choice.owned}
-                      size={80}
-                      borderWidth="1.5"
-                      onClick={() => openReward(choice)}
+          {#each list as row (row.id)}
+            {#if row.kind === "header"}
+              <p class="dailies-subhead">{row.label}</p>
+            {:else}
+              {@const left = remainingMs(row.expiry)}
+              <!-- Without a period key the tick would be stored under no period and
+                   never read back, so the row waits instead of eating the click. -->
+              {@const locked = row.periodKey === null && !row.custom}
+              <div class="dailies-row" class:dailies-row--off={row.hidden}>
+                <label class="dailies-label" title={row.auto ? $tr("dailies.autoTracked") : null}>
+                  <input
+                    type="checkbox"
+                    class="dailies-check"
+                    class:dailies-check--auto={row.auto}
+                    checked={row.done}
+                    disabled={row.auto || locked}
+                    data-task={row.id}
+                    onchange={() => toggleDone(row)}
+                  />
+                  <span class="min-w-0">
+                    <span class="dailies-name" class:dailies-name--done={row.done}>{row.label}</span
+                    >
+                    {#if row.detail}
+                      <span class="dailies-detail">{row.detail}</span>
+                    {/if}
+                  </span>
+                </label>
+
+                {#if row.progress && !row.done}
+                  <span class="dailies-progress"
+                    >{row.progress.current}/{row.progress.required}</span
+                  >
+                {/if}
+
+                {#if row.badge}
+                  <span class="dailies-badge">{row.badge}</span>
+                {/if}
+
+                {#if row.target > 1}
+                  <div class="flex shrink-0 items-center gap-1">
+                    <button
+                      class="dailies-step"
+                      title={$tr("dailies.decrement")}
+                      aria-label={$tr("dailies.decrement")}
+                      disabled={locked || row.count <= row.autoCount}
+                      data-task-dec={row.id}
+                      onclick={() => bump(row, -1)}>-</button
+                    >
+                    <span class="w-8 text-center font-display text-xs text-text-primary"
+                      >{row.count}/{row.target}</span
+                    >
+                    <button
+                      class="dailies-step"
+                      title={$tr("dailies.increment")}
+                      aria-label={$tr("dailies.increment")}
+                      disabled={locked || row.count >= row.target}
+                      data-task-inc={row.id}
+                      onclick={() => bump(row, 1)}>+</button
+                    >
+                  </div>
+                {/if}
+
+                {#if row.expiry}
+                  <span
+                    class="dailies-time"
+                    class:dailies-time--warn={left < URGENT_MS}
+                    class:dailies-time--crit={left < CRITICAL_MS}>{countdown(row.expiry)}</span
+                  >
+                {/if}
+
+                {#if row.lines || row.circuit}
+                  <button
+                    class="dailies-icon"
+                    title={expanded[row.id] ? $tr("dailies.collapse") : $tr("dailies.expand")}
+                    aria-label={expanded[row.id] ? $tr("dailies.collapse") : $tr("dailies.expand")}
+                    aria-expanded={Boolean(expanded[row.id])}
+                    data-task-expand={row.id}
+                    onclick={() => (expanded = { ...expanded, [row.id]: !expanded[row.id] })}
+                  >
+                    <WorldToggleIcon collapsed={!expanded[row.id]} />
+                  </button>
+                {/if}
+
+                {#if row.wiki}
+                  {@const page = row.wiki}
+                  <button
+                    class="dailies-icon"
+                    title={$tr("dailies.openWiki")}
+                    aria-label={$tr("dailies.openWiki")}
+                    onclick={() => send("open-external", buildWikiUrl(page))}
+                  >
+                    <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
+                      <path
+                        d="M9 2h5v5l-1.8-1.8L9 8.4 7.6 7l3.2-3.2L9 2zM4 4h3v1.5H4v7h7V9.5h1.5V13a.5.5 0 0 1-.5.5H3.5A.5.5 0 0 1 3 13V4.5A.5.5 0 0 1 3.5 4H4z"
+                      />
+                    </svg>
+                  </button>
+                {/if}
+
+                {#if editing && !row.dynamic}
+                  {#if row.retimeable}
+                    <select
+                      class="dailies-input"
+                      title={$tr("dailies.periodTitle")}
+                      value={row.period}
+                      onchange={(event) =>
+                        commit(
+                          setTrackerPeriod(
+                            tracker,
+                            row.id,
+                            event.currentTarget.value === "weekly" ? "weekly" : "daily",
+                          ),
+                        )}
+                    >
+                      <option value="daily">{$tr("dailies.groupDaily")}</option>
+                      <option value="weekly">{$tr("dailies.groupWeekly")}</option>
+                    </select>
+                  {/if}
+                  <button
+                    class="dailies-icon"
+                    title={row.hidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
+                    aria-label={row.hidden ? $tr("dailies.showTask") : $tr("dailies.hideTask")}
+                    data-task-hide={row.id}
+                    onclick={() => commit(toggleTrackerHidden(tracker, row.id))}
+                    >{row.hidden ? "+" : "x"}</button
+                  >
+                  {#if row.custom}
+                    <input
+                      class="dailies-input dailies-target"
+                      type="number"
+                      min="1"
+                      max="99"
+                      title={$tr("dailies.targetTitle")}
+                      value={row.target}
+                      onchange={(event) =>
+                        commit(
+                          setTrackerTarget(tracker, row.id, Number(event.currentTarget.value)),
+                        )}
                     />
-                  {/each}
-                </div>
+                    <button
+                      class="dailies-icon dailies-icon--danger"
+                      title={$tr("dailies.removeTask")}
+                      aria-label={$tr("dailies.removeTask")}
+                      data-task-remove={row.id}
+                      onclick={() => commit(removeCustomTask(tracker, row.id))}>&#8722;</button
+                    >
+                  {/if}
+                {/if}
+              </div>
+
+              {#if expanded[row.id]}
+                {#if row.lines}
+                  <ul class="dailies-sublist">
+                    {#each row.lines as line (line)}
+                      <li>{line}</li>
+                    {/each}
+                  </ul>
+                {/if}
+                {#if row.circuit}
+                  <div class="dailies-icons">
+                    {#each row.circuit as choice (choice.uniqueName)}
+                      <IconButtonCard
+                        name={choice.displayName ?? choice.name}
+                        imageUrl={choice.imageUrl}
+                        owned={choice.owned}
+                        size={80}
+                        borderWidth="1.5"
+                        onClick={() => openReward(choice)}
+                      />
+                    {/each}
+                  </div>
+                {/if}
               {/if}
             {/if}
-          {/if}
-        {/each}
+          {/each}
+        </div>
       </CollapsibleSection>
     </div>
   {/if}
@@ -474,7 +532,13 @@
 <div class="flex flex-col">
   <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
     <p class="m-0 text-sm text-text-secondary">
-      {wd ? $tr("dailies.manualHint") : $tr("dailies.awaitingWorldData")}
+      {#if !wd}
+        {$tr("dailies.awaitingWorldData")}
+      {:else if $inventoryData}
+        {$tr("dailies.autoHint")}
+      {:else}
+        {$tr("dailies.manualHint")}
+      {/if}
     </p>
     <div class="flex items-center gap-3">
       {#if editing && tracker.hidden.length > 0}
@@ -493,7 +557,7 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-2 gap-x-8 max-[1100px]:grid-cols-1">
+  <div class="grid grid-cols-2 gap-x-6 max-[1100px]:grid-cols-1">
     <div class="flex flex-col">
       {@render section("daily")}
       {@render section("nightwave")}
@@ -512,6 +576,7 @@
         type="text"
         maxlength="60"
         placeholder={$tr("dailies.addPlaceholder")}
+        data-task-name
         bind:value={draftLabel}
         onkeydown={(event) => event.key === "Enter" && addDraft()}
       />
@@ -519,7 +584,12 @@
         <option value="daily">{$tr("dailies.groupDaily")}</option>
         <option value="weekly">{$tr("dailies.groupWeekly")}</option>
       </select>
-      <button class="btn-secondary btn-sm" disabled={!draftLabel.trim()} onclick={addDraft}>
+      <button
+        class="btn-secondary btn-sm"
+        disabled={!draftLabel.trim()}
+        data-task-add
+        onclick={addDraft}
+      >
         {$tr("dailies.addTask")}
       </button>
     </div>
@@ -528,46 +598,96 @@
 
 <style>
   .dailies-section {
-    padding: 0.85rem 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .dailies-section:first-child {
-    border-top: none;
+    padding: 0.35rem 0 0.85rem;
   }
 
   .dailies-section--off {
     opacity: 0.45;
   }
 
-  .dailies-meta {
+  .dailies-card {
+    background: color-mix(in srgb, var(--bg-raised) 55%, transparent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .dailies-cardhead {
     align-items: center;
-    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--bg-deep) 45%, transparent);
+    border-bottom: 1px solid var(--border);
     display: flex;
+    gap: 0.6rem;
+    padding: 0.42rem 0.75rem;
+  }
+
+  .dailies-count {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    font-family: var(--font-display);
     font-size: 0.72rem;
-    gap: 0.5rem;
-    padding-bottom: 0.35rem;
+    letter-spacing: 0.04em;
+  }
+
+  .dailies-count--full {
+    color: var(--accent);
+  }
+
+  .dailies-bar {
+    background: color-mix(in srgb, var(--border) 55%, transparent);
+    border-radius: 2px;
+    flex: 1 1 auto;
+    height: 3px;
+    min-width: 2rem;
+    overflow: hidden;
+  }
+
+  .dailies-bar-fill {
+    background: var(--accent);
+    border-radius: 2px;
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .dailies-reset {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    white-space: nowrap;
   }
 
   .dailies-subhead {
+    background: color-mix(in srgb, var(--bg-deep) 30%, transparent);
+    border-top: 1px solid var(--border);
     color: var(--text-secondary);
-    font-size: 0.66rem;
+    font-size: 0.64rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    margin: 0.5rem 0 0.15rem;
+    margin: 0;
+    padding: 0.3rem 0.75rem 0.25rem;
     text-transform: uppercase;
+  }
+
+  .dailies-subhead:first-of-type {
+    border-top: none;
   }
 
   .dailies-row {
     align-items: center;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
     display: flex;
     gap: 0.5rem;
-    padding: 0.32rem 0;
+    padding: 0.38rem 0.75rem;
+    transition: background-color 0.12s;
   }
 
-  .dailies-row:last-child {
-    border-bottom: none;
+  .dailies-row + .dailies-row,
+  .dailies-sublist + .dailies-row,
+  .dailies-icons + .dailies-row {
+    border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  }
+
+  .dailies-row:hover {
+    background: color-mix(in srgb, var(--accent) 4%, transparent);
   }
 
   .dailies-row--off {
@@ -579,7 +699,7 @@
     cursor: pointer;
     display: flex;
     flex: 1 1 auto;
-    gap: 0.5rem;
+    gap: 0.55rem;
     min-width: 0;
   }
 
@@ -603,6 +723,15 @@
     font-size: 0.72rem;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dailies-progress {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
     white-space: nowrap;
   }
 
@@ -640,8 +769,8 @@
     color: var(--text-secondary);
     font-size: 0.72rem;
     list-style: none;
-    margin: 0 0 0.35rem;
-    padding: 0 0 0 1.5rem;
+    margin: 0;
+    padding: 0.1rem 0.75rem 0.45rem 2.05rem;
   }
 
   .dailies-sublist li {
@@ -652,14 +781,48 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
-    padding: 0.25rem 0 0.5rem 1.5rem;
+    padding: 0.25rem 0.75rem 0.6rem 2.05rem;
   }
 
   .dailies-check {
-    accent-color: var(--accent);
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    cursor: pointer;
+    display: grid;
     flex-shrink: 0;
-    height: 0.95rem;
-    width: 0.95rem;
+    height: 1rem;
+    margin: 0;
+    place-content: center;
+    transition:
+      border-color 0.15s,
+      background-color 0.15s;
+    width: 1rem;
+  }
+
+  .dailies-check:hover {
+    border-color: var(--accent);
+  }
+
+  .dailies-check:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .dailies-check:checked::after {
+    background: var(--bg-deep);
+    clip-path: polygon(14% 44%, 0 62%, 40% 100%, 100% 18%, 84% 4%, 38% 68%);
+    content: "";
+    height: 0.6rem;
+    width: 0.6rem;
+  }
+
+  /* Inventory-synced completion: same tick, marked by a soft glow, not clickable. */
+  .dailies-check--auto:disabled {
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
+    cursor: default;
+    opacity: 1;
   }
 
   .dailies-step,
@@ -679,7 +842,12 @@
       color 0.15s;
   }
 
-  .dailies-step:hover,
+  .dailies-step:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  .dailies-step:not(:disabled):hover,
   .dailies-icon:hover {
     border-color: var(--border-strong);
     color: var(--text-primary);

@@ -18,6 +18,8 @@ import type {
 export const itemDb = writable<Record<string, ItemDbEntry>>({});
 export const wfmItems = writable<WfmItemsLookup>({});
 export const inventoryData = writable<RawInventoryData | null>(null);
+/** mtime of the file behind `inventoryData`; dates its undated point-in-time fields. */
+export const inventoryModifiedAt = writable<number | null>(null);
 
 /** What the account can actually use: blueprints handed to the foundry are gone
  *  from the in-game inventory but stay in Recipes until the build is claimed. */

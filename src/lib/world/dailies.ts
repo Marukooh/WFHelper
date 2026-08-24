@@ -38,6 +38,7 @@ export const BUILTIN_TASKS: readonly TrackerDef[] = [
   { id: "spIncursions", period: "daily", target: 5, wiki: "Steel Path" },
   { id: "simaris", period: "daily", target: 1, wiki: "Cephalon Simaris" },
   { id: "syndicateStanding", period: "daily", target: 1, wiki: "Syndicate" },
+  { id: "dailyFocus", period: "daily", target: 1, wiki: "Focus" },
   { id: "archonHunt", period: "archon", target: 1, wiki: "Archon Hunt" },
   { id: "circuitNormal", period: "weekly", target: 1, wiki: "The Circuit" },
   { id: "circuitSteelPath", period: "weekly", target: 1, wiki: "The Circuit" },

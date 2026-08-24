@@ -109,6 +109,8 @@ interface SortieMission {
 }
 
 export interface Sortie {
+  /** World-state oid; the inventory's LastSortieReward joins on it. */
+  id?: string;
   activation?: string | null;
   expiry?: string | null;
   boss?: string;
@@ -121,6 +123,8 @@ interface ArchonHuntMission {
 }
 
 export interface ArchonHunt {
+  /** World-state oid; the inventory's LastLiteSortieReward joins on it. */
+  id?: string;
   activation: string | null;
   expiry: string | null;
   boss: string;
@@ -129,6 +133,8 @@ export interface ArchonHunt {
 
 export interface NightwaveChallenge {
   id: string;
+  /** Challenge path tail; the inventory's ChallengeProgress joins on it. */
+  name?: string;
   title: string;
   /** Falls back to the title for the few acts DE ships without a description. */
   description: string;

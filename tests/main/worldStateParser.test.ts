@@ -14,11 +14,13 @@ const parseRaw = (raw: Parameters<typeof parser.parseRaw>[0]) =>
 
 interface ParsedDailies {
   sortie: {
+    id: string;
     expiry: string | null;
     boss: string;
     missions: Array<{ node: string; mission: string; modifier: string }>;
   } | null;
   archonHunt: {
+    id: string;
     boss: string;
     missions: Array<{ node: string; mission: string }>;
   } | null;
@@ -27,6 +29,7 @@ interface ParsedDailies {
     phase: number;
     challenges: Array<{
       id: string;
+      name: string;
       title: string;
       description: string;
       standing: number;
@@ -164,6 +167,7 @@ describe("worldStateParser sortie, archon hunt, nightwave and alerts", () => {
       Sorties: [
         {
           ...window,
+          _id: { $oid: "sortie1" },
           Boss: "SORTIE_BOSS_LEPHANTIS",
           Variants: [
             {
@@ -186,6 +190,8 @@ describe("worldStateParser sortie, archon hunt, nightwave and alerts", () => {
       ],
     });
 
+    // The id joins the inventory's LastSortieReward for completion tracking.
+    expect(parsed.sortie?.id).toBe("sortie1");
     expect(parsed.sortie?.boss).toBe("Lephantis");
     expect(parsed.sortie?.expiry).toBeTruthy();
     expect(parsed.sortie?.missions).toEqual([
@@ -202,6 +208,7 @@ describe("worldStateParser sortie, archon hunt, nightwave and alerts", () => {
       LiteSorties: [
         {
           ...window,
+          _id: { $oid: "lite1" },
           Boss: "SORTIE_BOSS_NIRA",
           Missions: [
             { missionType: "MT_RESCUE", node: "SolNode25" },
@@ -211,6 +218,7 @@ describe("worldStateParser sortie, archon hunt, nightwave and alerts", () => {
       ],
     });
 
+    expect(parsed.archonHunt?.id).toBe("lite1");
     expect(parsed.archonHunt?.boss).toBe("Nira");
     expect(parsed.archonHunt?.missions).toEqual([
       { node: "Callisto (Jupiter)", mission: "Rescue" },
@@ -285,6 +293,8 @@ describe("worldStateParser sortie, archon hunt, nightwave and alerts", () => {
     const [daily, elite, unknown] = parsed.nightwave?.challenges ?? [];
     expect(daily).toMatchObject({
       id: "daily1",
+      // The path tail joins the inventory's ChallengeProgress records.
+      name: "SeasonDailyAimGlide",
       title: "Glider",
       description: "Kill 15 Enemies while Aim Gliding",
       standing: 1000,

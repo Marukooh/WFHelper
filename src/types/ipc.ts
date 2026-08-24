@@ -86,6 +86,8 @@ interface InventoryStatus {
   found: boolean;
   /** The user's persisted pick. Matches the loaded file whenever `path` is set. */
   source: InventorySource;
+  /** mtime of the loaded file; the only date behind undated point-in-time fields. */
+  modifiedAt: number | null;
   /** The last read failure, or null when no file was discovered or after success. */
   lastError?: InventoryReadError | null;
 }

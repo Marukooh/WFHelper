@@ -7,22 +7,34 @@ import { handleWfmNotification } from "./wfmNotifications.js";
 import { statusText } from "../stores/app.js";
 import { pendingArbiRunId, subscribeArbiRunSaved } from "../stores/arbiRuns.js";
 import { currentView } from "../stores/app.js";
-import { itemDb, parsedItems } from "../stores/data.js";
+import { inventoryModifiedAt, itemDb, parsedItems } from "../stores/data.js";
 import { masteryData } from "../stores/mastery.js";
 import { applyClosedWfmListing } from "../stores/market.js";
 import { addToast } from "../stores/toasts.js";
 import { applyUpdateState } from "../stores/updates.js";
 
+async function refreshInventoryModifiedAt(): Promise<void> {
+  try {
+    const status = await invoke("getInventoryStatus");
+    inventoryModifiedAt.set(status?.modifiedAt ?? null);
+  } catch {
+    // A missing status must not claim the loaded file is fresh.
+    inventoryModifiedAt.set(null);
+  }
+}
+
 /** Main-process events that outlive whichever view happens to be mounted.
  * App.svelte only calls this and disposes it; none of it is layout. */
 export function initRendererEvents(): () => void {
   const unsubscribes = [
-    // Runs land in the index even while the Arbitrations tab is unmounted.
     subscribeArbiRunSaved(),
 
     on("inventory-updated", async (data) => {
       if (data && !(data as { error?: unknown }).error) {
         await onInventoryLoaded(data);
+        // Main only pushes a status on watcher errors and source switches, so the
+        // mtime behind this payload has to be pulled.
+        await refreshInventoryModifiedAt();
         // SetupView routes itself during the wizard; navigating here would tear it down
         statusText.set({
           key: "app.liveUpdateStatus",
@@ -32,6 +44,7 @@ export function initRendererEvents(): () => void {
     }),
 
     on("inventory-status-updated", (status) => {
+      inventoryModifiedAt.set(status.modifiedAt ?? null);
       if (status.lastError) {
         statusText.set({
           key: "app.inventoryWatcherError",
@@ -67,6 +80,9 @@ export function initRendererEvents(): () => void {
         .catch((err) => console.warn("[Mastery] getMasteryProgress failed:", err));
     }),
   ];
+
+  // The startup inventory load can predate these subscriptions, so seed the mtime.
+  void refreshInventoryModifiedAt();
 
   // Main raises fallbackHint once per remembered XWayland failure.
   void invoke("getLinuxDisplay").then((display) => {
