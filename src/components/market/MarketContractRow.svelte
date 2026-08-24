@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PLATINUM_ICON_URL, RIVEN_TEMPLATE_URL } from "../../lib/assetUrls.js";
-  import { attributeKeyword, type ContractInventoryMatch } from "../../lib/marketContract.js";
+  import { attributeKeyword } from "../../lib/marketContract.js";
+  import { listingWarning, type ListingInventoryMatch } from "../../lib/marketListing.js";
   import MarketRowBase from "./MarketRowBase.svelte";
   import RivenPolarityIcon from "../RivenPolarityIcon.svelte";
   import { tr, type MessageKey } from "../../lib/i18n.js";
@@ -13,7 +14,7 @@
   export let onRemove: (contract: WfmContract) => void;
   export let onToggleVisible: (contract: WfmContract) => void;
   /** Null while the riven list has not loaded; nothing is flagged until it has. */
-  export let inventoryMatch: ContractInventoryMatch | null = null;
+  export let inventoryMatch: ListingInventoryMatch | null = null;
   export let busy = false;
 
   function contractStatsPreview(contractRow: WfmContract): string[] {
@@ -40,21 +41,7 @@
     : "bg-sky-500/20 text-sky-300";
   $: masteryLabel = contract.masteryLevel != null ? `MR${contract.masteryLevel}` : "MR-";
   $: thumb = contract.itemThumb || RIVEN_TEMPLATE_URL;
-  $: warning =
-    inventoryMatch == null || inventoryMatch.state === "match"
-      ? null
-      : inventoryMatch.state === "missing"
-        ? {
-            label: $tr("market.listing.missingFromInventory"),
-            title: $tr("market.listing.missingTitle"),
-          }
-        : {
-            label: $tr("market.listing.rankMismatch", { owned: inventoryMatch.ownedRank }),
-            title: $tr("market.listing.rankMismatchTitle", {
-              listed: contract.modRank ?? 0,
-              owned: inventoryMatch.ownedRank,
-            }),
-          };
+  $: warning = listingWarning(inventoryMatch, contract.modRank, $tr);
   $: rankBadges = [
     ...(contract.modRank != null ? [`R${contract.modRank}`] : []),
     ...(contract.rerolls != null ? [`RR${contract.rerolls}`] : []),

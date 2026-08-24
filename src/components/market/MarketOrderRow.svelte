@@ -6,7 +6,7 @@
   import { isRankedGroup } from "../../../config/shared/numeric.js";
   import { tr } from "../../lib/i18n.js";
   import type { InventoryViewItem } from "../../lib/inventoryMarket.js";
-  import type { OrderInventoryMatch } from "../../lib/marketOrderInventory.js";
+  import { listingWarning, type ListingInventoryMatch } from "../../lib/marketListing.js";
   import type { OrderModalHint, WfmOrder } from "../../types/market.js";
 
   export let order: WfmOrder;
@@ -22,7 +22,7 @@
     updates: { platinum: number; quantity: number },
   ) => Promise<boolean>;
   // Null while the inventory has not parsed; nothing is flagged until it has.
-  export let inventoryMatch: OrderInventoryMatch | null = null;
+  export let inventoryMatch: ListingInventoryMatch | null = null;
 
   let draftPlatinum = 0;
   let draftQuantity = 0;
@@ -64,32 +64,7 @@
     order.orderType === "buy" ? "bg-sky-500/20 text-sky-300" : "bg-amber-500/20 text-amber-300";
   $: liveLabel = order.visible ? $tr("market.liveLower") : $tr("market.hiddenLower");
   $: ownedCount = item?.amount ?? 0;
-  $: warning =
-    inventoryMatch == null || inventoryMatch.state === "match"
-      ? null
-      : inventoryMatch.state === "missing"
-        ? {
-            label: $tr("market.listing.missingFromInventory"),
-            title: $tr("market.listing.missingTitle"),
-          }
-        : inventoryMatch.state === "partial"
-          ? {
-              label: $tr("market.listing.partialBacking", {
-                owned: inventoryMatch.owned,
-                listed: inventoryMatch.listed,
-              }),
-              title: $tr("market.listing.partialTitle", {
-                owned: inventoryMatch.owned,
-                listed: inventoryMatch.listed,
-              }),
-            }
-          : {
-              label: $tr("market.listing.rankMismatch", { owned: inventoryMatch.ownedRank }),
-              title: $tr("market.listing.rankMismatchTitle", {
-                listed: order.modRank ?? 0,
-                owned: inventoryMatch.ownedRank,
-              }),
-            };
+  $: warning = listingWarning(inventoryMatch, order.modRank, $tr);
   $: isRankedListing = item
     ? isRankedGroup(item.inventoryGroup) && item.maxRank > 0
     : order.modRank != null;

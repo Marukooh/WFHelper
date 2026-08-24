@@ -2,6 +2,7 @@ import { isRankedGroup, toFinitePositiveInt } from "../../config/shared/numeric.
 import { isResourceItem, resolveItem, shouldHide } from "./inventory/itemClassification.js";
 import { gameRefKey, normalizeMarketName, toMarketSlug } from "./marketNaming.js";
 import { type InventoryBaseItem } from "./inventoryMarket.js";
+import type { ListingInventoryMatch } from "./marketListing.js";
 import type { InventoryGroup, ItemDbEntry, ParsedItem } from "../types/inventory.js";
 import type { WfmItemsLookup } from "../types/ipc.js";
 import type { WfmOrder } from "../types/market.js";
@@ -117,12 +118,6 @@ export function ownedCountForMarketOrder(
   return ownedCountForOrder(parsedItemForOrder(order, parsedItems, wfmItems));
 }
 
-export type OrderInventoryMatch =
-  | { state: "match" }
-  | { state: "missing" }
-  | { state: "partial"; owned: number; listed: number }
-  | { state: "rank-mismatch"; ownedRank: number };
-
 // Mirrors the two early returns in parseInventory. An item the parser never
 // keeps can never be proven owned, so resources, gems and captura scenes must
 // stay unflagged however empty the inventory looks.
@@ -146,7 +141,7 @@ export function orderInventoryMatch(
   parsedItems: ParsedItem[],
   wfmItems: WfmItemsLookup,
   itemDb: Record<string, ItemDbEntry>,
-): OrderInventoryMatch {
+): ListingInventoryMatch {
   if (order.orderType !== "sell") return { state: "match" };
 
   const owned = matchingParsedItems(order, parsedItems, wfmItems).filter(
@@ -161,7 +156,7 @@ export function orderInventoryMatch(
   const listed = toFinitePositiveInt(order.quantity) ?? 1;
   // A stack split across rank rows still backs one listing, so the rows that
   // survive the rank check are summed rather than read one at a time.
-  const backing = (rows: ParsedItem[]): OrderInventoryMatch => {
+  const backing = (rows: ParsedItem[]): ListingInventoryMatch => {
     const total = rows.reduce((sum, item) => sum + ownedCountForOrder(item), 0);
     return total < listed ? { state: "partial", owned: total, listed } : { state: "match" };
   };
