@@ -306,14 +306,18 @@ export function isBuildPartItem(
 }
 
 export function canonicalBuildPartName(internalName: string, name: string): string {
-  if (
-    /\/Types\/Recipes\/WarframeRecipes\//i.test(internalName) &&
-    /\bHelmet Blueprint$/i.test(name)
-  ) {
-    return name.replace(/\bHelmet Blueprint$/i, "Neuroptics Blueprint");
+  let result = name;
+  // DE keeps the crafted part under ...Component beside the tradable ...Blueprint
+  // recipe, but the item DB names the Component entry after the blueprint players
+  // trade (WFCD keys the blueprint under the Component path). The raw Component
+  // row is the crafted part, so keeping the suffix would mislabel it.
+  if (/\/Types\/Recipes\/\S*Component$/i.test(internalName)) {
+    result = result.replace(/\s+Blueprint$/i, "");
   }
-
-  return name;
+  if (/\/Types\/Recipes\/WarframeRecipes\//i.test(internalName)) {
+    result = result.replace(/\bHelmet(?= Blueprint$|$)/i, "Neuroptics");
+  }
+  return result;
 }
 
 /** warframe.market listing a key by game reference is the only signal that it is

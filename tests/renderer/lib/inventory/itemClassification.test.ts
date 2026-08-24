@@ -315,6 +315,46 @@ describe("canonicalBuildPartName", () => {
     );
     expect(result).toBe("Something Helmet Blueprint");
   });
+
+  it("drops the blueprint suffix from a crafted frame part", () => {
+    const result = canonicalBuildPartName(
+      "/Lotus/Types/Recipes/WarframeRecipes/AtlasPrimeSystemsComponent",
+      "Atlas Prime Systems Blueprint",
+    );
+    expect(result).toBe("Atlas Prime Systems");
+  });
+
+  it("keeps the suffix on the blueprint itself", () => {
+    const result = canonicalBuildPartName(
+      "/Lotus/Types/Recipes/WarframeRecipes/AtlasPrimeSystemsBlueprint",
+      "Atlas Prime Systems Blueprint",
+    );
+    expect(result).toBe("Atlas Prime Systems Blueprint");
+  });
+
+  it("drops the blueprint suffix from a crafted weapon part too", () => {
+    const result = canonicalBuildPartName(
+      "/Lotus/Types/Recipes/Weapons/WeaponParts/BratonPrimeBarrelComponent",
+      "Braton Prime Barrel Blueprint",
+    );
+    expect(result).toBe("Braton Prime Barrel");
+  });
+
+  it("keeps the suffix on a weapon part blueprint", () => {
+    const result = canonicalBuildPartName(
+      "/Lotus/Types/Recipes/Weapons/WeaponParts/BratonPrimeBarrelBlueprint",
+      "Braton Prime Barrel Blueprint",
+    );
+    expect(result).toBe("Braton Prime Barrel Blueprint");
+  });
+
+  it("names a crafted helmet part Neuroptics without the suffix", () => {
+    const result = canonicalBuildPartName(
+      "/Lotus/Types/Recipes/WarframeRecipes/SarynHelmetComponent",
+      "Saryn Helmet Blueprint",
+    );
+    expect(result).toBe("Saryn Neuroptics");
+  });
 });
 
 describe("shouldHide", () => {
