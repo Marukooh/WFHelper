@@ -6,7 +6,11 @@ import {
   createOverlayWindowBoundsChangeHandler,
   createOverlayWindowsController,
 } from "./overlay/windows";
-import { applyOverlayZOrder, registerZOrderSubscriber } from "./overlay/zOrder";
+import {
+  applyOverlayZOrder,
+  registerZOrderSubscriber,
+  syncOverlayWindowZOrder,
+} from "./overlay/zOrder";
 import * as rivenSession from "./overlay/rivenSession";
 import * as rivenScan from "./overlay/rivenScan";
 import {
@@ -248,9 +252,7 @@ function syncRivenWindowZOrder(warframeFocused: boolean): void {
   const keepRaised = warframeFocused || _rivenInteractive;
   probeRivenZOrder(keepRaised);
   for (const { win, controller } of rivenWindowEntries()) {
-    if (!win || win.isDestroyed()) continue;
-    if (!controller.isOverlayWindowVisible()) continue;
-    applyOverlayZOrder(win, keepRaised);
+    syncOverlayWindowZOrder(controller, win, keepRaised);
   }
 }
 

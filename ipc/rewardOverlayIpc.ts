@@ -10,7 +10,7 @@ import {
 } from "./ipcSecurity";
 import { createOverlayScanController } from "./overlay/scan";
 import { createRelicSelectionController } from "./overlay/relicSelection";
-import { applyOverlayZOrder, registerZOrderSubscriber } from "./overlay/zOrder";
+import { registerZOrderSubscriber, syncOverlayWindowZOrder } from "./overlay/zOrder";
 import {
   createOverlayWindowBoundsChangeHandler,
   createOverlayWindowsController,
@@ -105,25 +105,6 @@ export const plannerWindowsController = createOverlayWindowsController({
   windowStateKey: "planner",
   onWindowBoundsChanged: rememberOverlayWindowBounds,
 });
-
-type OverlayWindowsController = ReturnType<typeof createOverlayWindowsController>;
-
-// Covers the 2.5s refocus grace and the 250ms immediate hides, and nothing else.
-const HIDE_IMMINENT_MS = 3_000;
-
-function syncOverlayWindowZOrder(
-  controller: OverlayWindowsController,
-  win: InstanceType<typeof BrowserWindow> | null,
-  warframeFocused: boolean,
-): void {
-  if (!win || win.isDestroyed() || !controller.isOverlayWindowVisible()) return;
-  // The refocus that releases a held-open overlay schedules its hide 2.5s out,
-  // and re-stacking a window that is already being torn down is what crashed
-  // under an injected hook. Only the last seconds are skipped.
-  const hideDueIn = controller.overlayHideDueIn();
-  if (hideDueIn !== null && hideDueIn <= HIDE_IMMINENT_MS) return;
-  applyOverlayZOrder(win, warframeFocused);
-}
 
 registerZOrderSubscriber({
   isActive: () =>

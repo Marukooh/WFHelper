@@ -33,6 +33,28 @@ export function applyOverlayZOrder(win: OverlayWindow, warframeFocused: boolean)
   }
 }
 
+interface ZOrderWindowsController {
+  isOverlayWindowVisible: () => boolean;
+  overlayHideDueIn: () => number | null;
+}
+
+const HIDE_IMMINENT_MS = 3_000;
+
+/** Poll-driven stacking for one overlay window, guards included. */
+export function syncOverlayWindowZOrder(
+  controller: ZOrderWindowsController,
+  win: OverlayWindow | null,
+  warframeFocused: boolean,
+): void {
+  if (!win || win.isDestroyed() || !controller.isOverlayWindowVisible()) return;
+  // The refocus that releases a held-open overlay schedules its hide 2.5s out,
+  // and re-stacking a window that is already being torn down is what crashed
+  // under an injected hook. Only the last seconds are skipped.
+  const hideDueIn = controller.overlayHideDueIn();
+  if (hideDueIn !== null && hideDueIn <= HIDE_IMMINENT_MS) return;
+  applyOverlayZOrder(win, warframeFocused);
+}
+
 async function poll(): Promise<void> {
   if (polling) return;
   const active = [...subscribers].filter((subscriber) => subscriber.isActive());
