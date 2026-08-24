@@ -1,13 +1,18 @@
 import { nextDailyResetUtc, nextWeeklyResetUtc } from "../format.js";
 import { readStorage, writeStorage } from "../persistence.js";
 
-/** Calendar periods reset on the clock; the rest key off a world-state expiry. */
+/** Calendar periods reset on the clock; the rest key off a world-state expiry,
+ *  except the two vendor rotations, which run on fixed 4-day UTC grids. */
 type TrackerPeriod =
   | "daily"
   | "weekly"
+  | "tenet"
+  | "coda"
   | "sortie"
   | "archon"
   | "steelPath"
+  | "descendia"
+  | "calendar1999"
   | "baro"
   | "darvo"
   | "varzia";
@@ -24,6 +29,8 @@ interface TrackerDef {
   wiki?: string;
   /** Set only on user-added tasks; built-ins resolve `dailies.task.<id>`. */
   label?: string;
+  /** Weekly vendor visits list under Vendors, not Weekly; period alone cannot tell. */
+  group?: TrackerGroup;
 }
 
 const STORAGE_KEY = "world-dailies";
@@ -48,8 +55,16 @@ export const BUILTIN_TASKS: readonly TrackerDef[] = [
   { id: "kahl", period: "weekly", target: 1, wiki: "Kahl's Garrison" },
   { id: "clem", period: "weekly", target: 1, wiki: "Clem" },
   { id: "ayatanHunt", period: "weekly", target: 1, wiki: "Maroo" },
-  { id: "ergoGlast", period: "weekly", target: 1, wiki: "Ergo Glast" },
+  { id: "descendiaNormal", period: "descendia", target: 1, wiki: "The Descendia" },
+  { id: "descendiaSteelPath", period: "descendia", target: 1, wiki: "The Descendia" },
+  { id: "calendar1999", period: "calendar1999", target: 1, wiki: "1999 Calendar" },
   { id: "steelPathHonors", period: "steelPath", target: 1, wiki: "Teshin" },
+  { id: "palladino", period: "weekly", target: 1, wiki: "Palladino", group: "vendors" },
+  { id: "acrithis", period: "weekly", target: 1, wiki: "Acrithis", group: "vendors" },
+  { id: "bird3", period: "weekly", target: 1, wiki: "Bird 3", group: "vendors" },
+  { id: "yonta", period: "weekly", target: 1, wiki: "Archimedean Yonta", group: "vendors" },
+  { id: "tenetMelee", period: "tenet", target: 1, wiki: "Ergo Glast", group: "vendors" },
+  { id: "codaWeapons", period: "coda", target: 1, wiki: "Coda Weapons", group: "vendors" },
   { id: "baro", period: "baro", target: 1, wiki: "Baro Ki'Teer" },
   { id: "varzia", period: "varzia", target: 1, wiki: "Prime Resurgence" },
   { id: "darvo", period: "darvo", target: 1, wiki: "Darvo" },
@@ -60,9 +75,31 @@ export interface TrackerExpiries {
   sortie: string | null;
   archon: string | null;
   steelPath: string | null;
+  descendia: string | null;
+  calendar1999: string | null;
   baro: string | null;
   darvo: string | null;
   varzia: string | null;
+}
+
+/** Community-maintained epochs for the two 4-day vendor grids (wiki Countdown
+ *  templates; Tenet and Coda run offset by one day). The worldstate carries no
+ *  rotation data for either, so a re-seeded cycle needs a new anchor here. */
+const FOUR_DAY_MS = 4 * 24 * 60 * 60_000;
+type FourDayPeriod = "tenet" | "coda";
+const FOUR_DAY_ANCHORS: Record<FourDayPeriod, number> = {
+  tenet: Date.UTC(2015, 11, 3),
+  coda: Date.UTC(2025, 2, 18),
+};
+
+function isFourDayPeriod(period: string): period is FourDayPeriod {
+  return period === "tenet" || period === "coda";
+}
+
+function nextFourDayResetUtc(anchorMs: number, now: Date): Date {
+  const elapsed = now.getTime() - anchorMs;
+  const periods = Math.floor(elapsed / FOUR_DAY_MS) + 1;
+  return new Date(anchorMs + periods * FOUR_DAY_MS);
 }
 
 interface TrackerEntry {
@@ -80,9 +117,12 @@ export interface TrackerState {
   seq: number;
 }
 
-export function trackerGroup(period: TrackerPeriod): TrackerGroup {
+export function trackerGroup(period: TrackerPeriod, override?: TrackerGroup): TrackerGroup {
+  if (override) return override;
   if (period === "baro" || period === "darvo" || period === "varzia") return "vendors";
+  if (period === "tenet" || period === "coda") return "vendors";
   if (period === "weekly" || period === "steelPath" || period === "archon") return "weekly";
+  if (period === "descendia" || period === "calendar1999") return "weekly";
   return "daily";
 }
 
@@ -102,7 +142,16 @@ export function trackerPeriodKey(
 ): string | null {
   if (period === "daily") return `daily:${nextDailyResetUtc(now).toISOString()}`;
   if (period === "weekly") return `weekly:${nextWeeklyResetUtc(now).toISOString()}`;
+  if (isFourDayPeriod(period)) {
+    return `${period}:${nextFourDayResetUtc(FOUR_DAY_ANCHORS[period], now).toISOString()}`;
+  }
   return expiryPeriodKey(period, expiries[period]);
+}
+
+/** Countdown target for a period the clock alone can compute; null for the rest. */
+export function fourDayResetIso(period: string, now: Date): string | null {
+  if (!isFourDayPeriod(period)) return null;
+  return nextFourDayResetUtc(FOUR_DAY_ANCHORS[period], now).toISOString();
 }
 
 function emptyState(): TrackerState {
@@ -152,6 +201,19 @@ function revivePeriods(raw: unknown): Record<string, TrackerUserPeriod> {
   return revived;
 }
 
+/** The "ergoGlast" task was really Iron Wake's weekly, which Palladino runs;
+ *  carry saved state across the rename so nothing unticks or unhides. */
+function migrateRenamedIds(state: TrackerState): TrackerState {
+  const old = state.progress["ergoGlast"];
+  if (old && !state.progress["palladino"]) state.progress["palladino"] = old;
+  delete state.progress["ergoGlast"];
+  const oldPeriod = state.periods["ergoGlast"];
+  if (oldPeriod && !state.periods["palladino"]) state.periods["palladino"] = oldPeriod;
+  delete state.periods["ergoGlast"];
+  state.hidden = state.hidden.map((id) => (id === "ergoGlast" ? "palladino" : id));
+  return state;
+}
+
 export function loadTracker(): TrackerState {
   const raw = readStorage(STORAGE_KEY);
   if (!raw) return emptyState();
@@ -161,7 +223,7 @@ export function loadTracker(): TrackerState {
     const source = parsed as Record<string, unknown>;
     const custom = reviveCustom(source.custom);
     const seq = source.seq;
-    return {
+    return migrateRenamedIds({
       progress: reviveProgress(source.progress),
       hidden: Array.isArray(source.hidden)
         ? source.hidden.filter((id): id is string => typeof id === "string")
@@ -169,7 +231,7 @@ export function loadTracker(): TrackerState {
       periods: revivePeriods(source.periods),
       custom,
       seq: typeof seq === "number" && seq >= 0 ? Math.trunc(seq) : custom.length,
-    };
+    });
   } catch {
     return emptyState();
   }

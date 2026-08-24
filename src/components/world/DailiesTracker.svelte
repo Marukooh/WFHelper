@@ -15,7 +15,11 @@
   import { buildParsedItemFromDb } from "../../lib/parsedItemFromDb.js";
   import { worldData } from "../../stores/world.js";
   import type { NightwaveChallenge, WorldAlert } from "../../types/world.js";
-  import { resolveCircuitChoices, type CircuitChoice } from "../../lib/world.js";
+  import {
+    resolveCircuitChoices,
+    resolveVendorItems,
+    type CircuitChoice,
+  } from "../../lib/world.js";
   import IconButtonCard from "./IconButtonCard.svelte";
   import WorldToggleIcon from "./WorldToggleIcon.svelte";
   import {
@@ -37,8 +41,13 @@
     type TrackerState,
     type TrackerUserPeriod,
   } from "../../lib/world/dailies.js";
-  import { autoTrackerState } from "../../lib/world/dailiesAuto.js";
-  import { trackerExpiries, trackerLive } from "../../lib/world/dailiesLive.js";
+  import { autoTrackerState, nightwaveSeasonStanding } from "../../lib/world/dailiesAuto.js";
+  import {
+    codaBatch,
+    TENET_MELEE_STOCK,
+    trackerExpiries,
+    trackerLive,
+  } from "../../lib/world/dailiesLive.js";
   import { loadCollapsedSections, toggleCollapsedSection } from "../../lib/world/useWorldView.js";
 
   const GROUP_TITLES: Record<TrackerGroup, MessageKey> = {
@@ -60,6 +69,7 @@
   let expanded = $state<Record<string, boolean>>({});
   let draftLabel = $state("");
   let draftPeriod = $state<TrackerUserPeriod>("daily");
+  let query = $state("");
 
   const nowMs = $derived($clock);
   const now = $derived(new Date(nowMs));
@@ -125,6 +135,28 @@
     circuitSteelPath: resolveCircuitChoices(circuitChoices("hard"), $itemDb, $inventoryData),
   });
 
+  const vendorStock = $derived({
+    varzia: resolveVendorItems(
+      (wd?.vaultTrader?.inventory ?? []).flatMap((offer) =>
+        offer.uniqueName ? [offer.uniqueName] : [],
+      ),
+      $itemDb,
+      $inventoryData,
+    ),
+    darvo: resolveVendorItems(
+      (wd?.dailyDeals ?? []).flatMap((deal) => (deal.uniqueName ? [deal.uniqueName] : [])),
+      $itemDb,
+      $inventoryData,
+    ),
+    // Fixed name lists resolve like circuit choices so owned marking matches.
+    tenetMelee: resolveCircuitChoices(TENET_MELEE_STOCK, $itemDb, $inventoryData),
+    codaWeapons: resolveCircuitChoices(codaBatch(nowMs).weapons, $itemDb, $inventoryData),
+  });
+
+  const seasonStanding = $derived(
+    nightwaveSeasonStanding($inventoryData, wd?.nightwave?.affiliationTag),
+  );
+
   function openReward(choice: CircuitChoice): void {
     const entry = $itemDb[choice.uniqueName];
     if (!entry) return;
@@ -143,7 +175,7 @@
       const row = taskRow({
         id: task.id,
         label: task.label ?? t(`dailies.task.${task.id}` as MessageKey),
-        group: trackerGroup(task.period),
+        group: trackerGroup(task.period, task.group),
         periodKey,
         target: task.target,
         wiki: task.wiki,
@@ -152,7 +184,12 @@
       const circuit =
         task.id === "circuitNormal" || task.id === "circuitSteelPath"
           ? circuitRewards[task.id]
-          : [];
+          : task.id === "varzia" ||
+              task.id === "darvo" ||
+              task.id === "tenetMelee" ||
+              task.id === "codaWeapons"
+            ? vendorStock[task.id]
+            : [];
       return {
         ...row,
         custom: Boolean(task.label),
@@ -246,10 +283,21 @@
     collapsed = toggleCollapsedSection(collapsed, key);
   }
 
+  function matchesQuery(row: Row, needle: string): boolean {
+    if (!needle) return true;
+    return (
+      row.label.toLowerCase().includes(needle) || (row.detail ?? "").toLowerCase().includes(needle)
+    );
+  }
+
   function groupRows(group: TrackerGroup): Row[] {
     if (tracker.hidden.includes(`section:${group}`) && !editing) return [];
+    const needle = query.trim().toLowerCase();
     const visible = rows.filter(
-      (row) => row.group === group && (editing || row.kind === "header" || !row.hidden),
+      (row) =>
+        row.group === group &&
+        (editing || row.kind === "header" || !row.hidden) &&
+        (row.kind === "header" || matchesQuery(row, needle)),
     );
     // A header left with no task under it would render as a stray label.
     return visible.filter(
@@ -292,10 +340,15 @@
       return $tr("dailies.resetsIn", { time: timeTo(nextWeeklyResetUtc(now), nowMs) });
     }
     if (group === "nightwave" && wd?.nightwave) {
-      return $tr("dailies.seasonEnds", {
+      const ends = $tr("dailies.seasonEnds", {
         season: String(wd.nightwave.season),
         time: countdown(wd.nightwave.expiry),
       });
+      if (seasonStanding === null) return ends;
+      const standing = $tr("dailies.seasonStanding", {
+        amount: seasonStanding.toLocaleString(),
+      });
+      return `${ends} · ${standing}`;
     }
     return "";
   }
@@ -513,6 +566,7 @@
                         name={choice.displayName ?? choice.name}
                         imageUrl={choice.imageUrl}
                         owned={choice.owned}
+                        subsumed={choice.subsumed}
                         size={80}
                         borderWidth="1.5"
                         onClick={() => openReward(choice)}
@@ -546,6 +600,13 @@
           >{$tr("dailies.hiddenCount", { count: String(tracker.hidden.length) })}</span
         >
       {/if}
+      <input
+        class="dailies-input dailies-name-input"
+        type="search"
+        placeholder={$tr("common.searchPlaceholder")}
+        data-tracker-search
+        bind:value={query}
+      />
       <button
         class="btn-secondary btn-sm"
         data-tracker-edit

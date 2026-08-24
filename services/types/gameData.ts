@@ -159,6 +159,31 @@ interface SeasonInfoRaw {
   ActiveChallenges?: SeasonChallengeRaw[];
 }
 
+interface TimeWindowRaw {
+  Activation?: WorldStateDate;
+  Expiry?: WorldStateDate;
+}
+
+/** One dated slot of the 1999 calendar; DE ships several event kinds and only
+ *  ever fills the field its own type names. */
+export interface CalendarEventRaw {
+  type?: string;
+  challenge?: string;
+  reward?: string;
+  upgrade?: string;
+}
+
+export interface CalendarDayRaw {
+  day?: number;
+  events?: CalendarEventRaw[];
+}
+
+interface CalendarSeasonRaw extends TimeWindowRaw {
+  /** Season tag, e.g. "CST_SUMMER". */
+  Season?: string;
+  Days?: CalendarDayRaw[];
+}
+
 interface AlertRewardRaw {
   credits?: number;
   countedItems?: { ItemType?: string; ItemCount?: number }[];
@@ -248,6 +273,7 @@ export interface WorldStateRaw {
   Sorties?: SortieRaw | SortieRaw[];
   LiteSorties?: LiteSortieRaw | LiteSortieRaw[];
   SeasonInfo?: SeasonInfoRaw;
+  KnownCalendarSeasons?: CalendarSeasonRaw | CalendarSeasonRaw[];
   Alerts?: AlertRaw[];
   Descents?: DescentRaw[];
   EndlessXpChoices?: EndlessXpChoice[];

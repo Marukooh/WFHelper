@@ -315,6 +315,69 @@ export function resolveCircuitRotation(
   return weeks.map(resolve);
 }
 
+function buildOwnedSets(inventoryData: RawInventoryData | null): {
+  ownedSuits: Set<string>;
+  ownedWeapons: Set<string>;
+} {
+  const ownedSuits = new Set<string>();
+  const ownedWeapons = new Set<string>();
+  if (inventoryData) {
+    // Warframes currently in inventory
+    for (const suit of (inventoryData.Suits || []) as Array<{ ItemType?: string }>) {
+      if (suit.ItemType) ownedSuits.add(suit.ItemType);
+    }
+    // Warframes subsumed to Helminth (no longer in Suits but still "owned")
+    const consumedSuits = (
+      (inventoryData as Record<string, unknown>).InfestedFoundry as
+        | { ConsumedSuits?: Array<{ s?: string }> }
+        | undefined
+    )?.ConsumedSuits;
+    if (Array.isArray(consumedSuits)) {
+      for (const entry of consumedSuits) {
+        if (entry.s) ownedSuits.add(entry.s);
+      }
+    }
+    // Weapons
+    const weaponKeys: Array<keyof RawInventoryData> = ["LongGuns", "Pistols", "Melee"];
+    for (const k of weaponKeys) {
+      for (const wpn of (inventoryData[k] || []) as Array<{ ItemType?: string }>) {
+        if (wpn.ItemType) ownedWeapons.add(wpn.ItemType);
+      }
+    }
+  }
+  return { ownedSuits, ownedWeapons };
+}
+
+const VENDOR_WARFRAME_CATS = new Set(["warframe", "warframes", "suits"]);
+
+/** Vendor stock arrives as uniqueNames; entries the item DB cannot picture are
+ *  dropped rather than rendered as empty tiles (bundles, decorations). */
+export function resolveVendorItems(
+  uniqueNames: string[],
+  itemDb: Record<string, ItemDbEntry>,
+  inventoryData: RawInventoryData | null,
+): CircuitChoice[] {
+  if (!uniqueNames.length || !itemDb) return [];
+  const { ownedSuits, ownedWeapons } = buildOwnedSets(inventoryData);
+  const resolved: CircuitChoice[] = [];
+  for (const uniqueName of uniqueNames) {
+    const entry = itemDb[uniqueName];
+    if (!entry?.name || !entry.imageUrl) continue;
+    const category = (entry.category || entry.productCategory || "").toLowerCase();
+    const owned = VENDOR_WARFRAME_CATS.has(category)
+      ? ownedSuits.has(uniqueName)
+      : ownedWeapons.has(uniqueName);
+    resolved.push({
+      name: entry.name,
+      ...(entry.displayName ? { displayName: entry.displayName } : {}),
+      imageUrl: entry.imageUrl,
+      owned,
+      uniqueName,
+    });
+  }
+  return resolved;
+}
+
 function circuitResolver(
   itemDb: Record<string, ItemDbEntry>,
   inventoryData: RawInventoryData | null,
@@ -343,32 +406,7 @@ function circuitResolver(
     if (base && !incarnonArt.has(base)) incarnonArt.set(base, entry.imageUrl);
   }
 
-  const ownedSuits = new Set<string>();
-  const ownedWeapons = new Set<string>();
-  if (inventoryData) {
-    // Warframes currently in inventory
-    for (const suit of (inventoryData.Suits || []) as Array<{ ItemType?: string }>) {
-      if (suit.ItemType) ownedSuits.add(suit.ItemType);
-    }
-    // Warframes subsumed to Helminth (no longer in Suits but still "owned")
-    const consumedSuits = (
-      (inventoryData as Record<string, unknown>).InfestedFoundry as
-        | { ConsumedSuits?: Array<{ s?: string }> }
-        | undefined
-    )?.ConsumedSuits;
-    if (Array.isArray(consumedSuits)) {
-      for (const entry of consumedSuits) {
-        if (entry.s) ownedSuits.add(entry.s);
-      }
-    }
-    // Weapons
-    const weaponKeys: Array<keyof RawInventoryData> = ["LongGuns", "Pistols", "Melee"];
-    for (const k of weaponKeys) {
-      for (const wpn of (inventoryData[k] || []) as Array<{ ItemType?: string }>) {
-        if (wpn.ItemType) ownedWeapons.add(wpn.ItemType);
-      }
-    }
-  }
+  const { ownedSuits, ownedWeapons } = buildOwnedSets(inventoryData);
 
   const WARFRAME_CATS = new Set(["warframe", "warframes", "suits"]);
 

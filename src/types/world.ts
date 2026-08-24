@@ -151,7 +151,28 @@ interface Nightwave {
   expiry: string | null;
   season: number;
   phase: number;
+  /** Syndicate tag; joins the inventory's Affiliations entry for season standing. */
+  affiliationTag?: string;
   challenges: NightwaveChallenge[];
+}
+
+/** A DE-scheduled window with no further detail the tracker needs. */
+interface WorldWindow {
+  activation: string | null;
+  expiry: string | null;
+}
+
+/** One dated slot of the 1999 calendar; main resolves the events to display text. */
+export interface CalendarDay {
+  day: number;
+  events: string[];
+}
+
+interface CalendarSeason extends WorldWindow {
+  /** Game term (Winter/Spring/Summer/Autumn), shown as the game spells it. */
+  season: string;
+  /** Absent from world data cached before the days were parsed. */
+  days?: CalendarDay[];
 }
 
 interface AlertReward {
@@ -196,6 +217,8 @@ export interface WorldState {
   sortie?: Sortie | null;
   archonHunt?: ArchonHunt | null;
   nightwave?: Nightwave | null;
+  descents?: WorldWindow | null;
+  calendarSeason?: CalendarSeason | null;
   alerts?: WorldAlert[];
   steelPath?: SteelPathHonors | null;
   fissures?: Fissure[];

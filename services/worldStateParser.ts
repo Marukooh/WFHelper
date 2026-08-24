@@ -1,6 +1,13 @@
 import { withScope } from "./logger";
 import { normalizeErrorMessage } from "../config/shared/errors";
-import type { AlertRaw, SeasonChallengeRaw, WorldStateRaw, WorldStateDate } from "./types/gameData";
+import type {
+  AlertRaw,
+  CalendarDayRaw,
+  CalendarEventRaw,
+  SeasonChallengeRaw,
+  WorldStateRaw,
+  WorldStateDate,
+} from "./types/gameData";
 
 import fs from "fs";
 import path from "path";
@@ -207,6 +214,8 @@ export function emptyWorldState(): Record<string, unknown> {
     sortie: null,
     archonHunt: null,
     nightwave: null,
+    descents: null,
+    calendarSeason: null,
     alerts: [],
     steelPath: computeSteelPathHonors(),
     duviriCycle: null,
@@ -1089,6 +1098,33 @@ function activeEntry<T extends { Expiry?: WorldStateDate }>(
   );
 }
 
+/** One calendar event as a display string; unknown kinds degrade to their path
+ *  tail so a new event type shows something instead of vanishing. */
+function parseCalendarEvent(event: CalendarEventRaw): string {
+  if (event.challenge) {
+    const entry = getChallengeLookup()[event.challenge];
+    const name = localizedDictValue(entry?.name);
+    if (!name) return prettifyPathSlug(event.challenge);
+    return cleanChallengeText(name, undefined, Number(entry?.requiredCount) || undefined);
+  }
+  if (event.reward) return resolveItemName(storeItemPath(event.reward));
+  if (event.upgrade) return prettifyPathSlug(event.upgrade);
+  return "";
+}
+
+/** Days with no resolvable event carry nothing worth showing, so they are dropped. */
+function parseCalendarDays(days: CalendarDayRaw[] | undefined): Array<{
+  day: number;
+  events: string[];
+}> {
+  return asList(days)
+    .map((entry) => ({
+      day: Number(entry.day) || 0,
+      events: asList(entry.events).map(parseCalendarEvent).filter(Boolean),
+    }))
+    .filter((entry) => entry.events.length > 0);
+}
+
 /** Resolve one Nightwave act through ExportChallenges and the language dict. */
 function parseNightwaveChallenge(raw: SeasonChallengeRaw) {
   const challengePath = raw.Challenge || "";
@@ -1264,6 +1300,7 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
         expiry: deDate(seasonRaw.Expiry),
         season: Number(seasonRaw.Season) || 0,
         phase: Number(seasonRaw.Phase) || 0,
+        affiliationTag: seasonRaw.AffiliationTag || "",
         // DE leaves finished acts in ActiveChallenges, which would render a
         // negative countdown. A missing expiry keeps the act rather than risking
         // an empty board on a malformed field.
@@ -1358,6 +1395,25 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
       };
     });
 
+  // descentRaw is the active window already picked for the duviri expiry above.
+  const descents = descentRaw
+    ? { activation: deDate(descentRaw.Activation), expiry: deDate(descentRaw.Expiry) }
+    : null;
+
+  const calendarRaw = activeEntry(raw.KnownCalendarSeasons, nowMs);
+  const calendarSeason = calendarRaw
+    ? {
+        activation: deDate(calendarRaw.Activation),
+        expiry: deDate(calendarRaw.Expiry),
+        days: parseCalendarDays(calendarRaw.Days),
+        // "CST_SUMMER" -> "Summer"; an unknown tag shows raw rather than empty.
+        season: (calendarRaw.Season || "")
+          .replace(/^CST_/, "")
+          .toLowerCase()
+          .replace(/^./, (c) => c.toUpperCase()),
+      }
+    : null;
+
   const dailyDeals = (raw.DailyDeals || [])
     .filter((d) => Number(d.Expiry?.["$date"]?.["$numberLong"] || 0) > nowMs)
     .map((d) => {
@@ -1382,6 +1438,8 @@ export function parseRaw(raw: WorldStateRaw | null): Record<string, unknown> | n
     sortie,
     archonHunt,
     nightwave,
+    descents,
+    calendarSeason,
     alerts,
     steelPath: computeSteelPathHonors(),
     duviriCycle,

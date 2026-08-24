@@ -26,6 +26,8 @@ const NO_EXPIRIES: TrackerExpiries = {
   sortie: null,
   archon: null,
   steelPath: null,
+  descendia: null,
+  calendar1999: null,
   baro: null,
   darvo: null,
   varzia: null,
@@ -62,6 +64,15 @@ describe("trackerPeriodKey", () => {
 
     expect(monday).toBe(sunday);
     expect(nextMonday).not.toBe(monday);
+  });
+
+  it("computes the 4-day vendor grids from their anchors without world data", () => {
+    // Wiki anchors: Tenet boundaries fall on Aug 19/23/27 2026, Coda on Aug 20/24/28.
+    const now = new Date("2026-08-24T12:00:00Z");
+    expect(trackerPeriodKey("tenet", now, NO_EXPIRIES)).toBe("tenet:2026-08-27T00:00:00.000Z");
+    expect(trackerPeriodKey("coda", now, NO_EXPIRIES)).toBe("coda:2026-08-28T00:00:00.000Z");
+    const nextTenet = trackerPeriodKey("tenet", new Date("2026-08-27T00:01:00Z"), NO_EXPIRIES);
+    expect(nextTenet).toBe("tenet:2026-08-31T00:00:00.000Z");
   });
 
   it("keys expiry-driven periods off the world-state window", () => {
@@ -209,11 +220,11 @@ describe("custom tasks", () => {
 
 describe("trackerList", () => {
   it("applies a user period override to a built-in task", () => {
-    const state = setTrackerPeriod(emptyState(), "ergoGlast", "daily");
-    const task = trackerList(state).find((entry) => entry.id === "ergoGlast");
+    const state = setTrackerPeriod(emptyState(), "palladino", "daily");
+    const task = trackerList(state).find((entry) => entry.id === "palladino");
 
     expect(task?.period).toBe("daily");
-    expect(BUILTIN_TASKS.find((entry) => entry.id === "ergoGlast")?.period).toBe("weekly");
+    expect(BUILTIN_TASKS.find((entry) => entry.id === "palladino")?.period).toBe("weekly");
   });
 
   it("appends custom tasks after the built-ins", () => {
@@ -242,6 +253,25 @@ describe("persistence", () => {
     stubStorage({ "world-dailies": "{not json" });
 
     expect(loadTracker()).toEqual(emptyState());
+  });
+
+  it("carries ergoGlast progress and hidden state to palladino", () => {
+    stubStorage({
+      "world-dailies": JSON.stringify({
+        progress: { ergoGlast: { key: "weekly:x", count: 1 } },
+        hidden: ["ergoGlast"],
+        periods: { ergoGlast: "weekly" },
+        custom: [],
+        seq: 0,
+      }),
+    });
+
+    const state = loadTracker();
+    expect(state.progress["palladino"]).toEqual({ key: "weekly:x", count: 1 });
+    expect(state.progress["ergoGlast"]).toBeUndefined();
+    expect(state.hidden).toEqual(["palladino"]);
+    expect(state.periods["palladino"]).toBe("weekly");
+    expect(state.periods["ergoGlast"]).toBeUndefined();
   });
 
   it("drops malformed entries instead of failing the load", () => {

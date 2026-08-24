@@ -44,8 +44,8 @@ test.describe("World dailies tracker", () => {
     return page.locator(`[data-task="${id}"]`).locator("xpath=ancestor::div[1]");
   }
 
-  // Edit mode lives in component state, which survives a sub-tab switch, so
-  // toggling blind would flip it the wrong way after an earlier test left it on.
+  // An earlier test in this worker may have left edit mode on without leaving
+  // the dailies tab, so toggling blind could flip it the wrong way.
   async function setEditing(on: boolean): Promise<void> {
     const toggle = page.locator("[data-tracker-edit]");
     if ((await toggle.getAttribute("aria-pressed")) !== String(on)) await toggle.click();
@@ -54,6 +54,18 @@ test.describe("World dailies tracker", () => {
   test("the World tab offers the tracker as its own sub-tab", async () => {
     await openView("world");
     await expect(page.locator('[data-tour-tab="dailies"]')).toBeVisible();
+  });
+
+  test("search narrows the visible tasks", async () => {
+    await openDailies();
+    const search = page.locator("[data-tracker-search]");
+
+    await search.fill("netracell");
+    await expect(task("netracells")).toHaveCount(1);
+    await expect(task("clem")).toHaveCount(0);
+
+    await search.fill("");
+    await expect(task("clem")).toHaveCount(1);
   });
 
   test("ticks a task and keeps it across view switches", async () => {

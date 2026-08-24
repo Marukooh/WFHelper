@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { Translator } from "../../../src/lib/i18n.js";
-import { trackerExpiries, trackerLive } from "../../../src/lib/world/dailiesLive.js";
+import {
+  bird3ShardColor,
+  codaBatch,
+  trackerExpiries,
+  trackerLive,
+} from "../../../src/lib/world/dailiesLive.js";
 import type { WorldState } from "../../../src/types/world.js";
 
 const NOW = Date.parse("2026-08-24T12:00:00Z");
@@ -43,6 +48,8 @@ describe("trackerExpiries", () => {
       sortie: "2026-08-24T16:00:00Z",
       archon: "2026-08-31T00:00:00Z",
       steelPath: "2026-08-30T00:00:00Z",
+      descendia: null,
+      calendar1999: null,
       baro: "2026-08-28T14:00:00Z",
       darvo: "2026-08-24T20:00:00Z",
       varzia: "2026-08-01T00:00:00Z",
@@ -54,10 +61,87 @@ describe("trackerExpiries", () => {
       sortie: null,
       archon: null,
       steelPath: null,
+      descendia: null,
+      calendar1999: null,
       baro: null,
       darvo: null,
       varzia: null,
     });
+  });
+
+  it("reads the descent and calendar windows from the world state", () => {
+    const wd = world({
+      descents: { activation: "2026-08-24T00:00:00Z", expiry: "2026-08-31T00:00:00Z" },
+      calendarSeason: {
+        activation: "2026-08-24T00:00:00Z",
+        expiry: "2026-08-31T00:00:00Z",
+        season: "Summer",
+      },
+    });
+    const expiries = trackerExpiries(wd);
+    expect(expiries.descendia).toBe("2026-08-31T00:00:00Z");
+    expect(expiries.calendar1999).toBe("2026-08-31T00:00:00Z");
+    expect(trackerLive("calendar1999", wd, t, NOW)).toEqual({
+      detail: "Summer",
+      expiry: "2026-08-31T00:00:00Z",
+    });
+    expect(trackerLive("descendiaSteelPath", wd, t, NOW)).toEqual({
+      expiry: "2026-08-31T00:00:00Z",
+    });
+  });
+
+  it("computes the 4-day vendor countdowns without world data", () => {
+    // 2026-08-24T12:00Z sits inside Tenet window Aug 23-27 and Coda window Aug 24-28.
+    // Stock renders as an icon strip resolved in the component, so no text lines.
+    const nowMs = Date.parse("2026-08-24T12:00:00Z");
+    const tenet = trackerLive("tenetMelee", null, t, nowMs);
+    expect(tenet.expiry).toBe("2026-08-27T00:00:00.000Z");
+    expect(tenet.lines).toBeUndefined();
+    const coda = trackerLive("codaWeapons", null, t, nowMs);
+    expect(coda.expiry).toBe("2026-08-28T00:00:00.000Z");
+    expect(coda.detail).toBe("dailies.codaBatch(batch=A)");
+    expect(coda.lines).toBeUndefined();
+  });
+
+  it("spells the shard color out beside its name", () => {
+    const live = trackerLive("bird3", null, t, Date.parse("2026-08-24T12:00:00Z"));
+    expect(live.detail).toBe("dailies.bird3Shard(color=Crimson,plain=dailies.shardRed)");
+  });
+
+  it("lists upcoming calendar days under the 1999 calendar row", () => {
+    const wd = world({
+      calendarSeason: {
+        activation: "2026-08-24T00:00:00Z",
+        expiry: "2026-08-31T00:00:00Z",
+        season: "Winter",
+        days: [
+          { day: 5, events: ["Old challenge"] },
+          { day: 236, events: ["Kill 30 Scaldra enemies"] },
+          { day: 240, events: ["Primary Arcane Unlocker", "Melee Arcane Unlocker"] },
+        ],
+      },
+    });
+    const live = trackerLive("calendar1999", wd, t, Date.parse("2026-08-24T12:00:00Z"));
+    // 2026-08-24 is day 236; the day-5 entry is behind us and drops out.
+    expect(live.lines).toEqual([
+      "dailies.calendarDay(day=236) - Kill 30 Scaldra enemies",
+      "dailies.calendarDay(day=240) - Primary Arcane Unlocker, Melee Arcane Unlocker",
+    ]);
+  });
+
+  it("alternates the coda batches across the 4-day boundary", () => {
+    // Wiki: batch A occupies the second half of the 8-day loop from 2025-03-18Z;
+    // rendered page confirmed batch A live on 2026-08-24.
+    expect(codaBatch(Date.parse("2026-08-24T12:00:00Z")).batch).toBe("A");
+    expect(codaBatch(Date.parse("2026-08-23T12:00:00Z")).batch).toBe("B");
+    expect(codaBatch(Date.parse("2026-08-28T12:00:00Z")).batch).toBe("B");
+  });
+
+  it("cycles the bird 3 shard color on the 3-week clock", () => {
+    // Wiki formula anchored 2022-09-12Z; week of 2026-08-24 renders Crimson.
+    expect(bird3ShardColor(Date.parse("2026-08-24T12:00:00Z"))).toBe("Crimson");
+    expect(bird3ShardColor(Date.parse("2026-08-31T12:00:00Z"))).toBe("Azure");
+    expect(bird3ShardColor(Date.parse("2026-09-07T12:00:00Z"))).toBe("Amber");
   });
 });
 

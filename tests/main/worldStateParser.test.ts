@@ -24,9 +24,17 @@ interface ParsedDailies {
     boss: string;
     missions: Array<{ node: string; mission: string }>;
   } | null;
+  descents: { activation: string | null; expiry: string | null } | null;
+  calendarSeason: {
+    activation: string | null;
+    expiry: string | null;
+    season: string;
+    days?: Array<{ day: number; events: string[] }>;
+  } | null;
   nightwave: {
     season: number;
     phase: number;
+    affiliationTag: string;
     challenges: Array<{
       id: string;
       name: string;
@@ -258,6 +266,61 @@ describe("worldStateParser sortie, archon hunt, nightwave and alerts", () => {
       "live1",
       "undated1",
     ]);
+  });
+
+  it("carries the season affiliation tag for the standing join", () => {
+    const parsed = parseDailies({
+      SeasonInfo: {
+        ...window,
+        Season: 18,
+        Phase: 0,
+        AffiliationTag: "RadioLegionIntermission16Syndicate",
+        ActiveChallenges: [],
+      },
+    });
+    expect(parsed.nightwave?.affiliationTag).toBe("RadioLegionIntermission16Syndicate");
+  });
+
+  it("parses the descent and calendar season windows", () => {
+    const parsed = parseDailies({
+      Descents: [{ ...window }],
+      KnownCalendarSeasons: [{ ...window, Season: "CST_SUMMER" }],
+    });
+    expect(parsed.descents?.expiry).not.toBeNull();
+    expect(parsed.calendarSeason?.season).toBe("Summer");
+    const empty = parseDailies({});
+    expect(empty.descents).toBeNull();
+    expect(empty.calendarSeason).toBeNull();
+  });
+
+  it("resolves calendar days to readable event lines", () => {
+    const parsed = parseDailies({
+      KnownCalendarSeasons: [
+        {
+          ...window,
+          Season: "CST_WINTER",
+          Days: [
+            { day: 9, events: [] },
+            {
+              day: 13,
+              events: [
+                { type: "CET_REWARD", reward: "/Lotus/StoreItems/Types/Restoratives/Consumable" },
+                {
+                  type: "CET_CHALLENGE",
+                  challenge: "/Lotus/Types/Challenges/Calendar1999/CalendarKillEnemiesEasy",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const days = parsed.calendarSeason?.days ?? [];
+    // The empty day drops; the filled one keeps one line per event.
+    expect(days).toHaveLength(1);
+    expect(days[0]?.day).toBe(13);
+    expect(days[0]?.events).toHaveLength(2);
+    expect(days[0]?.events.every((line: string) => line.length > 0)).toBe(true);
   });
 
   it("resolves nightwave acts, flags elites and degrades unknown challenges", () => {
