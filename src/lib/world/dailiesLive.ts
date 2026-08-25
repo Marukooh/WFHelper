@@ -7,6 +7,8 @@ interface TrackerLive {
   detail?: string | undefined;
   /** Sub-lines revealed by the row's expand toggle. */
   lines?: string[] | undefined;
+  /** Calendar days revealed by the expand toggle; rendered, not flattened to text. */
+  calendar?: CalendarDay[] | undefined;
   /** Drives the per-row countdown; null when the task has no live window. */
   expiry?: string | null | undefined;
 }
@@ -69,7 +71,7 @@ export function bird3ShardColor(nowMs: number): string {
 
 /** A season spans a whole quarter, so the row shows only the near future and
  *  leaves the rest to the wiki link. */
-const CALENDAR_LINE_CAP = 15;
+const CALENDAR_DAY_CAP = 15;
 
 function dayOfYearUtc(nowMs: number): number {
   const now = new Date(nowMs);
@@ -80,15 +82,10 @@ function dayOfYearUtc(nowMs: number): number {
 
 /** DE numbers calendar days by day-of-year; a season numbered from its own start
  *  would match nothing, so an empty upcoming list falls back to the whole list. */
-function calendarLines(days: CalendarDay[], t: Translator, nowMs: number): string[] {
+function upcomingCalendarDays(days: CalendarDay[], nowMs: number): CalendarDay[] {
   const today = dayOfYearUtc(nowMs);
   const upcoming = days.filter((entry) => entry.day >= today);
-  return (upcoming.length > 0 ? upcoming : days)
-    .slice(0, CALENDAR_LINE_CAP)
-    .map(
-      (entry) =>
-        `${t("dailies.calendarDay", { day: String(entry.day) })} - ${entry.events.join(", ")}`,
-    );
+  return (upcoming.length > 0 ? upcoming : days).slice(0, CALENDAR_DAY_CAP);
 }
 
 function isActive(activation?: string, expiry?: string, nowMs = Date.now()): boolean {
@@ -227,7 +224,7 @@ export function trackerLive(
       // The season tag is a game term (Winter/Spring/...), shown as the game spells it.
       return {
         detail: season.season || undefined,
-        lines: season.days?.length ? calendarLines(season.days, t, nowMs) : undefined,
+        calendar: season.days?.length ? upcomingCalendarDays(season.days, nowMs) : undefined,
         expiry: season.expiry ?? null,
       };
     }

@@ -14,7 +14,7 @@
   import { activeItem } from "../../stores/modals.js";
   import { buildParsedItemFromDb } from "../../lib/parsedItemFromDb.js";
   import { worldData } from "../../stores/world.js";
-  import type { NightwaveChallenge, WorldAlert } from "../../types/world.js";
+  import type { CalendarDay, NightwaveChallenge, WorldAlert } from "../../types/world.js";
   import {
     resolveCircuitChoices,
     resolveVendorItems,
@@ -85,6 +85,8 @@
     lines?: string[] | undefined;
     /** Circuit rewards, shown as an owned-marked icon strip when expanded. */
     circuit?: CircuitChoice[] | undefined;
+    /** 1999 calendar days, shown as day blocks when expanded. */
+    calendar?: CalendarDay[] | undefined;
     badge?: string | undefined;
     /** Partial progress toward a requirement, synced from the inventory. */
     progress?: { current: number; required: number } | undefined;
@@ -157,10 +159,10 @@
     nightwaveSeasonStanding($inventoryData, wd?.nightwave?.affiliationTag),
   );
 
-  function openReward(choice: CircuitChoice): void {
-    const entry = $itemDb[choice.uniqueName];
+  function openItem(uniqueName: string): void {
+    const entry = $itemDb[uniqueName];
     if (!entry) return;
-    activeItem.set(buildParsedItemFromDb(choice.uniqueName, entry, $componentOwnership));
+    activeItem.set(buildParsedItemFromDb(uniqueName, entry, $componentOwnership));
   }
 
   function circuitChoices(category: string): string[] {
@@ -197,6 +199,7 @@
         detail: live.detail ?? (autoDetail ? t(autoDetail.key, autoDetail.params) : undefined),
         lines: live.lines?.length ? live.lines : undefined,
         circuit: circuit.length > 0 ? circuit : undefined,
+        calendar: live.calendar?.length ? live.calendar : undefined,
         expiry: live.expiry,
       };
     });
@@ -283,10 +286,24 @@
     collapsed = toggleCollapsedSection(collapsed, key);
   }
 
+  // Expanded content is searchable too, so a mission node or reward name finds
+  // the row that hides it behind the toggle.
   function matchesQuery(row: Row, needle: string): boolean {
     if (!needle) return true;
-    return (
-      row.label.toLowerCase().includes(needle) || (row.detail ?? "").toLowerCase().includes(needle)
+    if (row.label.toLowerCase().includes(needle)) return true;
+    if ((row.detail ?? "").toLowerCase().includes(needle)) return true;
+    if (row.lines?.some((line) => line.toLowerCase().includes(needle))) return true;
+    if (
+      row.circuit?.some((choice) =>
+        (choice.displayName ?? choice.name).toLowerCase().includes(needle),
+      )
+    ) {
+      return true;
+    }
+    return Boolean(
+      row.calendar?.some((day) =>
+        day.events.some((event) => event.label.toLowerCase().includes(needle)),
+      ),
     );
   }
 
@@ -471,7 +488,7 @@
                   >
                 {/if}
 
-                {#if row.lines || row.circuit}
+                {#if row.lines || row.circuit || row.calendar}
                   <button
                     class="dailies-icon"
                     title={expanded[row.id] ? $tr("dailies.collapse") : $tr("dailies.expand")}
@@ -569,8 +586,50 @@
                         subsumed={choice.subsumed}
                         size={80}
                         borderWidth="1.5"
-                        onClick={() => openReward(choice)}
+                        onClick={() => openItem(choice.uniqueName)}
                       />
+                    {/each}
+                  </div>
+                {/if}
+                {#if row.calendar}
+                  <div class="dailies-cal">
+                    {#each row.calendar as day (day.day)}
+                      {@const perks = day.events.filter((event) => event.kind === "upgrade")}
+                      <div class="dailies-cal-day">
+                        <p class="dailies-cal-num">
+                          {$tr("dailies.calendarDay", { day: String(day.day) })}
+                        </p>
+                        {#each day.events as event, index (index)}
+                          {#if event.kind === "reward"}
+                            {@const entry = event.uniqueName
+                              ? $itemDb[event.uniqueName]
+                              : undefined}
+                            {#if entry?.imageUrl}
+                              {@const uniqueName = event.uniqueName ?? ""}
+                              <button class="dailies-cal-chip" onclick={() => openItem(uniqueName)}>
+                                <img class="dailies-cal-icon" src={entry.imageUrl} alt="" />
+                                <span>{event.label}</span>
+                              </button>
+                            {:else}
+                              <span class="dailies-cal-chip dailies-cal-chip--plain"
+                                >{event.label}</span
+                              >
+                            {/if}
+                          {:else if event.kind === "challenge"}
+                            <p class="dailies-cal-line">{event.label}</p>
+                            {#if event.description}
+                              <p class="dailies-cal-desc">{event.description}</p>
+                            {/if}
+                          {/if}
+                        {/each}
+                        {#if perks.length > 0}
+                          <p class="dailies-cal-line">
+                            {$tr("dailies.calendarPerks")}: {perks
+                              .map((perk) => perk.label)
+                              .join(" · ")}
+                          </p>
+                        {/if}
+                      </div>
                     {/each}
                   </div>
                 {/if}
@@ -743,6 +802,7 @@
 
   .dailies-row + .dailies-row,
   .dailies-sublist + .dailies-row,
+  .dailies-cal + .dailies-row,
   .dailies-icons + .dailies-row {
     border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
   }
@@ -836,6 +896,73 @@
 
   .dailies-sublist li {
     padding: 0.1rem 0;
+  }
+
+  .dailies-cal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.1rem 0.75rem 0.5rem 2.05rem;
+  }
+
+  .dailies-cal-day {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .dailies-cal-num {
+    color: var(--text-secondary);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .dailies-cal-line {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    margin: 0;
+  }
+
+  .dailies-cal-desc {
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+    margin: 0;
+    opacity: 0.75;
+  }
+
+  .dailies-cal-chip {
+    align-items: center;
+    align-self: flex-start;
+    background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    display: inline-flex;
+    font-size: 0.72rem;
+    gap: 0.4rem;
+    padding: 0.12rem 0.4rem 0.12rem 0.15rem;
+    text-align: left;
+    transition:
+      border-color 0.15s,
+      color 0.15s;
+  }
+
+  .dailies-cal-chip--plain {
+    color: var(--text-secondary);
+    padding-left: 0.4rem;
+  }
+
+  button.dailies-cal-chip:hover {
+    border-color: var(--accent);
+  }
+
+  .dailies-cal-icon {
+    height: 30px;
+    object-fit: contain;
+    width: 30px;
   }
 
   .dailies-icons {

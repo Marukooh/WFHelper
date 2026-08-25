@@ -162,10 +162,20 @@ interface WorldWindow {
   expiry: string | null;
 }
 
-/** One dated slot of the 1999 calendar; main resolves the events to display text. */
+/** One resolved 1999 calendar entry; the kind decides how the tracker renders it. */
+interface CalendarDayEvent {
+  kind: "challenge" | "reward" | "upgrade";
+  label: string;
+  /** Challenge objective text; absent when the dict has no description value. */
+  description?: string;
+  /** Reward item path, so the renderer can join the item database for an icon. */
+  uniqueName?: string;
+}
+
+/** One dated slot of the 1999 calendar; main resolves the events for display. */
 export interface CalendarDay {
   day: number;
-  events: string[];
+  events: CalendarDayEvent[];
 }
 
 interface CalendarSeason extends WorldWindow {

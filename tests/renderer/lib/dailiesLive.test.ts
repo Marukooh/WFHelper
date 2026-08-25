@@ -7,7 +7,7 @@ import {
   trackerExpiries,
   trackerLive,
 } from "../../../src/lib/world/dailiesLive.js";
-import type { WorldState } from "../../../src/types/world.js";
+import type { CalendarDay, WorldState } from "../../../src/types/world.js";
 
 const NOW = Date.parse("2026-08-24T12:00:00Z");
 
@@ -108,25 +108,62 @@ describe("trackerExpiries", () => {
     expect(live.detail).toBe("dailies.bird3Shard(color=Crimson,plain=dailies.shardRed)");
   });
 
-  it("lists upcoming calendar days under the 1999 calendar row", () => {
-    const wd = world({
+  const calendarWorld = (days: CalendarDay[]) =>
+    world({
       calendarSeason: {
         activation: "2026-08-24T00:00:00Z",
         expiry: "2026-08-31T00:00:00Z",
         season: "Winter",
-        days: [
-          { day: 5, events: ["Old challenge"] },
-          { day: 236, events: ["Kill 30 Scaldra enemies"] },
-          { day: 240, events: ["Primary Arcane Unlocker", "Melee Arcane Unlocker"] },
-        ],
+        days,
       },
     });
+  const challengeDay = (day: number): CalendarDay => ({
+    day,
+    events: [{ kind: "challenge", label: `Act ${day}` }],
+  });
+
+  it("lists upcoming calendar days under the 1999 calendar row", () => {
+    const wd = calendarWorld([
+      challengeDay(5),
+      {
+        day: 236,
+        events: [{ kind: "challenge", label: "Even the Odds", description: "Kill 30 Enemies" }],
+      },
+      {
+        day: 240,
+        events: [
+          {
+            kind: "reward",
+            label: "Primary Arcane Adapter",
+            uniqueName: "/Lotus/Types/Items/MiscItems/PrimaryArcaneUnlocker",
+          },
+          { kind: "upgrade", label: "Armor" },
+        ],
+      },
+    ]);
     const live = trackerLive("calendar1999", wd, t, Date.parse("2026-08-24T12:00:00Z"));
     // 2026-08-24 is day 236; the day-5 entry is behind us and drops out.
-    expect(live.lines).toEqual([
-      "dailies.calendarDay(day=236) - Kill 30 Scaldra enemies",
-      "dailies.calendarDay(day=240) - Primary Arcane Unlocker, Melee Arcane Unlocker",
-    ]);
+    expect(live.lines).toBeUndefined();
+    expect(live.calendar?.map((entry) => entry.day)).toEqual([236, 240]);
+    expect(live.calendar?.[0]?.events[0]?.description).toBe("Kill 30 Enemies");
+    expect(live.calendar?.[1]?.events.map((event) => event.kind)).toEqual(["reward", "upgrade"]);
+  });
+
+  it("caps the calendar at fifteen days and falls back to the whole season", () => {
+    const nowMs = Date.parse("2026-08-24T12:00:00Z");
+    const many = Array.from({ length: 20 }, (_, index) => challengeDay(236 + index));
+    const capped = trackerLive("calendar1999", calendarWorld(many), t, nowMs);
+    expect(capped.calendar).toHaveLength(15);
+    expect(capped.calendar?.[14]?.day).toBe(250);
+    // DE numbers days by day-of-year, but a season numbered from its own start
+    // would match nothing, so the unfiltered list stands in.
+    const ownNumbering = trackerLive(
+      "calendar1999",
+      calendarWorld([challengeDay(1), challengeDay(2)]),
+      t,
+      nowMs,
+    );
+    expect(ownNumbering.calendar?.map((entry) => entry.day)).toEqual([1, 2]);
   });
 
   it("alternates the coda batches across the 4-day boundary", () => {

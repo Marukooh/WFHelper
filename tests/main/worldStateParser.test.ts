@@ -29,7 +29,15 @@ interface ParsedDailies {
     activation: string | null;
     expiry: string | null;
     season: string;
-    days?: Array<{ day: number; events: string[] }>;
+    days?: Array<{
+      day: number;
+      events: Array<{
+        kind: string;
+        label: string;
+        description?: string;
+        uniqueName?: string;
+      }>;
+    }>;
   } | null;
   nightwave: {
     season: number;
@@ -293,34 +301,116 @@ describe("worldStateParser sortie, archon hunt, nightwave and alerts", () => {
     expect(empty.calendarSeason).toBeNull();
   });
 
-  it("resolves calendar days to readable event lines", () => {
-    const parsed = parseDailies({
-      KnownCalendarSeasons: [
-        {
-          ...window,
-          Season: "CST_WINTER",
-          Days: [
-            { day: 9, events: [] },
-            {
-              day: 13,
-              events: [
-                { type: "CET_REWARD", reward: "/Lotus/StoreItems/Types/Restoratives/Consumable" },
-                {
-                  type: "CET_CHALLENGE",
-                  challenge: "/Lotus/Types/Challenges/Calendar1999/CalendarKillEnemiesEasy",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    const days = parsed.calendarSeason?.days ?? [];
-    // The empty day drops; the filled one keeps one line per event.
+  type RawCalendarDay = {
+    day?: number;
+    events?: Array<{ type?: string; challenge?: string; reward?: string; upgrade?: string }>;
+  };
+  const calendarDays = (days: RawCalendarDay[]) =>
+    parseDailies({ KnownCalendarSeasons: [{ ...window, Season: "CST_WINTER", Days: days }] })
+      .calendarSeason?.days ?? [];
+
+  it("resolves calendar days to structured events", () => {
+    const days = calendarDays([
+      { day: 9, events: [] },
+      {
+        day: 13,
+        events: [
+          { type: "CET_REWARD", reward: "/Lotus/StoreItems/Types/Restoratives/Consumable" },
+          {
+            type: "CET_CHALLENGE",
+            challenge: "/Lotus/Types/Challenges/Calendar1999/CalendarKillEnemiesEasy",
+          },
+        ],
+      },
+    ]);
+    // The empty day drops; the filled one keeps one entry per event.
     expect(days).toHaveLength(1);
     expect(days[0]?.day).toBe(13);
     expect(days[0]?.events).toHaveLength(2);
-    expect(days[0]?.events.every((line: string) => line.length > 0)).toBe(true);
+    expect(days[0]?.events.map((event) => event.kind)).toEqual(["reward", "challenge"]);
+    expect(days[0]?.events.every((event) => event.label.length > 0)).toBe(true);
+  });
+
+  it("gives a calendar challenge both its title and its objective", () => {
+    const [day] = calendarDays([
+      {
+        day: 20,
+        events: [
+          {
+            type: "CET_CHALLENGE",
+            challenge: "/Lotus/Types/Challenges/Calendar1999/CalendarKillEnemiesEasy",
+          },
+        ],
+      },
+    ]);
+    expect(day?.events[0]?.label).toBe("Even the Odds");
+    // |COUNT| resolves from the export's requiredCount, as nightwave acts do.
+    expect(day?.events[0]?.description).toBe("Kill 250 Enemies");
+  });
+
+  it("keeps the reward path and strips dict icon tags from its name", () => {
+    const [day] = calendarDays([
+      {
+        day: 21,
+        events: [
+          {
+            type: "CET_REWARD",
+            reward: "/Lotus/StoreItems/Types/Gameplay/NarmerSorties/ArchonCrystalBoreal",
+          },
+        ],
+      },
+    ]);
+    expect(day?.events[0]?.uniqueName).toBe(
+      "/Lotus/Types/Gameplay/NarmerSorties/ArchonCrystalBoreal",
+    );
+    expect(day?.events[0]?.label).toBe("Azure Archon Shard");
+  });
+
+  it("title-cases a shouted reward name", () => {
+    const [day] = calendarDays([
+      {
+        day: 22,
+        events: [
+          {
+            type: "CET_REWARD",
+            reward: "/Lotus/StoreItems/Types/Gameplay/NarmerSorties/ArchonCrystal",
+          },
+        ],
+      },
+    ]);
+    expect(day?.events[0]?.label).toBe("Archon Shard");
+  });
+
+  it("prettifies a store item the exports do not carry", () => {
+    const [day] = calendarDays([
+      {
+        day: 23,
+        events: [
+          {
+            type: "CET_REWARD",
+            reward: "/Lotus/StoreItems/Types/Boosters/ModDropChanceBooster3DayStoreItem",
+          },
+        ],
+      },
+    ]);
+    expect(day?.events[0]?.label).toBe("Mod Drop Chance Booster 3 Day");
+  });
+
+  it("emits calendar perk choices as upgrade events", () => {
+    const [day] = calendarDays([
+      {
+        day: 24,
+        events: [
+          { type: "CET_UPGRADE", upgrade: "/Lotus/Upgrades/Calendar/Armor" },
+          { type: "CET_UPGRADE", upgrade: "/Lotus/Upgrades/Calendar/AbilityStrength" },
+          { type: "CET_UNKNOWN" },
+        ],
+      },
+    ]);
+    // The unknown kind drops rather than rendering a blank row.
+    expect(day?.events).toHaveLength(2);
+    expect(day?.events.map((event) => event.kind)).toEqual(["upgrade", "upgrade"]);
+    expect(day?.events.map((event) => event.label)).toEqual(["Armor", "Ability Strength"]);
   });
 
   it("resolves nightwave acts, flags elites and degrades unknown challenges", () => {

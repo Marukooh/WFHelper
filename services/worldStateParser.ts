@@ -172,27 +172,35 @@ function getItemLookup(): Record<
   return _itemLookup;
 }
 
+/** Dict values embed icon tags such as "<SHARD_BLUE_SIMPLE>" that have no glyph
+ *  outside the game, so display names drop them. */
+function stripDictTags(value: string): string {
+  return value
+    .replace(/<[A-Z0-9_]+>/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /** Resolve a Lotus item path (e.g. /Lotus/Types/Items/...) to a display name */
 function resolveItemName(itemPath: string): string {
   const items = getItemLookup();
   const entry = items[itemPath];
   if (entry?.name) {
     const resolved = resolveDictValue(entry.name);
-    if (resolved) return resolved;
+    if (resolved) return stripDictTags(resolved);
   }
   // Recipe fallback: resolve name via resultType (e.g. MummyQuestKeyBlueprint -> "Sands of Inaros Blueprint")
   if (entry?.resultType) {
     const result = items[entry.resultType];
     if (result?.name) {
       const resolved = resolveDictValue(result.name);
-      if (resolved) return `${resolved} Blueprint`;
+      if (resolved) return `${stripDictTags(resolved)} Blueprint`;
     }
   }
   // Relic fallback: ExportRelics entries have era + category but no name
   if (entry?.era && entry?.category) return `${entry.era} ${entry.category} Relic`;
   // Fallback: extract readable name from path slug
-  const slug = itemPath.split("/").pop() || itemPath;
-  const readable = slug.replace(/([a-z])([A-Z])/g, "$1 $2").trim();
+  const readable = prettifyPathSlug(itemPath);
   // Glyphs are stored as "AvatarImage..." in data - display as "Glyph ..."
   if (readable.startsWith("Avatar Image")) return readable.replace("Avatar Image", "Glyph").trim();
   return readable;
@@ -402,10 +410,17 @@ function missionTypeLabel(missionType: string, nodeId: string): string {
   return MISSION_TYPE[missionType] || enumTailLabel(missionType, "MT_");
 }
 
-/** Readable tail of a Lotus path: ".../SeasonDailyAimGlide" -> "Season Daily Aim Glide". */
+/** Readable tail of a Lotus path: ".../SeasonDailyAimGlide" -> "Season Daily Aim Glide".
+ *  The "StoreItem" tail is plumbing, and DE glues durations onto the noun
+ *  ("Booster3Day"), so digits are split off the letters either way round. */
 function prettifyPathSlug(value: string): string {
-  const slug = value.split("/").pop() || value;
-  return slug.replace(/([a-z0-9])([A-Z])/g, "$1 $2").trim();
+  const slug = (value.split("/").pop() || value).replace(/StoreItems?$/, "");
+  return slug
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Za-z])(\d)/g, "$1 $2")
+    .replace(/(\d)([A-Za-z])/g, "$1 $2")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function computeVallisCycle(nowMs: number = Date.now()): {
@@ -1098,29 +1113,55 @@ function activeEntry<T extends { Expiry?: WorldStateDate }>(
   );
 }
 
-/** One calendar event as a display string; unknown kinds degrade to their path
- *  tail so a new event type shows something instead of vanishing. */
-function parseCalendarEvent(event: CalendarEventRaw): string {
+/** Mirrors CalendarDayEvent in src/types/world.ts; services stay out of renderer types. */
+interface CalendarEvent {
+  kind: "challenge" | "reward" | "upgrade";
+  label: string;
+  description?: string;
+  uniqueName?: string;
+}
+
+/** A few calendar dict values are shouted; only this row rewrites them, since
+ *  item names elsewhere are matched against the game and must stay verbatim. */
+function calendarLabel(value: string): string {
+  return /[A-Za-z]/.test(value) && value === value.toUpperCase() ? titleCase(value) : value;
+}
+
+/** One resolved calendar event, or null for a kind we cannot render. */
+function parseCalendarEvent(event: CalendarEventRaw): CalendarEvent | null {
   if (event.challenge) {
     const entry = getChallengeLookup()[event.challenge];
+    const count = Number(entry?.requiredCount) || undefined;
     const name = localizedDictValue(entry?.name);
-    if (!name) return prettifyPathSlug(event.challenge);
-    return cleanChallengeText(name, undefined, Number(entry?.requiredCount) || undefined);
+    if (!name) return { kind: "challenge", label: prettifyPathSlug(event.challenge) };
+    // The description key is the name key with its _Name tail swapped, as with
+    // nightwave acts; without a value the objective line simply stays away.
+    const description = localizedDictValue(entry?.name?.replace(/_Name$/, "_Description"));
+    return {
+      kind: "challenge",
+      label: calendarLabel(cleanChallengeText(name, undefined, count)),
+      ...(description ? { description: cleanChallengeText(description, undefined, count) } : {}),
+    };
   }
-  if (event.reward) return resolveItemName(storeItemPath(event.reward));
-  if (event.upgrade) return prettifyPathSlug(event.upgrade);
-  return "";
+  if (event.reward) {
+    const uniqueName = storeItemPath(event.reward);
+    return { kind: "reward", label: calendarLabel(resolveItemName(uniqueName)), uniqueName };
+  }
+  if (event.upgrade) return { kind: "upgrade", label: prettifyPathSlug(event.upgrade) };
+  return null;
 }
 
 /** Days with no resolvable event carry nothing worth showing, so they are dropped. */
 function parseCalendarDays(days: CalendarDayRaw[] | undefined): Array<{
   day: number;
-  events: string[];
+  events: CalendarEvent[];
 }> {
   return asList(days)
     .map((entry) => ({
       day: Number(entry.day) || 0,
-      events: asList(entry.events).map(parseCalendarEvent).filter(Boolean),
+      events: asList(entry.events)
+        .map(parseCalendarEvent)
+        .filter((resolved): resolved is CalendarEvent => Boolean(resolved?.label)),
     }))
     .filter((entry) => entry.events.length > 0);
 }
