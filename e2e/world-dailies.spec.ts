@@ -3,6 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 import {
   closeElectronTestHarness,
   launchElectronTestHarness,
+  openView,
   writeHarnessInventory,
   type ElectronTestHarness,
 } from "./electronTestHarness";
@@ -24,14 +25,8 @@ test.describe("World dailies tracker", () => {
     await closeElectronTestHarness(harness);
   });
 
-  // Sidebar labels are translated, so navigate by data-view.
-  async function openView(view: string): Promise<void> {
-    await page.locator(`#sidebar [data-view="${view}"]`).click();
-    await page.waitForTimeout(300);
-  }
-
   async function openDailies(): Promise<void> {
-    await openView("world");
+    await openView(page, "world");
     await page.locator('[data-tour-tab="dailies"]').click();
     await expect(page.locator('[data-task-meta="daily"]')).toBeVisible();
   }
@@ -52,7 +47,7 @@ test.describe("World dailies tracker", () => {
   }
 
   test("the World tab offers the tracker as its own sub-tab", async () => {
-    await openView("world");
+    await openView(page, "world");
     await expect(page.locator('[data-tour-tab="dailies"]')).toBeVisible();
   });
 
@@ -75,7 +70,7 @@ test.describe("World dailies tracker", () => {
     await task("clem").check();
     await expect(task("clem")).toBeChecked();
 
-    await openView("settings");
+    await openView(page, "settings");
     await openDailies();
     await expect(task("clem")).toBeChecked();
   });

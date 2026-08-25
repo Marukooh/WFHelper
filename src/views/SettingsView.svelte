@@ -574,7 +574,7 @@
         <button class="btn-secondary btn-sm" on:click={resetDefaults}
           >{$tr("settings.resetDefaults")}</button
         >
-        <button class="btn-secondary btn-sm" on:click={() => startTour()}
+        <button class="btn-secondary btn-sm" data-tour-restart on:click={() => startTour()}
           >{$tr("settings.showFeatureTour")}</button
         >
         <button class="btn-secondary btn-sm" on:click={openScanDebugFolder}

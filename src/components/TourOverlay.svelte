@@ -417,14 +417,16 @@
       <p class="m-0 text-xs font-semibold text-accent">{$tr("tour.interactiveHint")}</p>
     {/if}
     <div class="mt-1 flex items-center justify-between">
-      <button class="btn-secondary btn-sm" on:click={() => void finishTour()}
+      <button class="btn-secondary btn-sm" data-tour-skip on:click={() => void finishTour()}
         >{$tr("tour.skip")}</button
       >
       <div class="flex gap-2">
         {#if index > 0}
-          <button class="btn-secondary btn-sm" on:click={backStep}>{$tr("common.back")}</button>
+          <button class="btn-secondary btn-sm" data-tour-back on:click={backStep}
+            >{$tr("common.back")}</button
+          >
         {/if}
-        <button class="btn-primary btn-sm" on:click={nextStep}>
+        <button class="btn-primary btn-sm" data-tour-next on:click={nextStep}>
           {index >= tourSteps.length - 1 ? $tr("tour.done") : $tr("common.next")}
         </button>
       </div>

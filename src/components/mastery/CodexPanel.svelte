@@ -134,7 +134,7 @@
       onValueChange={(value) => (search = value)}
     />
     <label class="flex cursor-pointer items-center gap-1.5 text-sm text-text-secondary">
-      <input type="checkbox" bind:checked={incompleteOnly} />
+      <input type="checkbox" data-codex-incomplete bind:checked={incompleteOnly} />
       {$tr("codex.incompleteOnly")}
     </label>
     {#if $devMode}
@@ -167,6 +167,7 @@
     <div class="filter-tabs flex-wrap" data-tour="mastery-codex-factions">
       <button
         class="filter-tab"
+        data-codex-faction="all"
         data-active={factionFilter === "all" || undefined}
         class:active={factionFilter === "all"}
         on:click={() => (factionFilter = "all")}>{$tr("common.all")}</button
@@ -174,6 +175,7 @@
       {#each shownFactions as faction (faction.key)}
         <button
           class="filter-tab"
+          data-codex-faction={faction.key}
           data-active={factionFilter === faction.key || undefined}
           class:active={factionFilter === faction.key}
           on:click={() => (factionFilter = faction.key)}>{faction.label}</button

@@ -222,7 +222,7 @@
     onClose={close}
     initialFocus={() => (isEdit ? platinumEl : searchEl)}
   >
-    <div class="detail-panel order-modal-panel">
+    <div class="detail-panel order-modal-panel" data-order-modal={isEdit ? "edit" : "create"}>
       <button
         type="button"
         class="detail-close"

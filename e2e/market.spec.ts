@@ -91,7 +91,7 @@ test.describe("Market tab (fixture mode)", () => {
     }
 
     await page.locator('#sidebar [data-view="market"]').click();
-    await expect(page.getByRole("heading", { name: "My Orders" })).toBeVisible({
+    await expect(page.locator('[data-market-orders-heading="orders"]')).toBeVisible({
       timeout: 20_000,
     });
     await expect(page.locator('[title="Fixture Item 1"]').first()).toBeVisible({
@@ -106,9 +106,9 @@ test.describe("Market tab (fixture mode)", () => {
 
   test("edit modal autofocuses the price and steps it without a confirm dialog", async () => {
     const firstRow = page.locator(".order-row", { hasText: "Fixture Item 1" }).first();
-    await firstRow.getByRole("button", { name: "Edit" }).click();
+    await firstRow.locator("[data-order-edit]").click();
 
-    const dialog = page.getByRole("dialog", { name: "Edit Order" });
+    const dialog = page.locator('[data-order-modal="edit"]');
     const priceInput = page.locator("#order-platinum");
     await expect(priceInput).toBeVisible();
     await expect(priceInput).toBeFocused();

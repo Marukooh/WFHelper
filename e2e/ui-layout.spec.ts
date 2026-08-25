@@ -3,6 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 import {
   closeElectronTestHarness,
   launchElectronTestHarness,
+  openView,
   writeHarnessInventory,
   type ElectronTestHarness,
 } from "./electronTestHarness";
@@ -50,21 +51,15 @@ test.describe("Shared view layout", () => {
     await closeElectronTestHarness(harness);
   });
 
-  // Sidebar labels are translated, so navigate by data-view.
-  async function openView(view: string): Promise<void> {
-    await page.locator(`#sidebar [data-view="${view}"]`).click();
-    await page.waitForTimeout(300);
-  }
-
   async function headingSize(view: string): Promise<string> {
-    await openView(view);
+    await openView(page, view);
     const heading = page.locator("#content .view.active h2").first();
     await expect(heading).toBeVisible();
     return heading.evaluate((node) => getComputedStyle(node).fontSize);
   }
 
   test("Stats file import respects CSP", async () => {
-    await openView("stats");
+    await openView(page, "stats");
     const fileInput = page.locator('input[type="file"][accept=".json"]');
     await expect(fileInput).toBeHidden();
     expect(
@@ -88,7 +83,7 @@ test.describe("Shared view layout", () => {
       { width: 900, height: 600 },
     ]) {
       await page.setViewportSize(viewport);
-      await openView("stats");
+      await openView(page, "stats");
       const filters = page.locator("[data-trade-filters]");
       await expect(filters).toBeVisible();
       expect(
@@ -108,7 +103,7 @@ test.describe("Shared view layout", () => {
 
   test("Inventory starts without an empty listings panel", async () => {
     await page.setViewportSize({ width: 900, height: 600 });
-    await openView("inventory");
+    await openView(page, "inventory");
     await expect(page.getByRole("heading", { name: "Market Listings" })).toHaveCount(0);
     expect(
       await page.locator("#content").evaluate((node) => node.scrollWidth <= node.clientWidth),
@@ -124,7 +119,7 @@ test.describe("Shared view layout", () => {
       { width: 1280, height: 2000 },
     ]) {
       await page.setViewportSize(viewport);
-      await openView("inventory");
+      await openView(page, "inventory");
 
       const header = await page.evaluate(() => {
         const tabs = Array.from(document.querySelectorAll("[data-tour-tab]")) as HTMLElement[];
@@ -160,7 +155,7 @@ test.describe("Shared view layout", () => {
   // and the grid scrolled visibly through the strip above them.
   test("pinned filters sit flush with the scroll area on a narrow window", async () => {
     await page.setViewportSize({ width: 1280, height: 820 });
-    await openView("inventory");
+    await openView(page, "inventory");
     // Narrow enough for the compact rule, short enough that the grid scrolls.
     await page.setViewportSize({ width: 760, height: 420 });
     await page.waitForTimeout(300);
@@ -184,28 +179,28 @@ test.describe("Shared view layout", () => {
   test("new planning and inventory filters are reachable", async () => {
     await page.setViewportSize({ width: 1280, height: 820 });
 
-    await openView("inventory");
-    await page.getByRole("button", { name: "Filters" }).click();
+    await openView(page, "inventory");
+    await page.locator("[data-advanced-filters-toggle]").click();
     const customMinimum = page.getByRole("spinbutton", { name: "Custom minimum platinum" });
     await expect(customMinimum).toBeVisible();
     await customMinimum.fill("7");
     await expect(customMinimum).toHaveValue("7");
 
-    await openView("mastery");
+    await openView(page, "mastery");
     await page.locator('[data-tour="mastery-view-tabs"] [data-tour-tab="roadmap"]').click();
     const roadmapTabs = page.locator('[data-tour="mastery-roadmap"]');
     await expect(roadmapTabs.locator('[data-tour-tab="easy"]')).toBeVisible();
     await expect(roadmapTabs.locator('[data-tour-tab="relics"]')).toBeVisible();
     await expect(roadmapTabs.locator('[data-tour-tab="platinum"]')).toBeVisible();
 
-    await openView("relics");
+    await openView(page, "relics");
     await expect(page.getByRole("combobox", { name: "Relics" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Unowned reward" })).toBeVisible();
   });
 
   test("Relic filters and card headers stay compact at desktop width", async () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await openView("relics");
+    await openView(page, "relics");
 
     const filterRow = page.locator("[data-relic-filter-row]");
     const filterControls = page.locator("[data-relic-filter-controls]");

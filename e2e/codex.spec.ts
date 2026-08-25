@@ -87,12 +87,12 @@ test.describe("Mastery codex tab", () => {
     await expect(list.getByText("Butcher", { exact: true })).toHaveCount(0);
     await factions.getByRole("button", { name: "Grineer", exact: true }).click();
     await expect(list.getByText("Butcher", { exact: true })).toBeVisible();
-    await factions.getByRole("button", { name: "All", exact: true }).click();
+    await factions.locator('[data-codex-faction="all"]').click();
 
     await page.screenshot({ path: path.join("test-results", "codex-tab.png") });
 
     // Incomplete-only drops the finished and the unknown rows.
-    await page.getByText("Incomplete only").click();
+    await page.locator("[data-codex-incomplete]").check();
     await expect(list.getByText("Butcher", { exact: true })).toHaveCount(0);
     await expect(list.getByText("Shiny Test Enemy", { exact: true })).toHaveCount(0);
   });

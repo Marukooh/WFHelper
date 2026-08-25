@@ -86,6 +86,12 @@ export async function launchElectronTestHarness(
   }
 }
 
+/** Sidebar labels are translated, so navigate by data-view. */
+export async function openView(page: Page, view: string): Promise<void> {
+  await page.locator(`#sidebar [data-view="${view}"]`).click();
+  await page.waitForTimeout(300);
+}
+
 export async function setDisplayLanguage(page: Page, code: string): Promise<void> {
   await page.locator('#sidebar [data-view="settings"]').click();
   await page.locator('[data-setting="language"] select').selectOption(code);
@@ -96,12 +102,13 @@ export async function overlayWindow(
   match: string,
   reject?: string,
 ): Promise<Page> {
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  const attempts = 60;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     for (const win of harness.app.windows()) {
       const url = win.url();
       if (url.includes(match) && (!reject || !url.includes(reject))) return win;
     }
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(`overlay window ${match} never appeared`);
 }
@@ -116,13 +123,14 @@ export async function evaluateInMain<R, A>(
   arg?: A,
 ): Promise<R> {
   let lastError: unknown;
-  for (let attempt = 0; attempt < 4; attempt++) {
+  const attempts = 4;
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       return (await app.evaluate(fn as never, arg as never)) as R;
     } catch (err) {
       if (!/Execution context was destroyed/i.test(String(err))) throw err;
       lastError = err;
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
   throw lastError;

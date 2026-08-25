@@ -63,6 +63,7 @@
       {#if filtersEnabled}
         <button
           class="filter-tab inline-flex min-h-8 items-center gap-1.5 pt-0 pb-0 [&_svg]:h-3.5 [&_svg]:w-3.5"
+          data-advanced-filters-toggle
           class:active={showFilterPanel || advancedCount > 0}
           title={advancedCount > 0
             ? advancedCount === 1

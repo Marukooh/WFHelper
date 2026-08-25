@@ -51,10 +51,10 @@ test.describe("Feature tour", () => {
 
   test("walks every available step without replacing saved sub-tabs", async () => {
     await page.locator('#sidebar [data-view="settings"]').click();
-    await page.getByRole("button", { name: "Show feature tour" }).click();
+    await page.locator("[data-tour-restart]").click();
 
     const card = page.locator("[data-tour-card]");
-    const next = card.getByRole("button", { name: "Next" });
+    const next = card.locator("[data-tour-next]");
 
     await expect(card).toBeVisible();
     await expect
@@ -126,7 +126,8 @@ test.describe("Feature tour", () => {
       }
     }
 
-    await card.getByRole("button", { name: "Done" }).click();
+    // Last step: the same Next button reads Done and closes the card.
+    await card.locator("[data-tour-next]").click();
     await expect(card).toHaveCount(0);
     await expect
       .poll(() =>
@@ -168,12 +169,12 @@ test.describe("Feature tour", () => {
       page.locator('[data-tour="mastery-roadmap"] [data-tour-tab="platinum"]'),
     ).toHaveAttribute("data-active", "true");
 
-    for (const exit of ["Skip tour", "Escape"] as const) {
+    for (const exit of ["skip", "escape"] as const) {
       await page.locator('#sidebar [data-view="settings"]').click();
-      await page.getByRole("button", { name: "Show feature tour" }).click();
+      await page.locator("[data-tour-restart]").click();
       await expect(card).toBeVisible();
-      if (exit === "Escape") await page.keyboard.press("Escape");
-      else await card.getByRole("button", { name: exit }).click();
+      if (exit === "escape") await page.keyboard.press("Escape");
+      else await card.locator("[data-tour-skip]").click();
       await expect(card).toHaveCount(0);
       await expect(
         page.locator('[data-tour="inventory-tabs"] [data-tour-tab="resources"]'),
