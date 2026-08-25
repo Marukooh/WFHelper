@@ -145,8 +145,23 @@ export async function closeElectronTestHarness(
 ): Promise<void> {
   if (!harness) return;
   try {
-    await harness.app.close();
+    // close() waits for a clean exit and has hung a CI teardown for the whole
+    // 120s hook budget; a stuck Electron gets 15s, then a hard kill.
+    const closed = harness.app.close().then(
+      () => true,
+      () => false,
+    );
+    if (!(await Promise.race([closed, delay(15_000)]))) {
+      harness.app.process().kill();
+      await Promise.race([closed, delay(5_000)]);
+    }
   } finally {
     fs.rmSync(harness.sandboxDir, { recursive: true, force: true });
   }
+}
+
+function delay(ms: number): Promise<false> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(false), ms).unref();
+  });
 }
