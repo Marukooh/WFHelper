@@ -8,8 +8,10 @@ import {
 	getAutoCacheStats,
 	getOrHydrateMeta,
 	getOrHydrateOrderSummary,
+	getOrHydrateOrderSummaryBySubtype,
 	getOrHydratePrice,
 } from '../services/readThrough';
+import { isRelicSlug, normalizeOrderSubtype } from '../services/orderSubtype';
 import { recordActiveUser } from '../services/activeUsers';
 import { readRankedSummaryCatalogFromKv, sanitizeSnapshotForClient } from '../services/prewarm';
 import { fetchCatalogSlugs, readClientCatalogFromKv } from '../services/prewarmCatalog';
@@ -27,6 +29,7 @@ const routeStats = {
 	publicRateLimitedRequests: 0,
 	bootstrapRejectedRequests: 0,
 	invalidRankRequests: 0,
+	invalidSubtypeRequests: 0,
 	snapshotRequests: 0,
 	priceRequests: 0,
 	metaRequests: 0,
@@ -413,6 +416,20 @@ export async function handlePublicRoutes(req: Request, url: URL, env: Env, ctx?:
 		if (guardResponse) return guardResponse;
 
 		routeStats.orderSummaryRequests += 1;
+		const rawSubtype = url.searchParams.get('subtype');
+		if (rawSubtype !== null) {
+			// Relics are priced per refinement and never appear in the ranked catalog,
+			// so the subtype path replaces rank validation instead of adding to it.
+			const subtype = normalizeOrderSubtype(rawSubtype);
+			if (!subtype || !isRelicSlug(orderSummarySlug)) {
+				routeStats.invalidSubtypeRequests += 1;
+				return jsonResponse({ ok: false, error: 'invalid_subtype' }, req, env, 400);
+			}
+
+			const subtypeResult = await getOrHydrateOrderSummaryBySubtype(env, orderSummarySlug, subtype, ctx);
+			return respondWithStatus(subtypeResult, req, env);
+		}
+
 		const rank = parseRankFilter(url);
 		const validation = await validateRankedSlugAndRank(env, orderSummarySlug, rank, { rankRequired: true });
 		if (!validation.ok) {

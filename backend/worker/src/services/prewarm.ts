@@ -32,6 +32,7 @@ import {
 	orderSummaryCacheTtlSec,
 	sanitizeOrderSummaryHotsetEntries,
 } from './prewarmCatalog';
+import { workerOrderSummarySubtypeCacheKey, type OrderSubtype } from './orderSubtype';
 
 export {
 	buildOrderSummaryPayload,
@@ -236,16 +237,21 @@ async function fetchRawOrdersFromEndpoint(url: string): Promise<FetchResult<unkn
 	return { data: rawOrders, transient: false };
 }
 
-export async function fetchOrdersPayload(slug: string, options?: { rank?: number | null }): Promise<FetchResult<OrdersPayload>> {
+export async function fetchOrdersPayload(
+	slug: string,
+	options?: { rank?: number | null; subtype?: OrderSubtype | null },
+): Promise<FetchResult<OrdersPayload>> {
 	const targetRank = normalizeRankFilter(options?.rank);
+	// Missing-subtype-counts-as-intact lives in normalizeWfmOrderBookSide.
+	const targetSubtype = options?.subtype ?? null;
 
 	const v2Attempt = await fetchRawOrdersFromEndpoint(`https://api.warframe.market/v2/orders/item/${encodeURIComponent(slug)}`);
 	if (v2Attempt.data) {
 		return {
 			data: {
 				slug,
-				sell: normalizeWfmOrderBookSide(v2Attempt.data, 'sell', targetRank),
-				buy: normalizeWfmOrderBookSide(v2Attempt.data, 'buy', targetRank),
+				sell: normalizeWfmOrderBookSide(v2Attempt.data, 'sell', targetRank, undefined, targetSubtype),
+				buy: normalizeWfmOrderBookSide(v2Attempt.data, 'buy', targetRank, undefined, targetSubtype),
 				timestamp: Date.now(),
 			},
 			transient: false,
@@ -263,8 +269,8 @@ export async function fetchOrdersPayload(slug: string, options?: { rank?: number
 	return {
 		data: {
 			slug,
-			sell: normalizeWfmOrderBookSide(v1Attempt.data, 'sell', targetRank),
-			buy: normalizeWfmOrderBookSide(v1Attempt.data, 'buy', targetRank),
+			sell: normalizeWfmOrderBookSide(v1Attempt.data, 'sell', targetRank, undefined, targetSubtype),
+			buy: normalizeWfmOrderBookSide(v1Attempt.data, 'buy', targetRank, undefined, targetSubtype),
 			timestamp: Date.now(),
 		},
 		transient: false,
@@ -321,6 +327,19 @@ export async function putOrderSummaryPayload(
 	const cacheKey = workerOrderSummaryCacheKey(slug, normalizedRank);
 
 	await env.PRICE_CACHE.put(cacheKey, JSON.stringify(payload), {
+		expirationTtl: orderSummaryCacheTtlSec(env),
+	});
+
+	return payload;
+}
+
+export async function putOrderSummarySubtypePayload(
+	env: Env,
+	slug: string,
+	payload: Record<string, unknown>,
+	subtype: OrderSubtype,
+): Promise<Record<string, unknown>> {
+	await env.PRICE_CACHE.put(workerOrderSummarySubtypeCacheKey(slug, subtype), JSON.stringify(payload), {
 		expirationTtl: orderSummaryCacheTtlSec(env),
 	});
 

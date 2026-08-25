@@ -12,7 +12,7 @@ Public:
 - `GET /v1/snapshot`
 - `GET /v1/prices/:slug`
 - `GET /v1/meta/:slug`
-- `GET /v1/order-summary/:slug`
+- `GET /v1/order-summary/:slug`, with `?subtype=` for relic refinements
 - `GET /v1/orders/:slug`, disabled by default
 
 Admin routes require `Authorization: Bearer <ADMIN_API_KEY>`:

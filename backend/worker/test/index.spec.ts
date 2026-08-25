@@ -2052,3 +2052,202 @@ describe('anonymous active-user counting', () => {
 		expect(body.result[1].users).toBe(0);
 	});
 });
+
+describe('relic order summary subtypes', () => {
+	const RELIC_SLUG = 'wf_test_axi_a1_relic';
+
+	function relicOrdersResponse(): Response {
+		return new Response(
+			JSON.stringify({
+				data: [
+					{
+						type: 'sell',
+						platinum: 20,
+						quantity: 1,
+						visible: true,
+						subtype: 'radiant',
+						user: { ingameName: 'RadiantSeller', status: 'ingame' },
+					},
+					{
+						type: 'sell',
+						platinum: 4,
+						quantity: 1,
+						visible: true,
+						subtype: 'intact',
+						user: { ingameName: 'IntactSeller', status: 'ingame' },
+					},
+					{
+						type: 'buy',
+						platinum: 12,
+						quantity: 1,
+						visible: true,
+						subtype: 'radiant',
+						user: { ingameName: 'RadiantBuyer', status: 'online' },
+					},
+					{
+						type: 'buy',
+						platinum: 2,
+						quantity: 1,
+						visible: true,
+						subtype: 'intact',
+						user: { ingameName: 'IntactBuyer', status: 'online' },
+					},
+				],
+			}),
+			{ status: 200, headers: { 'content-type': 'application/json' } },
+		);
+	}
+
+	function mockRelicOrders(): ReturnType<typeof vi.fn> {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input instanceof URL ? input : typeof input === 'string' ? input : input.url);
+			if (url === `https://api.warframe.market/v2/orders/item/${RELIC_SLUG}`) return relicOrdersResponse();
+			throw new Error(`Unexpected url: ${url}`);
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		return fetchMock;
+	}
+
+	it('rejects an unknown subtype before any upstream fetch', async () => {
+		const fetchMock = vi.fn(async () => {
+			throw new Error('should not fetch upstream for an invalid subtype');
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(new IncomingRequest(`https://example.com/v1/order-summary/${RELIC_SLUG}?subtype=shiny`), env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ ok: false, error: 'invalid_subtype' });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('rejects a subtype query on a non-relic slug', async () => {
+		const fetchMock = vi.fn(async () => {
+			throw new Error('should not fetch upstream for a non-relic subtype query');
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(new IncomingRequest('https://example.com/v1/order-summary/primed_flow?subtype=radiant'), env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ ok: false, error: 'invalid_subtype' });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('summarizes only orders matching the requested subtype', async () => {
+		mockRelicOrders();
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(
+			new IncomingRequest(`https://example.com/v1/order-summary/${RELIC_SLUG}?subtype=radiant`),
+			env,
+			ctx,
+		);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			ok: true,
+			data: { slug: RELIC_SLUG, rank: null, subtype: 'radiant', wts: 20, wtb: 12 },
+		});
+	});
+
+	it('caches each subtype under its own key', async () => {
+		mockRelicOrders();
+
+		const radiantCtx = createExecutionContext();
+		await worker.fetch(new IncomingRequest(`https://example.com/v1/order-summary/${RELIC_SLUG}?subtype=radiant`), env, radiantCtx);
+		await waitOnExecutionContext(radiantCtx);
+
+		const intactCtx = createExecutionContext();
+		const intact = await worker.fetch(
+			new IncomingRequest(`https://example.com/v1/order-summary/${RELIC_SLUG}?subtype=intact`),
+			env,
+			intactCtx,
+		);
+		await waitOnExecutionContext(intactCtx);
+
+		expect(await intact.json()).toMatchObject({ ok: true, data: { subtype: 'intact', wts: 4, wtb: 2 } });
+
+		const radiantCached = JSON.parse(String(await env.PRICE_CACHE.get(`orders-summary:${RELIC_SLUG}:sradiant`))) as Record<string, unknown>;
+		const intactCached = JSON.parse(String(await env.PRICE_CACHE.get(`orders-summary:${RELIC_SLUG}:sintact`))) as Record<string, unknown>;
+		expect(radiantCached).toMatchObject({ subtype: 'radiant', wts: 20 });
+		expect(intactCached).toMatchObject({ subtype: 'intact', wts: 4 });
+		// The ranked family must stay untouched by subtype writes.
+		expect(await env.PRICE_CACHE.get(`orders-summary:${RELIC_SLUG}`)).toBeNull();
+	});
+
+	it('serves a cached subtype summary without re-fetching', async () => {
+		await env.PRICE_CACHE.put(
+			`orders-summary:${RELIC_SLUG}:sradiant`,
+			JSON.stringify({ slug: RELIC_SLUG, rank: null, subtype: 'radiant', wts: 999, wtb: 111, timestamp: Date.now() }),
+		);
+		const fetchMock = vi.fn(async () => {
+			throw new Error('cached subtype summaries should not hit WFM');
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(
+			new IncomingRequest(`https://example.com/v1/order-summary/${RELIC_SLUG}?subtype=radiant`),
+			env,
+			ctx,
+		);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ ok: true, data: { wts: 999, wtb: 111 } });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('leaves bare relic requests on the ranked path', async () => {
+		const fetchMock = vi.fn(async () => {
+			throw new Error('rank-less order summaries must fail validation before upstream');
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(new IncomingRequest(`https://example.com/v1/order-summary/${RELIC_SLUG}`), env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(404);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe('relic subtype fallback', () => {
+	const RELIC_SLUG = 'wf_test_lith_b1_relic';
+
+	it('counts an order with no subtype as intact', async () => {
+		globalThis.fetch = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						data: [
+							{ type: 'sell', platinum: 7, quantity: 1, visible: true, user: { ingameName: 'LegacySeller', status: 'ingame' } },
+							{
+								type: 'sell',
+								platinum: 30,
+								quantity: 1,
+								visible: true,
+								subtype: 'radiant',
+								user: { ingameName: 'RadiantSeller', status: 'ingame' },
+							},
+						],
+					}),
+					{ status: 200, headers: { 'content-type': 'application/json' } },
+				),
+		) as unknown as typeof fetch;
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(new IncomingRequest(`https://example.com/v1/order-summary/${RELIC_SLUG}?subtype=intact`), env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ ok: true, data: { subtype: 'intact', wts: 7 } });
+	});
+});

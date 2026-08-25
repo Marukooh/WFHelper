@@ -11,8 +11,10 @@ import {
 	markUntradable,
 	putMetaPayload,
 	putOrderSummaryPayload,
+	putOrderSummarySubtypePayload,
 	putPricePayload,
 } from './prewarm';
+import { workerMissOrderSummarySubtypeKey, workerOrderSummarySubtypeCacheKey, type OrderSubtype } from './orderSubtype';
 import { fetchCatalogSlugs } from './prewarmCatalog';
 import { normalizeRankFilter } from '../../../../config/shared/numeric';
 import { isExcludedRankedMarketItem, isWfmExcludedSlug } from '../../../../config/shared/wfmExclusions';
@@ -234,9 +236,17 @@ async function hydrateMeta(env: Env, slug: string, markNoData: boolean): Promise
 	return task;
 }
 
-async function hydrateOrderSummary(env: Env, slug: string, markNoData: boolean, rank: number | null): Promise<HydrateResult> {
-	const requestKey = workerOrderSummaryCacheKey(slug, rank);
-	const missKey = workerMissCacheKey(MISS_ORDER_SUMMARY_PREFIX, slug, rank);
+async function hydrateOrderSummary(
+	env: Env,
+	slug: string,
+	markNoData: boolean,
+	rank: number | null,
+	subtype: OrderSubtype | null = null,
+): Promise<HydrateResult> {
+	const requestKey = subtype ? workerOrderSummarySubtypeCacheKey(slug, subtype) : workerOrderSummaryCacheKey(slug, rank);
+	const missKey = subtype
+		? workerMissOrderSummarySubtypeKey(MISS_ORDER_SUMMARY_PREFIX, slug, subtype)
+		: workerMissCacheKey(MISS_ORDER_SUMMARY_PREFIX, slug, rank);
 
 	if (orderSummaryCircuitOpen()) {
 		autoStats.orderSummaryUnavailable += 1;
@@ -247,7 +257,7 @@ async function hydrateOrderSummary(env: Env, slug: string, markNoData: boolean, 
 	if (inFlight) return inFlight;
 
 	const task = (async () => {
-		const result = await fetchOrdersPayload(slug, rank != null ? { rank } : undefined);
+		const result = await fetchOrdersPayload(slug, subtype ? { subtype } : rank != null ? { rank } : undefined);
 		if (!result.data) {
 			if (result.transient) {
 				noteOrderSummaryTransient();
@@ -263,9 +273,13 @@ async function hydrateOrderSummary(env: Env, slug: string, markNoData: boolean, 
 		}
 
 		noteOrderSummaryRecovery();
-		const data = buildOrderSummaryPayload(result.data.slug, rank, result.data);
+		const data = buildOrderSummaryPayload(result.data.slug, subtype ? null : rank, result.data, subtype);
 		await env.PRICE_CACHE.delete(missKey);
-		await putOrderSummaryPayload(env, result.data.slug, data, rank);
+		if (subtype) {
+			await putOrderSummarySubtypePayload(env, result.data.slug, data, subtype);
+		} else {
+			await putOrderSummaryPayload(env, result.data.slug, data, rank);
+		}
 
 		autoStats.orderSummaryHydrated += 1;
 		return { data, transient: false };
@@ -392,6 +406,31 @@ export async function getOrHydrateOrderSummary(
 		missKey,
 		isStale: isOrderSummaryStale,
 		hydrate: (markNoData) => hydrateOrderSummary(env, slug, markNoData, rank),
+		stats: {
+			cacheHit: 'orderSummaryCacheHits',
+			negativeHit: 'orderSummaryNegativeHits',
+			staleRefreshQueued: 'orderSummaryStaleRefreshQueued',
+		},
+		canQueueRefresh: () => !orderSummaryCircuitOpen(),
+	});
+}
+
+export async function getOrHydrateOrderSummaryBySubtype(
+	env: Env,
+	slug: string,
+	subtype: OrderSubtype,
+	ctx?: ExecutionContext,
+): Promise<AutoReadResult> {
+	if (isWfmExcludedSlug(slug)) {
+		return { status: 'not_found', data: null, cacheHit: true };
+	}
+
+	return withReadThrough(env, ctx, {
+		namespace: env.PRICE_CACHE,
+		cacheKey: workerOrderSummarySubtypeCacheKey(slug, subtype),
+		missKey: workerMissOrderSummarySubtypeKey(MISS_ORDER_SUMMARY_PREFIX, slug, subtype),
+		isStale: isOrderSummaryStale,
+		hydrate: (markNoData) => hydrateOrderSummary(env, slug, markNoData, null, subtype),
 		stats: {
 			cacheHit: 'orderSummaryCacheHits',
 			negativeHit: 'orderSummaryNegativeHits',

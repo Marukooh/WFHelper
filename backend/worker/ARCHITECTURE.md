@@ -87,6 +87,21 @@ The catalog response carries the same body ETag treatment as the snapshot, keyed
 `WFM_ITEMS_CACHE_VERSION`. The ETag is stored in the edge-cached entry, so matching
 `If-None-Match` requests return 304 from both the Cache API hit and a freshly built body.
 
+## Relic order subtypes
+
+`GET /v1/order-summary/{slug}?subtype=intact|exceptional|flawless|radiant` serves relic prices per
+refinement. Relics are absent from the ranked catalog, so the subtype path replaces rank validation
+instead of extending it: the slug must end in `_relic` and the subtype must be one of the four
+values, or the route returns `400 invalid_subtype` before any upstream request.
+
+Hydration reuses the normal orders fetch and filters it to the requested subtype; an order without a
+`subtype` field counts as intact. Cache and negative-marker keys carry a `:s{subtype}` segment
+(`orders-summary:{slug}:s{subtype}`, `miss:orders-summary:v1:{slug}:s{subtype}`) so they never
+collide with the ranked `:r{rank}` family. TTL, stale refresh, and negative markers are unchanged.
+Subtype entries stay out of the snapshot; the desktop requests them on demand.
+
+Bare `/v1/order-summary/{slug}` requests keep the existing rank-required behavior.
+
 ## Read-through and prewarm
 
 Confirmed misses use `miss:price:*`, `miss:meta:*`, `miss:orders:*`, and

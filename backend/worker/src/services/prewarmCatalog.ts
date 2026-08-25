@@ -7,6 +7,7 @@ import { isWfmSlug } from '../../../../config/shared/textNormalize';
 import { WFM_HEADERS } from '../../../../config/shared/wfm';
 import { isExcludedRankedMarketItem } from '../../../../config/shared/wfmExclusions';
 import { bestOrderPrice } from '../../../../config/shared/wfmOrders';
+import type { OrderSubtype } from './orderSubtype';
 
 const ORDER_SUMMARY_HOTSET_MAX_ENTRIES = 96;
 
@@ -182,7 +183,12 @@ export function sanitizeOrderSummaryHotsetEntries(value: unknown): OrderSummaryH
 	return deduped;
 }
 
-export function buildOrderSummaryPayload(slug: string, rank: number | null, payload: OrdersPayload): Record<string, unknown> {
+export function buildOrderSummaryPayload(
+	slug: string,
+	rank: number | null,
+	payload: OrdersPayload,
+	subtype?: OrderSubtype | null,
+): Record<string, unknown> {
 	const sellActive = bestOrderPrice(payload.sell, 'sell', true);
 	const buyActive = bestOrderPrice(payload.buy, 'buy', true);
 	const sellAny = bestOrderPrice(payload.sell, 'sell', false);
@@ -191,6 +197,7 @@ export function buildOrderSummaryPayload(slug: string, rank: number | null, payl
 	return {
 		slug,
 		rank,
+		...(subtype ? { subtype } : {}),
 		wts: sellActive ?? sellAny ?? null,
 		wtb: buyActive ?? buyAny ?? null,
 		timestamp: payload.timestamp,
