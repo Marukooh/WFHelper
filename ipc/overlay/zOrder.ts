@@ -1,6 +1,7 @@
 import { app, type BrowserWindow } from "electron";
 import { withScope } from "../../services/logger";
 import * as warframeStatus from "../../services/warframeStatus";
+import { HIDE_IMMINENT_MS } from "./windows";
 
 const log = withScope("overlayZOrder");
 
@@ -37,8 +38,6 @@ interface ZOrderWindowsController {
   isOverlayWindowVisible: () => boolean;
   overlayHideDueIn: () => number | null;
 }
-
-const HIDE_IMMINENT_MS = 3_000;
 
 /** Poll-driven stacking for one overlay window, guards included. */
 export function syncOverlayWindowZOrder(

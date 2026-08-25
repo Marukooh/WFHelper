@@ -12,6 +12,12 @@ import type {
 // Two passes: one right after the map, one late enough for a slow compositor.
 const CLICK_THROUGH_REASSERT_DELAYS_MS = [250, 1_500];
 
+// Shared with the z-order poll: re-stacking a window in its last seconds
+// before a queued hide is what crashed under injected hooks. Lives here so
+// zOrder.ts (which imports electron at module load) stays out of this
+// module's dependency-injected, electron-free import graph.
+export const HIDE_IMMINENT_MS = 3_000;
+
 const OVERLAY_WINDOW_BOUNDS = Object.freeze({
   width: 980,
   height: 140,
@@ -528,6 +534,10 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     raiseReassertTimers = CLICK_THROUGH_REASSERT_DELAYS_MS.map((delay) =>
       setTimeout(() => {
         if (overlayWindow.isDestroyed() || !isOverlayWindowVisible()) return;
+        // Same imminent-hide guard as the z-order poll: re-stacking a window
+        // that is about to be torn down is what crashed under injected hooks.
+        const hideDueIn = overlayHideDueIn();
+        if (hideDueIn !== null && hideDueIn <= HIDE_IMMINENT_MS) return;
         keepOverlayAboveGame(overlayWindow);
         overlayWindow.moveTop();
       }, delay),
