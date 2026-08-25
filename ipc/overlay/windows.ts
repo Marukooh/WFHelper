@@ -839,6 +839,10 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     if (targetWindow.webContents.id !== senderId) return false;
 
     rendererReady = true;
+    // The zoom set while loadFile was still in flight is reset by the
+    // navigation commit, so the first load re-applies it here. Only displays
+    // with a base zoom other than 1 ever see the difference.
+    applyZoomForCurrentSize(targetWindow);
     const pending = pendingOverlayEvents.splice(0);
     for (const event of pending) {
       targetWindow.webContents.send(event.channel, event.payload);
