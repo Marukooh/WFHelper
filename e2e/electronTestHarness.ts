@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -152,11 +153,35 @@ export async function closeElectronTestHarness(
       () => false,
     );
     if (!(await Promise.race([closed, delay(15_000)]))) {
-      harness.app.process().kill();
+      forceKillElectronTree(harness.app.process().pid);
       await Promise.race([closed, delay(5_000)]);
     }
   } finally {
-    fs.rmSync(harness.sandboxDir, { recursive: true, force: true });
+    removeSandbox(harness.sandboxDir);
+  }
+}
+
+// Node's kill only hits the main process; a surviving GPU or network service
+// child keeps cache files locked and fails the sandbox delete with EBUSY.
+function forceKillElectronTree(pid: number | undefined): void {
+  if (!pid) return;
+  try {
+    if (process.platform === "win32") {
+      execFileSync("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore" });
+    } else {
+      process.kill(pid, "SIGKILL");
+    }
+  } catch {
+    // Already gone.
+  }
+}
+
+function removeSandbox(dir: string): void {
+  try {
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
+  } catch (error) {
+    // A leaked temp sandbox beats failing the run over cleanup.
+    console.warn(`[harness] sandbox cleanup left ${dir}: ${String(error)}`);
   }
 }
 
