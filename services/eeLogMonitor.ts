@@ -146,6 +146,7 @@ const uptimeTracker = new EeUptimeTracker();
 
 let rewardCallback: ((stalenessMs: number) => void) | null = null;
 let rewardUiReadyCallback: (() => void) | null = null;
+let eeConfigSavedCallback: (() => void) | null = null;
 let rewardScreenCloseCallback: ((stalenessMs: number) => void) | null = null;
 let relicPickerCallback: (() => void) | null = null;
 let relicPickerCloseCallback: (() => void) | null = null;
@@ -157,6 +158,12 @@ let loginCompleteCallback: (() => void) | null = null;
 let lastLoginCompleteAt = 0;
 
 export { RIVEN_PATTERNS, forceEndRivenSession };
+
+/** The game writes settings (interface scale included) to EE.cfg lazily; this
+ *  line is the only signal that the file just changed. */
+export function isEeConfigSavedLine(line: string): boolean {
+  return /Saved package: \/Configs\/EE\.cfg\s*$/.test(line);
+}
 
 export function isLoginCompleteLine(line: string): boolean {
   return LOGIN_COMPLETE_PATTERN.test(line);
@@ -391,6 +398,12 @@ function handleLine(line: string, source: "dbwin" | "file" = "file"): void {
     rewardUiReadyCallback();
   }
 
+  // The consumer re-reads EE.cfg and pushes the current value, so the DBWIN
+  // line plus its file-poll echo firing twice is harmless.
+  if (eeConfigSavedCallback && isEeConfigSavedLine(line)) {
+    eeConfigSavedCallback();
+  }
+
   if (rewardScreenCloseCallback && REWARD_SCREEN_CLOSE_PATTERN.test(line)) {
     rewardScreenCloseCallback(stalenessMs);
   }
@@ -581,6 +594,7 @@ interface EeLogHandlers {
   onLoginComplete?: (() => void) | null;
   onRewardTrigger?: ((stalenessMs: number) => void) | null;
   onRewardUiReady?: (() => void) | null;
+  onEeConfigSaved?: (() => void) | null;
   onRewardScreenClose?: ((stalenessMs: number) => void) | null;
   onRelicSelectionOpen?: (() => void) | null;
   onRelicSelectionClose?: (() => void) | null;
@@ -607,6 +621,7 @@ const NULL_EE_LOG_HANDLERS: NormalizedEeLogHandlers = {
   onLoginComplete: null,
   onRewardTrigger: null,
   onRewardUiReady: null,
+  onEeConfigSaved: null,
   onRewardScreenClose: null,
   onRelicSelectionOpen: null,
   onRelicSelectionClose: null,
@@ -645,6 +660,7 @@ function normalizeHandlers(
     onLoginComplete: asFunction(handlers.onLoginComplete),
     onRewardTrigger: asFunction(handlers.onRewardTrigger),
     onRewardUiReady: asFunction(handlers.onRewardUiReady),
+    onEeConfigSaved: asFunction(handlers.onEeConfigSaved),
     onRewardScreenClose: asFunction(handlers.onRewardScreenClose),
     onRelicSelectionOpen: asFunction(handlers.onRelicSelectionOpen),
     onRelicSelectionClose: asFunction(handlers.onRelicSelectionClose),
@@ -682,6 +698,7 @@ export function startWatching(
   lastLoginCompleteAt = 0;
   rewardCallback = normalized.onRewardTrigger;
   rewardUiReadyCallback = normalized.onRewardUiReady;
+  eeConfigSavedCallback = normalized.onEeConfigSaved;
   rewardScreenCloseCallback = normalized.onRewardScreenClose;
   relicPickerCallback = normalized.onRelicSelectionOpen;
   relicPickerCloseCallback = normalized.onRelicSelectionClose;
@@ -767,6 +784,7 @@ export function stopWatching(): void {
   loginCompleteCallback = null;
   lastLoginCompleteAt = 0;
   rewardUiReadyCallback = null;
+  eeConfigSavedCallback = null;
   rewardScreenCloseCallback = null;
   relicPickerCallback = null;
   relicPickerCloseCallback = null;

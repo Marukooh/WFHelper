@@ -9,6 +9,7 @@ import { pendingRecipeCounts, withoutFoundryPending } from "../../config/shared/
 import { RELIC_REWARD_ITEMS, RELIC_REWARD_TRIGGER } from "../../config/shared/ipcChannels";
 import { normalizeWfmSlug } from "../../config/shared/wfm";
 import { REFERENCE_WARFRAME_UI_SCALE } from "../../config/runtime/overlaySettings";
+import { resolveWarframeUiScale } from "../../services/eeLogPath";
 import * as itemDatabase from "../../services/itemDatabase";
 import { computeMasteryProgress } from "../../services/masteryHelper";
 import { getWindowsOcrHealth } from "../../services/ocrServer";
@@ -412,8 +413,12 @@ export function createOverlayScanController(options: OverlayScanControllerOption
       let result: RewardScanResult | null | undefined;
       try {
         result = await rewardScanner.scanRewardsDetailed(null, {
+          // Read from EE.cfg each attempt so a mid-session slider change in the
+          // game applies immediately; the settings slider is the fallback and
+          // becomes authoritative when the user turns auto-detection off.
           warframeUiScale:
-            Number(ctx.overlaySettings.warframeUiScale) || REFERENCE_WARFRAME_UI_SCALE,
+            (ctx.overlaySettings.warframeUiScaleAuto !== false ? resolveWarframeUiScale() : null) ??
+            (Number(ctx.overlaySettings.warframeUiScale) || REFERENCE_WARFRAME_UI_SCALE),
         });
       } catch (err) {
         log.error(`[Trigger] scan attempt ${attempts} failed:`, normalizeErrorMessage(err));

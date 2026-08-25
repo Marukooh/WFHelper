@@ -275,6 +275,10 @@ export interface IpcInvokeMap {
     args: [];
     return: OverlaySettings;
   };
+  getDetectedWarframeUiScale: {
+    args: [];
+    return: number | null;
+  };
   setOverlaySettings: {
     args: [settings: Partial<OverlaySettings>];
     return: OverlaySettings;
@@ -535,6 +539,7 @@ export interface IpcEventMap {
   "world-state-fetch-error": string;
   "arbi-run-saved": ArbiRunRecord;
   "arbi-open-run": string;
+  "warframe-ui-scale-updated": number | null;
 }
 
 export interface IpcSendMap {

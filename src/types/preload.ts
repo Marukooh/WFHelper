@@ -91,6 +91,7 @@ export interface PreloadAPI {
     preference: IpcInvokeMap["setLinuxDisplay"]["args"][0],
   ) => Promise<IpcInvokeMap["setLinuxDisplay"]["return"]>;
   getOverlaySettings: () => Promise<IpcInvokeMap["getOverlaySettings"]["return"]>;
+  getDetectedWarframeUiScale: () => Promise<IpcInvokeMap["getDetectedWarframeUiScale"]["return"]>;
   setOverlaySettings: (
     settings: IpcInvokeMap["setOverlaySettings"]["args"][0],
   ) => Promise<IpcInvokeMap["setOverlaySettings"]["return"]>;
@@ -156,6 +157,9 @@ export interface PreloadAPI {
     id: IpcInvokeMap["showArbiRunLogInFolder"]["args"][0],
   ) => Promise<IpcInvokeMap["showArbiRunLogInFolder"]["return"]>;
   onArbiRunSaved: (callback: (run: IpcEventMap["arbi-run-saved"]) => void) => () => void;
+  onWarframeUiScaleUpdated: (
+    callback: (scale: IpcEventMap["warframe-ui-scale-updated"]) => void,
+  ) => () => void;
   onArbiOpenRun: (callback: (runId: IpcEventMap["arbi-open-run"]) => void) => () => void;
   getArbiSchedule: () => Promise<IpcInvokeMap["getArbiSchedule"]["return"]>;
   setArbiScheduleOccurrence: (

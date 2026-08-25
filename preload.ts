@@ -58,6 +58,8 @@ import {
   OVERLAY_PUSH_RELIC_FILTERS,
   OVERLAY_GET_SETTINGS,
   OVERLAY_SET_SETTINGS,
+  OVERLAY_GET_DETECTED_UI_SCALE,
+  WARFRAME_UI_SCALE_UPDATED,
   OPEN_EXTERNAL,
   LOG_WARN,
   RANKED_HOTSET_LOAD,
@@ -192,6 +194,7 @@ try {
     setLinuxDisplay: inv<"setLinuxDisplay">(LINUX_DISPLAY_SET),
     getOverlaySettings: inv<"getOverlaySettings">(OVERLAY_GET_SETTINGS),
     setOverlaySettings: inv<"setOverlaySettings">(OVERLAY_SET_SETTINGS),
+    getDetectedWarframeUiScale: inv<"getDetectedWarframeUiScale">(OVERLAY_GET_DETECTED_UI_SCALE),
 
     openExternal: (url) => ipcRenderer.send(OPEN_EXTERNAL, url),
     logWarn: (message, ...args) => ipcRenderer.send(LOG_WARN, message, ...args),
@@ -231,6 +234,10 @@ try {
     saveArbiRunImage: inv<"saveArbiRunImage">(ARBI_SAVE_IMAGE),
     showArbiRunLogInFolder: inv<"showArbiRunLogInFolder">(ARBI_SHOW_LOG_IN_FOLDER),
     onArbiRunSaved: ipcDataBridge<IpcEventMap["arbi-run-saved"]>(ipcRenderer, ARBI_RUN_SAVED),
+    onWarframeUiScaleUpdated: ipcDataBridge<IpcEventMap["warframe-ui-scale-updated"]>(
+      ipcRenderer,
+      WARFRAME_UI_SCALE_UPDATED,
+    ),
     onArbiOpenRun: ipcDataBridge<IpcEventMap["arbi-open-run"]>(ipcRenderer, ARBI_OPEN_RUN),
 
     getArbiSchedule: inv<"getArbiSchedule">(ARBI_SCHED_GET),

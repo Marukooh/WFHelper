@@ -97,3 +97,39 @@ export function resolveEeLogPath(): string | null {
   }
   return null;
 }
+
+/** The game's Scaleform UI settings persist in EE.cfg next to EE.log. */
+export function parseWarframeUiScaleFromEeCfg(text: string): number | null {
+  // The scale line only means what the slider shows while the mode is custom;
+  // otherwise the game ignores the stored value. Live EE.cfg dumps show
+  // DSM_CUSTOM; MSM_CUSTOM is accepted as a documented variant.
+  if (!/^\s*Flash\.FlashDrawScaleMode\s*=\s*[DM]SM_CUSTOM\s*$/m.test(text)) return null;
+  const matches = text.match(/^\s*Flash\.FlashDrawScale\s*=\s*([0-9.]+)\s*$/gm);
+  if (!matches || matches.length === 0) return null;
+  // Last occurrence wins when the key repeats.
+  const value = Number(matches[matches.length - 1].split("=")[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  // The in-game slider runs 50-100%; clamp anything outside like the manual setting does.
+  return Math.min(1, Math.max(0.5, Number(value.toFixed(2))));
+}
+
+let _lastLoggedUiScale: number | null | undefined;
+
+/** Interface scale read fresh from EE.cfg on every call, so mid-session
+ *  changes in the game's settings apply to the next scan. Null when the file
+ *  is missing, unreadable, or the slider was never moved off default. */
+export function resolveWarframeUiScale(): number | null {
+  const eeLogPath = resolveEeLogPath();
+  if (!eeLogPath) return null;
+  try {
+    const cfgPath = path.join(path.dirname(eeLogPath), "EE.cfg");
+    const scale = parseWarframeUiScaleFromEeCfg(fs.readFileSync(cfgPath, "utf8"));
+    if (scale !== _lastLoggedUiScale) {
+      _lastLoggedUiScale = scale;
+      log.info(`[EECfg] Warframe interface scale from EE.cfg: ${scale ?? "not set"}`);
+    }
+    return scale;
+  } catch {
+    return null;
+  }
+}

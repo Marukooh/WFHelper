@@ -15,6 +15,7 @@ import { writeFileAtomicSync } from "../services/atomicFile";
 import { userDataPath } from "../services/userDataPath";
 import { asRecord } from "./ipcValidators";
 import { withScope } from "../services/logger";
+import { resolveWarframeUiScale } from "../services/eeLogPath";
 import * as warframeStatus from "../services/warframeStatus";
 import * as rivenOverlayIpc from "./rivenOverlayIpc";
 import * as rewardOverlayIpc from "./rewardOverlayIpc";
@@ -40,6 +41,7 @@ import {
   OVERLAY_INTERACTION_MODE,
   OVERLAY_THEME_VARS,
   OVERLAY_GET_SETTINGS,
+  OVERLAY_GET_DETECTED_UI_SCALE,
   OVERLAY_GET_MESSAGES,
   OVERLAY_GET_THEME_VARS,
   OVERLAY_LOCALE_UPDATED,
@@ -355,6 +357,10 @@ function register(): void {
   // Settings & theme IPC (shared across all overlays)
   handleAuthorized(OVERLAY_GET_SETTINGS, assertMainRendererSender, async () => {
     return { ...ctx.overlaySettings };
+  });
+
+  handleAuthorized(OVERLAY_GET_DETECTED_UI_SCALE, assertMainRendererSender, async () => {
+    return resolveWarframeUiScale();
   });
 
   handleAuthorized(OVERLAY_GET_THEME_VARS, assertOverlayRendererSender, async () => {

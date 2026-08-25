@@ -83,6 +83,7 @@ export const RIVENS_DELETE_AUCTION = "delete-riven-auction";
 
 export const OVERLAY_GET_SETTINGS = "overlay:get-settings";
 export const OVERLAY_SET_SETTINGS = "overlay:set-settings";
+export const OVERLAY_GET_DETECTED_UI_SCALE = "overlay:get-detected-ui-scale";
 export const OVERLAY_GET_THEME_VARS = "overlay:get-theme-vars";
 export const OVERLAY_GET_MESSAGES = "overlay:get-messages";
 export const OVERLAY_GET_DRAG_HINT = "overlay:get-drag-hint";
@@ -140,6 +141,7 @@ export const ARBI_IMPORT_LOG = "arbi:import-log";
 export const ARBI_SAVE_IMAGE = "arbi:save-image";
 export const ARBI_SHOW_LOG_IN_FOLDER = "arbi:show-log-in-folder";
 export const ARBI_RUN_SAVED = "arbi-run-saved";
+export const WARFRAME_UI_SCALE_UPDATED = "warframe-ui-scale-updated";
 export const ARBI_OPEN_RUN = "arbi-open-run";
 
 export const ARBI_SUMMARY_DATA = "arbi-summary-data";

@@ -15,6 +15,10 @@ export const overlaySettings = writable<OverlaySettings>({
 
 export const overlaySettingsLoaded = writable<boolean>(false);
 
+/** Interface scale detected from EE.cfg; null when the manual slider applies.
+ *  Seeded by SettingsView and pushed by main whenever the game saves its config. */
+export const detectedWarframeUiScale = writable<number | null>(null);
+
 /** Apply a saved settings response to the stores. Call after ipc.setOverlaySettings / getOverlaySettings. */
 export function applyOverlaySettingsResponse(saved: OverlaySettings): void {
   overlaySettings.set({

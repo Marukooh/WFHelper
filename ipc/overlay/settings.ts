@@ -253,6 +253,7 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
         candidate.warframeUiScale,
         defaults.warframeUiScale,
       ),
+      warframeUiScaleAuto: booleanSetting("warframeUiScaleAuto"),
       uiScale: normalizeOverlayScale(candidate.uiScale, defaults.uiScale),
       overlayScale: normalizeOverlayScale(candidate.overlayScale, defaults.overlayScale),
       overlayWindowScales: normalizeWindowScales(candidate.overlayWindowScales),

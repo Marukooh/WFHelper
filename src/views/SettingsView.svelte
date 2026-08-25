@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { get } from "svelte/store";
   import {
     overlaySettings,
     overlaySettingsLoaded,
     OVERLAY_DEFAULTS,
     applyOverlaySettingsResponse,
+    detectedWarframeUiScale,
   } from "../stores/overlaySettings.js";
   import AppearanceCard from "../components/settings/AppearanceCard.svelte";
   import SettingsSection from "../components/settings/SettingsSection.svelte";
@@ -179,6 +180,7 @@
     "ocrDebugImagesEnabled",
     "blockThirdPartyInjection",
     "warframeUiScale",
+    "warframeUiScaleAuto",
     "hotkeyEnabled",
     "hotkey",
     "interactionHotkeyEnabled",
@@ -214,6 +216,19 @@
     windowScales = { ...(s.overlayWindowScales || {}) };
   }
 
+  // The detected value only drives the row while auto mode is on.
+  $: uiScaleDetected = form.warframeUiScaleAuto ? $detectedWarframeUiScale : null;
+
+  // Live updates arrive via the warframe-ui-scale-updated push whenever the
+  // game saves EE.cfg; this pull seeds the store and covers missed pushes.
+  async function refreshDetectedUiScale(): Promise<void> {
+    try {
+      detectedWarframeUiScale.set(await invoke("getDetectedWarframeUiScale"));
+    } catch {
+      detectedWarframeUiScale.set(null);
+    }
+  }
+
   onMount(async () => {
     if (!$overlaySettingsLoaded) {
       try {
@@ -225,8 +240,14 @@
       }
     }
     applyToForm($overlaySettings);
+    await refreshDetectedUiScale();
+    // The view stays mounted once visited; refresh on focus so alt-tabbing
+    // back from an in-game scale change shows the new value.
+    window.addEventListener("focus", refreshDetectedUiScale);
     await refreshInventorySource();
   });
+
+  onDestroy(() => window.removeEventListener("focus", refreshDetectedUiScale));
 
   let saveRevision = 0;
   let saveQueue: Promise<void> = Promise.resolve();
@@ -698,7 +719,20 @@
           </SettingsRow>
 
           <SettingsRow
+            label={$tr("settings.warframeUiScaleAutoToggle")}
+            dataSetting="warframe-ui-scale-auto"
+          >
+            <input
+              type="checkbox"
+              bind:checked={form.warframeUiScaleAuto}
+              on:change={autoSave}
+              class="accent-accent"
+            />
+          </SettingsRow>
+
+          <SettingsRow
             label={$tr("settings.warframeUiScale")}
+            hint={uiScaleDetected != null ? $tr("settings.warframeUiScaleAuto") : undefined}
             inputRow
             dataSetting="warframe-ui-scale"
           >
@@ -708,11 +742,17 @@
                 min="0.5"
                 max="1"
                 step="0.01"
-                bind:value={form.warframeUiScale}
-                on:change={autoSave}
+                value={uiScaleDetected ?? form.warframeUiScale}
+                disabled={uiScaleDetected != null}
+                on:change={(e) => {
+                  form.warframeUiScale = Number(e.currentTarget.value);
+                  autoSave();
+                }}
                 class="settings-range"
               />
-              <span class="settings-range-value">{Math.round(form.warframeUiScale * 100)}%</span>
+              <span class="settings-range-value"
+                >{Math.round((uiScaleDetected ?? form.warframeUiScale) * 100)}%</span
+              >
             </div>
           </SettingsRow>
 

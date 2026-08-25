@@ -10,6 +10,7 @@ import { currentView } from "../stores/app.js";
 import { inventoryModifiedAt, itemDb, parsedItems } from "../stores/data.js";
 import { masteryData } from "../stores/mastery.js";
 import { applyClosedWfmListing } from "../stores/market.js";
+import { detectedWarframeUiScale } from "../stores/overlaySettings.js";
 import { addToast } from "../stores/toasts.js";
 import { applyUpdateState } from "../stores/updates.js";
 
@@ -56,6 +57,10 @@ export function initRendererEvents(): () => void {
     }),
 
     on("app-update-status", (state) => applyUpdateState(state, true)),
+
+    // Fires when the game saves EE.cfg, so the Settings row tracks in-game
+    // interface scale changes live.
+    on("warframe-ui-scale-updated", (scale) => detectedWarframeUiScale.set(scale)),
 
     on("wfm:notification", (notification) => handleWfmNotification(notification, get(tr))),
 

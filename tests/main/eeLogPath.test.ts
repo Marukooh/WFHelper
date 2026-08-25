@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { parseSteamLibraryPaths, resolveEeLogPath } from "../../services/eeLogPath";
+import {
+  parseSteamLibraryPaths,
+  parseWarframeUiScaleFromEeCfg,
+  resolveEeLogPath,
+  resolveWarframeUiScale,
+} from "../../services/eeLogPath";
 
 const ORIGINAL_OVERRIDE = process.env.WFHELPER_EE_LOG;
 const ORIGINAL_LOCALAPPDATA = process.env.LOCALAPPDATA;
@@ -69,5 +76,97 @@ describe("resolveEeLogPath", () => {
     delete process.env.WFHELPER_EE_LOG;
     delete process.env.LOCALAPPDATA;
     expect(resolveEeLogPath()).toBeNull();
+  });
+});
+
+describe("parseWarframeUiScaleFromEeCfg", () => {
+  it("reads the scale when the mode is custom", () => {
+    const cfg =
+      "Graphics.Borderless=1\nFlash.FlashDrawScale=0.93\nFlash.FlashDrawScaleMode=DSM_CUSTOM\n";
+    expect(parseWarframeUiScaleFromEeCfg(cfg)).toBe(0.93);
+  });
+
+  it("returns null without the custom mode marker", () => {
+    expect(parseWarframeUiScaleFromEeCfg("Flash.FlashDrawScale=0.93\n")).toBeNull();
+    expect(
+      parseWarframeUiScaleFromEeCfg(
+        "Flash.FlashDrawScale=0.93\nFlash.FlashDrawScaleMode=DSM_DEFAULT\n",
+      ),
+    ).toBeNull();
+  });
+
+  it("accepts the MSM_CUSTOM mode variant", () => {
+    expect(
+      parseWarframeUiScaleFromEeCfg(
+        "Flash.FlashDrawScale=0.9\nFlash.FlashDrawScaleMode=MSM_CUSTOM\n",
+      ),
+    ).toBe(0.9);
+  });
+
+  it("returns null when the mode is custom but the value line is missing", () => {
+    expect(parseWarframeUiScaleFromEeCfg("Flash.FlashDrawScaleMode=DSM_CUSTOM\n")).toBeNull();
+  });
+
+  it("takes the last occurrence when the key repeats across sections", () => {
+    const cfg =
+      "Flash.FlashDrawScale=0.60\nFlash.FlashDrawScaleMode=DSM_CUSTOM\nFlash.FlashDrawScale=0.85\n";
+    expect(parseWarframeUiScaleFromEeCfg(cfg)).toBe(0.85);
+  });
+
+  it("clamps to the in-game slider range", () => {
+    expect(
+      parseWarframeUiScaleFromEeCfg(
+        "Flash.FlashDrawScaleMode=DSM_CUSTOM\nFlash.FlashDrawScale=0.2\n",
+      ),
+    ).toBe(0.5);
+    expect(
+      parseWarframeUiScaleFromEeCfg(
+        "Flash.FlashDrawScaleMode=DSM_CUSTOM\nFlash.FlashDrawScale=1.4\n",
+      ),
+    ).toBe(1);
+  });
+
+  it("rejects malformed values", () => {
+    expect(
+      parseWarframeUiScaleFromEeCfg(
+        "Flash.FlashDrawScaleMode=DSM_CUSTOM\nFlash.FlashDrawScale=abc\n",
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("isEeConfigSavedLine", () => {
+  it("matches the real save line and rejects other package saves", async () => {
+    const { isEeConfigSavedLine } = await import("../../services/eeLogMonitor");
+    expect(isEeConfigSavedLine("260.958 Sys [Info]: Saved package: /Configs/EE.cfg")).toBe(true);
+    expect(isEeConfigSavedLine("179.274 Sys [Info]: Saved package: /Configs/Editor.cfg")).toBe(
+      false,
+    );
+    expect(
+      isEeConfigSavedLine(
+        "260.946 Sys [Info]: Redirecting package save to: C:\\Users\\U\\AppData\\Local\\Warframe\\EE.cfg",
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("resolveWarframeUiScale", () => {
+  it("re-reads EE.cfg next to the resolved EE.log on every call", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wfh-eecfg-"));
+    try {
+      process.env.WFHELPER_EE_LOG = path.join(dir, "EE.log");
+      const cfgPath = path.join(dir, "EE.cfg");
+
+      expect(resolveWarframeUiScale()).toBeNull();
+
+      fs.writeFileSync(cfgPath, "Flash.FlashDrawScale=0.8\nFlash.FlashDrawScaleMode=DSM_CUSTOM\n");
+      expect(resolveWarframeUiScale()).toBe(0.8);
+
+      // A mid-session change in the game rewrites EE.cfg; the next scan must see it.
+      fs.writeFileSync(cfgPath, "Flash.FlashDrawScale=0.65\nFlash.FlashDrawScaleMode=DSM_CUSTOM\n");
+      expect(resolveWarframeUiScale()).toBe(0.65);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

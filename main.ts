@@ -47,6 +47,7 @@ if (DISPLAY_BACKEND === "x11") {
 }
 
 import { getLogFilePath, withScope } from "./services/logger";
+import { resolveWarframeUiScale } from "./services/eeLogPath";
 import { MAIN_WINDOW_CSP, PERMISSIONS_POLICY } from "./config/runtime/security";
 import * as windowSecurity from "./services/windowSecurity";
 
@@ -94,6 +95,7 @@ import {
   INVENTORY_UPDATED,
   ITEM_DB_UPDATED,
   ARBI_RUN_SAVED,
+  WARFRAME_UI_SCALE_UPDATED,
 } from "./config/shared/ipcChannels";
 import * as statsTracker from "./services/statsTracker";
 import * as arbiRunTracker from "./services/arbiRunTracker";
@@ -518,6 +520,12 @@ function initGameMonitoring(profileStage: ProfileStage): void {
     onLoginComplete: () => inventorySync.onGameLogin(),
     onRewardTrigger: (stalenessMs) => overlayIpc.onRelicRewardTrigger("eelog", stalenessMs),
     onRewardUiReady: () => rewardOverlayIpc.notifyRewardUiReady(),
+    onEeConfigSaved: () => {
+      const win = ctx.mainWindow;
+      if (win && !win.isDestroyed()) {
+        win.webContents.send(WARFRAME_UI_SCALE_UPDATED, resolveWarframeUiScale());
+      }
+    },
     onRewardScreenClose: (stalenessMs) => rewardOverlayIpc.notifyRewardScreenClosed(stalenessMs),
     onRelicSelectionOpen: () => overlayIpc.onRelicSelectionTrigger("eelog"),
     onRelicSelectionClose: () => overlayIpc.onRelicSelectionClose(),

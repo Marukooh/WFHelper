@@ -59,6 +59,8 @@ export interface OverlaySettings {
   blockThirdPartyInjection: boolean;
   /** Warframe's in-game interface scale, used to align reward OCR crops. */
   warframeUiScale: number;
+  /** Prefer the EE.cfg-detected scale; off makes the manual slider authoritative. */
+  warframeUiScaleAuto: boolean;
   /** Main-window zoom multiplier applied on top of the display-derived base. */
   uiScale: number;
   overlayScale: number;
@@ -114,6 +116,7 @@ export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   ocrDebugImagesEnabled: true,
   blockThirdPartyInjection: true,
   warframeUiScale: REFERENCE_WARFRAME_UI_SCALE,
+  warframeUiScaleAuto: true,
   uiScale: 1,
   overlayScale: 1,
   overlayWindowScales: Object.freeze({}),
