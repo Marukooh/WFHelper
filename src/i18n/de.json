@@ -376,6 +376,8 @@
   "settings.sidebarTabsDesc": "Blende Tabs aus, die du nicht nutzt. Inventar und Einstellungen bleiben immer.",
   "settings.sidebarTabsTitle": "Seitenleisten-Tabs",
   "settings.tabGeneral": "Allgemein",
+  "settings.supportersDesc": "Danke an alle, die WFHelper auf Patreon unterstützen.",
+  "settings.supportersTitle": "Unterstützer",
   "settings.trackArbiRuns": "Arbitration-Runs aufzeichnen (Log-Erfassung + Statistiken)",
   "settings.tradeDetectedOverlay": "Trade-erkannt-Overlay",
   "settings.tradeRepKeybind": "+1-Rep-Taste",

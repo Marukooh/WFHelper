@@ -1015,6 +1015,8 @@
   "settings.showFeatureTour": "Show feature tour",
   "settings.sidebarTabsDesc": "Hide tabs you don't use. Inventory and Settings always stay.",
   "settings.sidebarTabsTitle": "Sidebar tabs",
+  "settings.supportersDesc": "Thank you to everyone supporting WFHelper on Patreon.",
+  "settings.supportersTitle": "Supporters",
   "settings.tabGeneral": "General",
   "settings.trackArbiRuns": "Track arbitration runs (log capture + stats)",
   "settings.tradeDetectedOverlay": "Trade detected overlay",

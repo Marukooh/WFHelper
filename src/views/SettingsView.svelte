@@ -11,6 +11,7 @@
   import SettingsSection from "../components/settings/SettingsSection.svelte";
   import SettingsRow from "../components/settings/SettingsRow.svelte";
   import AboutCard from "../components/settings/AboutCard.svelte";
+  import SupportersCard from "../components/settings/SupportersCard.svelte";
   import ProtonLaunchOption from "../components/ProtonLaunchOption.svelte";
   import LinuxDisplayBackend from "../components/LinuxDisplayBackend.svelte";
   import SegmentedControl from "../components/SegmentedControl.svelte";
@@ -565,6 +566,8 @@
           <LinuxDisplayBackend />
         </SettingsSection>
       {/if}
+
+      <SupportersCard />
 
       <AboutCard />
     </div>
