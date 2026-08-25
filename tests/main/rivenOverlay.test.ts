@@ -31,6 +31,16 @@ describe("riven overlay startup", () => {
     );
     expect(sessionOpen).not.toContain("show: false");
   });
+
+  it("routes renderer-ready through the controller so first-load zoom applies", () => {
+    // Riven replays its own events, so without this call the controller's
+    // markRendererReady never runs and the zoom the navigation commit reset
+    // stays at 1.0 on displays with a non-1 base zoom.
+    const readyFn =
+      rivenOverlayIpcSource.match(/export function markRivenRendererReady\([\s\S]*?\n\}/)?.[0] ??
+      "";
+    expect(readyFn).toContain("entry.controller.markRendererReady(senderId)");
+  });
 });
 
 describe("RIVEN_PATTERNS", () => {

@@ -173,6 +173,78 @@ describe("overlay window type", () => {
   });
 });
 
+describe("first-load zoom", () => {
+  it("re-applies the display base zoom when the renderer signals ready", () => {
+    // Short edge 720 puts the base zoom at 0.8, so a pristine 1.0 is visible.
+    const display = {
+      id: 1,
+      workArea: { x: 0, y: 0, width: 1280, height: 720 },
+    };
+
+    class FakeZoomWindow {
+      webContents = {
+        id: 1,
+        on: vi.fn(),
+        once: vi.fn(),
+        send: vi.fn(),
+        setZoomFactor: vi.fn(),
+        isLoadingMainFrame: () => false,
+        isCrashed: () => false,
+      };
+
+      showInactive() {}
+      loadFile() {
+        return Promise.resolve();
+      }
+      on() {}
+      setBounds() {}
+      setAspectRatio() {}
+      getBounds() {
+        return { x: 0, y: 0, width: 336, height: 512 };
+      }
+      isDestroyed() {
+        return false;
+      }
+      isVisible() {
+        return false;
+      }
+    }
+
+    const ctx = {
+      overlayWindow: null,
+      overlaySettings: {} as OverlaySettings,
+      overlayInteractiveMode: false,
+    };
+    const controller = createOverlayWindowsController({
+      app: { getAppPath: () => "D:\\app" } as unknown as typeof import("electron").app,
+      BrowserWindow: FakeZoomWindow as unknown as typeof import("electron").BrowserWindow,
+      screen: {
+        getPrimaryDisplay: () => display,
+        getAllDisplays: () => [display],
+        getCursorScreenPoint: () => ({ x: 640, y: 360 }),
+        getDisplayNearestPoint: () => display,
+        getDisplayMatching: () => display,
+      } as unknown as typeof import("electron").screen,
+      ctx,
+      log: { warn: () => {} },
+      hardenBrowserWindowNavigation: () => {},
+      overlayWindowFile: "D:\\app\\renderer\\riven-overlay.html",
+      windowWidth: 420,
+      windowHeight: 640,
+      platform: "win32",
+    });
+
+    controller.createOverlayWindow({ show: false });
+    const win = ctx.overlayWindow as unknown as FakeZoomWindow;
+    // The zoom set while loadFile is in flight is reset by the navigation commit.
+    win.webContents.setZoomFactor.mockClear();
+
+    controller.markRendererReady(1);
+
+    expect(win.webContents.setZoomFactor).toHaveBeenCalledWith(0.8);
+  });
+});
+
 function createPresentationProbe(options: {
   platform: typeof process.platform;
   nativeWayland: boolean;

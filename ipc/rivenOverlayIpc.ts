@@ -146,13 +146,16 @@ function sendToRivenWindows(channel: string, ...args: unknown[]): void {
 }
 
 export function markRivenRendererReady(senderId: number): boolean {
-  const window = getRivenWindows().find(
-    (candidate) => candidate && !candidate.isDestroyed() && candidate.webContents.id === senderId,
+  const entry = rivenWindowEntries().find(
+    ({ win }) => win !== null && !win.isDestroyed() && win.webContents.id === senderId,
   );
-  if (!window) return false;
+  if (!entry || !entry.win) return false;
+  // The controller re-applies the zoom the navigation commit reset; only
+  // displays with a base zoom other than 1 ever rendered the difference.
+  entry.controller.markRendererReady(senderId);
   if (readyRivenRenderers.has(senderId)) return true;
   readyRivenRenderers.add(senderId);
-  for (const [channel, args] of rivenLastEvents) window.webContents.send(channel, ...args);
+  for (const [channel, args] of rivenLastEvents) entry.win.webContents.send(channel, ...args);
   return true;
 }
 
