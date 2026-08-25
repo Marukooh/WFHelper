@@ -285,15 +285,22 @@ export async function fetchBackendMetaBySlug(
 
 export async function fetchBackendOrderSummaryBySlug(
   slug: string,
-  options?: { rank?: number | null },
+  options?: { rank?: number | null; subtype?: string | null },
 ): Promise<BackendFetchResult<BackendOrderSummaryPayload>> {
   const normalizedSlug = normalizeWfmSlug(slug);
   if (!normalizedSlug) return { status: "not_found" };
 
   const rankRaw = toFiniteNumber(options?.rank ?? null);
   const rank = rankRaw != null && rankRaw >= 0 ? Math.floor(rankRaw) : null;
-  const path =
-    rank != null
+  const subtype =
+    typeof options?.subtype === "string" && options.subtype.trim()
+      ? options.subtype.trim().toLowerCase()
+      : null;
+  // The worker treats subtype and rank as different validation paths; a relic
+  // request never carries a rank.
+  const path = subtype
+    ? `/v1/order-summary/${encodeURIComponent(normalizedSlug)}?subtype=${encodeURIComponent(subtype)}`
+    : rank != null
       ? `/v1/order-summary/${encodeURIComponent(normalizedSlug)}?rank=${encodeURIComponent(String(rank))}`
       : `/v1/order-summary/${encodeURIComponent(normalizedSlug)}`;
 

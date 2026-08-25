@@ -63,14 +63,19 @@ export function resetOrderSummaryDebugState(): void {
 
 export async function fetchOrderSummaryBySlug(
   slugInput: string | null | undefined,
-  options?: { rank?: number | null },
+  options?: { rank?: number | null; subtype?: string | null },
 ): Promise<BackendFetchResult<BackendOrderSummaryPayload>> {
   const slug = normalizeWfmSlug(slugInput);
   if (!slug) return { status: "not_found" };
 
   bumpCounter("requests");
   const rank = normalizeRankFilter(options?.rank ?? null);
-  const requestKey = rendererOrderBookCacheKey(slug, rank);
+  const subtype =
+    typeof options?.subtype === "string" && options.subtype.trim()
+      ? options.subtype.trim().toLowerCase()
+      : null;
+  const baseKey = rendererOrderBookCacheKey(slug, rank);
+  const requestKey = subtype ? `${baseKey}:st-${subtype}` : baseKey;
 
   const inFlight = inFlightByKey.get(requestKey);
   if (inFlight) return inFlight;
@@ -84,7 +89,7 @@ export async function fetchOrderSummaryBySlug(
   return inFlightByKey.run(requestKey, async () => {
     await fetchLimiter.acquire();
     try {
-      const result = await fetchBackendOrderSummaryBySlug(slug, { rank });
+      const result = await fetchBackendOrderSummaryBySlug(slug, { rank, subtype });
       if (result.status === "ok") {
         breaker.noteSuccess();
         bumpCounter("backendHitOk");

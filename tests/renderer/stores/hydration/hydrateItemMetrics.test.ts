@@ -162,6 +162,83 @@ describe("hydrateItemMetrics", () => {
     });
   });
 
+  it("prices relic rows from the subtype order summary, not the price route", async () => {
+    vi.clearAllMocks();
+    const { hydrateItemMetrics } =
+      await import("../../../../src/stores/hydration/hydrateItemMetrics.js");
+    let patched: ItemMetrics | null = null;
+    const needs: MetricNeeds = { price: true, ducats: false, orders: false, network: true };
+
+    fetchOrderSummaryBySlugMock.mockResolvedValue({
+      status: "ok",
+      data: { slug: "axi_a1_relic", rank: null, wts: 25, wtb: 10, timestamp: Date.now() },
+    });
+
+    const relic: InventoryBaseItem = {
+      ...makeItem(),
+      name: "Axi A1 Relic (Radiant)",
+      internalName: "/Lotus/Types/Game/Projections/T4VoidProjectionEPlatinum",
+      inventoryGroup: "relics",
+      category: "relics",
+      categoryLabel: "Relic",
+      rank: 0,
+      maxRank: 0,
+      marketSlug: "axi_a1_relic",
+      subtype: "radiant",
+    };
+
+    await hydrateItemMetrics(
+      makeContext((metric) => {
+        patched = metric;
+      }),
+      relic,
+      {},
+      needs,
+    );
+
+    expect(fetchOrderSummaryBySlugMock).toHaveBeenCalledWith(
+      "axi_a1_relic",
+      expect.objectContaining({ subtype: "radiant" }),
+    );
+    expect(fetchPriceBySlugMock).not.toHaveBeenCalled();
+    expect(fetchPriceByNameMock).not.toHaveBeenCalled();
+    expect(patched).toMatchObject({ platinum: 25, hasPrice: true });
+  });
+
+  it("stamps a relic row priced with no listings instead of refetching forever", async () => {
+    vi.clearAllMocks();
+    const { hydrateItemMetrics } =
+      await import("../../../../src/stores/hydration/hydrateItemMetrics.js");
+    let patched: ItemMetrics | null = null;
+    const needs: MetricNeeds = { price: true, ducats: false, orders: false, network: true };
+
+    fetchOrderSummaryBySlugMock.mockResolvedValue({ status: "not_found" });
+
+    const setCooldown = vi.fn();
+    const context = makeContext((metric) => {
+      patched = metric;
+    });
+    context.setPriceRetryCooldown = setCooldown;
+
+    const relic: InventoryBaseItem = {
+      ...makeItem(),
+      name: "Axi A1 Relic (Intact)",
+      internalName: "/Lotus/Types/Game/Projections/T4VoidProjectionEBronze",
+      inventoryGroup: "relics",
+      category: "relics",
+      categoryLabel: "Relic",
+      rank: 0,
+      maxRank: 0,
+      marketSlug: "axi_a1_relic",
+      subtype: "intact",
+    };
+
+    await hydrateItemMetrics(context, relic, {}, needs);
+
+    expect(patched).toMatchObject({ platinum: null, hasPrice: true });
+    expect(setCooldown).toHaveBeenCalled();
+  });
+
   it("replaces a stale metric slug with the item's current marketSlug", async () => {
     vi.clearAllMocks();
     const { hydrateItemMetrics } =

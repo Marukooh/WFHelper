@@ -204,8 +204,39 @@ export async function hydrateItemMetrics(
       }
     }
 
+    // Relics are priced per refinement: the plain price route knows no
+    // subtypes, so relic rows read the subtype order summary and skip the
+    // generic price fetch entirely.
+    const relicSubtype = item.inventoryGroup === "relics" ? (item.subtype ?? null) : null;
+    if (relicSubtype && needs.price && allowNetworkFetch && platinum == null) {
+      const relicSlug = normalizeWfmSlug(slug || item.marketSlug);
+      if (relicSlug) {
+        const summary = await fetchOrderSummaryBySlug(relicSlug, { subtype: relicSubtype });
+        if (summary.status === "ok") {
+          const best = summary.data.wts ?? summary.data.wtb;
+          platinum = best;
+          hasPrice = true;
+          if (best == null) {
+            ctx.setPriceRetryCooldown(retryKey, PRICE_NO_DATA_RETRY_MS);
+          } else {
+            ctx.clearPriceRetryCooldown(retryKey);
+          }
+        } else if (summary.status === "not_found") {
+          hasPrice = true;
+          ctx.setPriceRetryCooldown(retryKey, PRICE_NO_DATA_RETRY_MS);
+        } else {
+          ctx.setPriceRetryCooldown(retryKey, PRICE_TRANSIENT_RETRY_MS);
+        }
+      } else {
+        hasPrice = true;
+      }
+    }
+
     const needsPriceFetch =
-      allowNetworkFetch && needs.price && (!hasPrice || platinum == null || rankMismatch);
+      allowNetworkFetch &&
+      needs.price &&
+      relicSubtype == null &&
+      (!hasPrice || platinum == null || rankMismatch);
     if (needsPriceFetch) {
       let priceResult: Awaited<ReturnType<typeof fetchPriceByName>> = null;
       let bySlugStatus: Awaited<ReturnType<typeof fetchPriceBySlug>>["status"] | null = null;
