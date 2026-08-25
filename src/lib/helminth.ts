@@ -21,18 +21,26 @@ export function isSubsumableFrame(name: string): boolean {
   return !/\s(prime|umbra|dex)$/.test(baseFrameName(name));
 }
 
-/** Families the player has fed to the Helminth (InfestedFoundry.ConsumedSuits). */
-export function buildSubsumedFamilySet(inventoryData: unknown, itemDb: ItemDbLookup): Set<string> {
-  const set = new Set<string>();
+/** uniqueNames fed to the Helminth; DE writes the suit under `s` or `ItemType`. */
+export function consumedSuitUniqueNames(inventoryData: unknown): string[] {
   const consumed = (
     inventoryData as {
       InfestedFoundry?: { ConsumedSuits?: Array<{ s?: string; ItemType?: string }> };
     } | null
   )?.InfestedFoundry?.ConsumedSuits;
-  if (!Array.isArray(consumed)) return set;
+  if (!Array.isArray(consumed)) return [];
+  const out: string[] = [];
   for (const entry of consumed) {
     const un = typeof entry?.s === "string" ? entry.s : entry?.ItemType || "";
-    if (!un) continue;
+    if (un) out.push(un);
+  }
+  return out;
+}
+
+/** Families the player has fed to the Helminth (InfestedFoundry.ConsumedSuits). */
+export function buildSubsumedFamilySet(inventoryData: unknown, itemDb: ItemDbLookup): Set<string> {
+  const set = new Set<string>();
+  for (const un of consumedSuitUniqueNames(inventoryData)) {
     const name = itemDb[un]?.name || un.split("/").pop() || "";
     if (name) set.add(familyName(String(name)));
   }

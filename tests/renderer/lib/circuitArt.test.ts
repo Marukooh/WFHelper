@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveCircuitChoices, resolveVendorItems } from "../../../src/lib/world.js";
+import {
+  buildFeaturedPrimes,
+  circuitChoices,
+  resolveCircuitChoices,
+  resolveVendorItems,
+} from "../../../src/lib/world.js";
 import type { ItemDbEntry } from "../../../src/types/inventory.js";
 
 const TORID = "/Lotus/Weapons/Tenno/LongGuns/Torid";
 const ADAPTER = "/Lotus/Types/Items/MiscItems/IncarnonAdapters/Primary/ToridIncarnonUnlocker";
 const EXCALIBUR = "/Lotus/Powersuits/Excalibur/Excalibur";
+const ASH = "/Lotus/Powersuits/Ninja/Ninja";
+const ASH_PRIME = "/Lotus/Powersuits/Ninja/NinjaPrime";
 
 const DB: Record<string, ItemDbEntry> = {
   [TORID]: { name: "Torid", imageUrl: "torid-base.png", category: "Primary" },
@@ -19,6 +26,8 @@ const DB: Record<string, ItemDbEntry> = {
     imageUrl: "torid-incarnon-bp.png",
   },
   [EXCALIBUR]: { name: "Excalibur", imageUrl: "excalibur.png", category: "Warframe" },
+  [ASH]: { name: "Ash", imageUrl: "ash.png", category: "Warframe" },
+  [ASH_PRIME]: { name: "Ash Prime", imageUrl: "ash-prime.png", category: "Warframe" },
 };
 
 describe("circuit choice art", () => {
@@ -99,5 +108,80 @@ describe("subsumed circuit frames", () => {
 
     expect(frame.owned).toBe(true);
     expect(frame.subsumed).toBe(true);
+  });
+
+  // DE writes the consumed suit under ItemType as well as `s`, and the path only
+  // names the frame ("Ninja" for Ash), so the flag has to survive both.
+  it("reads a consumed suit written as ItemType", () => {
+    const [frame] = resolveVendorItems([ASH], DB, {
+      InfestedFoundry: { ConsumedSuits: [{ ItemType: ASH }] },
+    });
+
+    expect(frame.subsumed).toBe(true);
+  });
+
+  it("leaves a Prime unflagged when only its base frame was fed", () => {
+    const [frame] = resolveVendorItems([ASH_PRIME], DB, {
+      InfestedFoundry: { ConsumedSuits: [{ s: ASH }] },
+    });
+
+    expect(frame.subsumed).toBeUndefined();
+    expect(frame.owned).toBe(false);
+  });
+
+  it("flags the Prime that was itself fed", () => {
+    const [frame] = resolveVendorItems([ASH_PRIME], DB, {
+      InfestedFoundry: { ConsumedSuits: [{ s: ASH_PRIME }] },
+    });
+
+    expect(frame.subsumed).toBe(true);
+    expect(frame.owned).toBe(true);
+  });
+});
+
+describe("Prime Resurgence strip", () => {
+  const varzia = { inventory: [{ uniqueName: ASH_PRIME, item: "Ash Prime" }] };
+
+  it("marks a subsumed frame like the circuit and vendor strips", () => {
+    const [prime] = buildFeaturedPrimes(
+      varzia,
+      { InfestedFoundry: { ConsumedSuits: [{ s: ASH_PRIME }] } },
+      DB,
+    );
+
+    expect(prime.subsumed).toBe(true);
+    expect(prime.owned).toBe(true);
+  });
+
+  it("leaves an unfed Prime alone", () => {
+    const [prime] = buildFeaturedPrimes(
+      varzia,
+      { InfestedFoundry: { ConsumedSuits: [{ s: ASH }] } },
+      DB,
+    );
+
+    expect(prime.subsumed).toBeUndefined();
+    expect(prime.owned).toBe(false);
+  });
+});
+
+describe("circuit choice extraction", () => {
+  const wd = {
+    duviriCycle: {
+      choices: [
+        { category: "normal", choices: ["Excalibur"] },
+        { category: "hard", choices: ["Torid"] },
+      ],
+    },
+  };
+
+  it("picks the requested category", () => {
+    expect(circuitChoices(wd as never, "normal")).toEqual(["Excalibur"]);
+    expect(circuitChoices(wd as never, "hard")).toEqual(["Torid"]);
+  });
+
+  it("reads a missing group as no data", () => {
+    expect(circuitChoices(null, "normal")).toEqual([]);
+    expect(circuitChoices(wd as never, "nope")).toEqual([]);
   });
 });

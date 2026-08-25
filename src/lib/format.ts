@@ -1,4 +1,7 @@
-﻿export function parseIsoDate(value: string | null | undefined): Date | null {
+﻿export const DAY_MS = 86_400_000;
+export const WEEK_MS = 7 * DAY_MS;
+
+export function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
@@ -72,6 +75,17 @@ export function formatTimeRemaining(endDate: Date, nowMs: number = Date.now()): 
 
 export function formatBuildTime(seconds: number): string {
   return formatDurationMs(seconds * 1000, "buildCompact");
+}
+
+/** True only inside a fully dated window; an unparseable bound reads as closed. */
+export function activeWindow(
+  activationIso: string | null | undefined,
+  expiryIso: string | null | undefined,
+  clock: number,
+): boolean {
+  const activation = parseIsoDate(activationIso ?? null);
+  const expiry = parseIsoDate(expiryIso ?? null);
+  return !!(activation && expiry && clock >= +activation && clock < +expiry);
 }
 
 export function nextDailyResetUtc(now: Date = new Date()): Date {

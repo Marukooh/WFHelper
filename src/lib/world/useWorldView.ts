@@ -180,16 +180,6 @@ function isUrgent(
   return remainMs / totalMs < URGENCY_RATIO;
 }
 
-export function activeWindow(
-  activationIso: string | null | undefined,
-  expiryIso: string | null | undefined,
-  clock: number,
-): boolean {
-  const activation = parseIsoDate(activationIso ?? null);
-  const expiry = parseIsoDate(expiryIso ?? null);
-  return !!(activation && expiry && clock >= +activation && clock < +expiry);
-}
-
 export function buildWorldTimes({
   baro,
   baroActive,

@@ -1,6 +1,8 @@
+import { activeWindow, WEEK_MS } from "../format.js";
 import type { MessageKey, Translator } from "../i18n.js";
 import type { ArchonHunt, CalendarDay, Sortie, WorldState } from "../../types/world.js";
-import { fourDayResetIso, type TrackerExpiries } from "./dailies.js";
+import { circuitChoices } from "../world.js";
+import { FOUR_DAY_ANCHORS, FOUR_DAY_MS, fourDayResetIso, type TrackerExpiries } from "./dailies.js";
 
 interface TrackerLive {
   /** One-line subtitle under the task label. */
@@ -23,9 +25,9 @@ export const TENET_MELEE_STOCK = [
 ];
 
 /** Eleanor alternates two fixed batches; A occupies the second half of the
- *  8-day loop from the wiki anchor (2025-03-18T00:00Z). */
-const CODA_LOOP_ANCHOR_MS = Date.UTC(2025, 2, 18);
-const CODA_HALF_MS = 4 * 24 * 60 * 60_000;
+ *  8-day loop, so both halves ride the countdown anchor in `dailies.ts`. */
+const CODA_LOOP_ANCHOR_MS = FOUR_DAY_ANCHORS.coda;
+const CODA_HALF_MS = FOUR_DAY_MS;
 const CODA_BATCH_A = [
   "Coda Hema",
   "Coda Sporothrix",
@@ -55,7 +57,6 @@ export function codaBatch(nowMs: number): { batch: "A" | "B"; weapons: string[] 
 
 /** Bird 3's weekly Archon Shard color; wiki formula anchored 2022-09-12T00:00Z. */
 const BIRD3_ANCHOR_MS = Date.UTC(2022, 8, 12);
-const WEEK_MS = 7 * 24 * 60 * 60_000;
 const BIRD3_SHARDS = ["Azure", "Amber", "Crimson"];
 /** Shard names are item names, so the plain colour is spelled out beside them. */
 const SHARD_PLAIN_KEYS: Record<string, MessageKey> = {
@@ -88,18 +89,6 @@ function upcomingCalendarDays(days: CalendarDay[], nowMs: number): CalendarDay[]
   return (upcoming.length > 0 ? upcoming : days).slice(0, CALENDAR_DAY_CAP);
 }
 
-function isActive(activation?: string, expiry?: string, nowMs = Date.now()): boolean {
-  const start = activation ? Date.parse(activation) : NaN;
-  const end = expiry ? Date.parse(expiry) : NaN;
-  if (Number.isNaN(start) || Number.isNaN(end)) return false;
-  return nowMs >= start && nowMs < end;
-}
-
-function circuitChoices(wd: WorldState | null, category: string): string[] {
-  const set = (wd?.duviriCycle?.choices ?? []).find((entry) => entry.category === category);
-  return set?.choices ?? [];
-}
-
 export function trackerExpiries(wd: WorldState | null): TrackerExpiries {
   return {
     sortie: wd?.sortie?.expiry ?? null,
@@ -122,7 +111,6 @@ export function trackerLive(
   nowMs: number,
 ): TrackerLive {
   // The 4-day vendor grids come from the clock, so they tick without world data.
-  // Their stock renders as an icon strip, so no text lines here.
   if (id === "tenetMelee") {
     return { expiry: fourDayResetIso("tenet", new Date(nowMs)) };
   }
@@ -189,7 +177,7 @@ export function trackerLive(
     case "baro": {
       const baro = wd.voidTrader;
       if (!baro) return {};
-      const here = isActive(baro.activation, baro.expiry, nowMs);
+      const here = activeWindow(baro.activation, baro.expiry, nowMs);
       const location = baro.location ?? "";
       const where = location
         ? t(here ? "dailies.baroHere" : "dailies.baroAway", { location })
@@ -205,7 +193,7 @@ export function trackerLive(
     case "varzia": {
       const varzia = wd.vaultTrader;
       if (!varzia) return {};
-      const here = isActive(varzia.activation, varzia.expiry, nowMs);
+      const here = activeWindow(varzia.activation, varzia.expiry, nowMs);
       const offers = varzia.inventory?.length ?? 0;
       return {
         detail: here && offers > 0 ? t("dailies.itemCount", { count: String(offers) }) : undefined,

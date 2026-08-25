@@ -1,6 +1,12 @@
 import type { ItemDbEntry, RawInventoryData } from "../types/inventory.js";
-import type { VaultTrader, VaultTraderInventoryItem } from "../types/world.js";
+import type { VaultTrader, VaultTraderInventoryItem, WorldState } from "../types/world.js";
 import { PLANET_ICON_URLS } from "./assetUrls.js";
+import {
+  buildSubsumedFamilySet,
+  consumedSuitUniqueNames,
+  isFrameSubsumed,
+  isSubsumableFrame,
+} from "./helminth.js";
 import { RELIC_ICON_PATHS, fissureTierClass } from "./relic/relicConstants.js";
 
 export { RELIC_ICON_PATHS, fissureTierClass };
@@ -78,6 +84,8 @@ interface FeaturedPrime {
   displayName?: string;
   imageUrl: string;
   owned: boolean;
+  /** Fed to the Helminth. Refines `owned`, never replaces it. */
+  subsumed?: boolean;
   uniqueName: string;
 }
 
@@ -147,6 +155,7 @@ export function buildFeaturedPrimes(
 ): FeaturedPrime[] {
   if (!varzia || !itemDb) return [];
 
+  const subsumedSets = buildSubsumedSets(itemDb, inventoryData);
   const ownedUnique = new Set<string>();
   const ownedNames = new Set<string>();
   if (inventoryData) {
@@ -167,11 +176,13 @@ export function buildFeaturedPrimes(
     const key = db.name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
+    const subsumed = isSubsumedFrame(db, inv.uniqueName || "", subsumedSets);
     featured.push({
       name: db.name,
       ...(db.displayName ? { displayName: db.displayName } : {}),
       imageUrl: db.imageUrl,
-      owned: ownedUnique.has(inv.uniqueName || "") || ownedNames.has(key),
+      owned: ownedUnique.has(inv.uniqueName || "") || ownedNames.has(key) || subsumed,
+      ...(subsumed ? { subsumed: true } : {}),
       uniqueName: inv.uniqueName || "",
     });
     if (featured.length >= 9) break;
@@ -213,11 +224,16 @@ export function buildFeaturedPrimes(
         const key = entry.name.toLowerCase();
         if (seen.has(key)) continue;
         seen.add(key);
+        const subsumed = isSubsumedFrame(entry, entry.uniqueName, subsumedSets);
         featured.push({
           name: entry.name,
           ...(entry.displayName ? { displayName: entry.displayName } : {}),
           imageUrl: entry.imageUrl,
-          owned: (entry.uniqueName && ownedUnique.has(entry.uniqueName)) || ownedNames.has(key),
+          owned:
+            (entry.uniqueName && ownedUnique.has(entry.uniqueName)) ||
+            ownedNames.has(key) ||
+            subsumed,
+          ...(subsumed ? { subsumed: true } : {}),
           uniqueName: entry.uniqueName || "",
         });
         if (featured.length >= 9) break;
@@ -253,6 +269,12 @@ export const CIRCUIT_NORMAL_ROTATION: string[][] = [
   ["Gara", "Khora", "Revenant"],
   ["Garuda", "Baruuk", "Hildryn"],
 ];
+
+/** Live circuit picks for one category ("normal" or "hard"); the world state
+ *  groups them, and a missing group reads as no data rather than an error. */
+export function circuitChoices(wd: WorldState | null | undefined, category: string): string[] {
+  return (wd?.duviriCycle?.choices ?? []).find((set) => set.category === category)?.choices ?? [];
+}
 
 const INCARNON_SUFFIX = " incarnon genesis";
 
@@ -317,33 +339,53 @@ export function resolveCircuitRotation(
   return weeks.map(resolve);
 }
 
-function buildOwnedSets(inventoryData: RawInventoryData | null): {
+const WARFRAME_CATS = new Set(["warframe", "warframes", "suits"]);
+
+function entryCategory(entry: ItemDbEntry): string {
+  return (entry.category || entry.productCategory || "").toLowerCase();
+}
+
+interface SubsumedSets {
+  uniqueNames: Set<string>;
+  families: Set<string>;
+}
+
+function buildSubsumedSets(
+  itemDb: Record<string, ItemDbEntry>,
+  inventoryData: RawInventoryData | null,
+): SubsumedSets {
+  return {
+    uniqueNames: new Set(consumedSuitUniqueNames(inventoryData)),
+    families: buildSubsumedFamilySet(inventoryData, itemDb),
+  };
+}
+
+/** The suit that was actually fed always flags. Family matching then catches the
+ *  same frame under another uniqueName, but never a Prime, whose base being fed
+ *  says nothing about the Prime itself. */
+function isSubsumedFrame(entry: ItemDbEntry, uniqueName: string, sets: SubsumedSets): boolean {
+  if (!WARFRAME_CATS.has(entryCategory(entry))) return false;
+  if (sets.uniqueNames.has(uniqueName)) return true;
+  const name = entry.name || "";
+  return isSubsumableFrame(name) && isFrameSubsumed(name, sets.families);
+}
+
+interface OwnedSets {
   ownedSuits: Set<string>;
   ownedWeapons: Set<string>;
-  subsumedSuits: Set<string>;
-} {
+  subsumed: SubsumedSets;
+}
+
+function buildOwnedSets(
+  itemDb: Record<string, ItemDbEntry>,
+  inventoryData: RawInventoryData | null,
+): OwnedSets {
   const ownedSuits = new Set<string>();
   const ownedWeapons = new Set<string>();
-  const subsumedSuits = new Set<string>();
   if (inventoryData) {
-    // Warframes currently in inventory
     for (const suit of (inventoryData.Suits || []) as Array<{ ItemType?: string }>) {
       if (suit.ItemType) ownedSuits.add(suit.ItemType);
     }
-    // Warframes subsumed to Helminth (no longer in Suits but still "owned")
-    const consumedSuits = (
-      (inventoryData as Record<string, unknown>).InfestedFoundry as
-        | { ConsumedSuits?: Array<{ s?: string }> }
-        | undefined
-    )?.ConsumedSuits;
-    if (Array.isArray(consumedSuits)) {
-      for (const entry of consumedSuits) {
-        if (!entry.s) continue;
-        ownedSuits.add(entry.s);
-        subsumedSuits.add(entry.s);
-      }
-    }
-    // Weapons
     const weaponKeys: Array<keyof RawInventoryData> = ["LongGuns", "Pistols", "Melee"];
     for (const k of weaponKeys) {
       for (const wpn of (inventoryData[k] || []) as Array<{ ItemType?: string }>) {
@@ -351,10 +393,31 @@ function buildOwnedSets(inventoryData: RawInventoryData | null): {
       }
     }
   }
-  return { ownedSuits, ownedWeapons, subsumedSuits };
+  return { ownedSuits, ownedWeapons, subsumed: buildSubsumedSets(itemDb, inventoryData) };
 }
 
-const VENDOR_WARFRAME_CATS = new Set(["warframe", "warframes", "suits"]);
+interface ResolvedEntry extends ItemDbEntry {
+  uniqueName: string;
+  name: string;
+  imageUrl: string;
+}
+
+/** A frame fed to the Helminth left Suits but is still owned, so subsumption
+ *  refines `owned` instead of replacing it; weapons use their own collections. */
+function toCircuitChoice(entry: ResolvedEntry, sets: OwnedSets): CircuitChoice {
+  const subsumed = isSubsumedFrame(entry, entry.uniqueName, sets.subsumed);
+  const owned = WARFRAME_CATS.has(entryCategory(entry))
+    ? sets.ownedSuits.has(entry.uniqueName) || subsumed
+    : sets.ownedWeapons.has(entry.uniqueName);
+  return {
+    name: entry.name,
+    ...(entry.displayName ? { displayName: entry.displayName } : {}),
+    imageUrl: entry.imageUrl,
+    owned,
+    ...(subsumed ? { subsumed: true } : {}),
+    uniqueName: entry.uniqueName,
+  };
+}
 
 /** Vendor stock arrives as uniqueNames; entries the item DB cannot picture are
  *  dropped rather than rendered as empty tiles (bundles, decorations). */
@@ -364,22 +427,14 @@ export function resolveVendorItems(
   inventoryData: RawInventoryData | null,
 ): CircuitChoice[] {
   if (!uniqueNames.length || !itemDb) return [];
-  const { ownedSuits, ownedWeapons, subsumedSuits } = buildOwnedSets(inventoryData);
+  const sets = buildOwnedSets(itemDb, inventoryData);
   const resolved: CircuitChoice[] = [];
   for (const uniqueName of uniqueNames) {
     const entry = itemDb[uniqueName];
     if (!entry?.name || !entry.imageUrl) continue;
-    const category = (entry.category || entry.productCategory || "").toLowerCase();
-    const isFrame = VENDOR_WARFRAME_CATS.has(category);
-    const owned = isFrame ? ownedSuits.has(uniqueName) : ownedWeapons.has(uniqueName);
-    resolved.push({
-      name: entry.name,
-      ...(entry.displayName ? { displayName: entry.displayName } : {}),
-      imageUrl: entry.imageUrl,
-      owned,
-      ...(isFrame && subsumedSuits.has(uniqueName) ? { subsumed: true } : {}),
-      uniqueName,
-    });
+    resolved.push(
+      toCircuitChoice({ ...entry, uniqueName, name: entry.name, imageUrl: entry.imageUrl }, sets),
+    );
   }
   return resolved;
 }
@@ -388,11 +443,8 @@ function circuitResolver(
   itemDb: Record<string, ItemDbEntry>,
   inventoryData: RawInventoryData | null,
 ): (names: string[]) => CircuitChoice[] {
-  // Build name -> { uniqueName, imageUrl, category } lookup
-  const byName = new Map<
-    string,
-    { uniqueName: string; imageUrl: string; category: string; name: string; displayName?: string }
-  >();
+  // Build name -> item-db entry lookup
+  const byName = new Map<string, ResolvedEntry>();
   // Steel Path rewards the Incarnon Genesis adapter, whose art is the evolved
   // weapon - closer to what the reward actually is than the base weapon icon.
   const incarnonArt = new Map<string, string>();
@@ -400,39 +452,21 @@ function circuitResolver(
     if (!entry?.name || !entry.imageUrl) continue;
     const key = circuitNameKey(entry.name);
     if (!byName.has(key)) {
-      byName.set(key, {
-        uniqueName,
-        imageUrl: entry.imageUrl,
-        category: (entry.category || entry.productCategory || "").toLowerCase(),
-        name: entry.name,
-        ...(entry.displayName ? { displayName: entry.displayName } : {}),
-      });
+      byName.set(key, { ...entry, uniqueName, name: entry.name, imageUrl: entry.imageUrl });
     }
     const base = key.endsWith(INCARNON_SUFFIX) ? key.slice(0, -INCARNON_SUFFIX.length) : null;
     if (base && !incarnonArt.has(base)) incarnonArt.set(base, entry.imageUrl);
   }
 
-  const { ownedSuits, ownedWeapons, subsumedSuits } = buildOwnedSets(inventoryData);
-
-  const WARFRAME_CATS = new Set(["warframe", "warframes", "suits"]);
+  const sets = buildOwnedSets(itemDb, inventoryData);
 
   return (names) =>
     names.map((name) => {
       const match = byName.get(circuitNameKey(name));
       if (!match) return { name, imageUrl: "", owned: false, uniqueName: "" };
 
-      const isFrame = WARFRAME_CATS.has(match.category);
-      const owned = isFrame ? ownedSuits.has(match.uniqueName) : ownedWeapons.has(match.uniqueName);
       // Art only - ownership still tracks the base weapon the adapter fits.
       const imageUrl = incarnonArt.get(circuitNameKey(name)) || match.imageUrl;
-
-      return {
-        name: match.name,
-        ...(match.displayName ? { displayName: match.displayName } : {}),
-        imageUrl,
-        owned,
-        ...(isFrame && subsumedSuits.has(match.uniqueName) ? { subsumed: true } : {}),
-        uniqueName: match.uniqueName,
-      };
+      return toCircuitChoice({ ...match, imageUrl }, sets);
     });
 }

@@ -16,6 +16,7 @@
   import { worldData } from "../../stores/world.js";
   import type { CalendarDay, NightwaveChallenge, WorldAlert } from "../../types/world.js";
   import {
+    circuitChoices,
     resolveCircuitChoices,
     resolveVendorItems,
     type CircuitChoice,
@@ -133,8 +134,8 @@
   }
 
   const circuitRewards = $derived({
-    circuitNormal: resolveCircuitChoices(circuitChoices("normal"), $itemDb, $inventoryData),
-    circuitSteelPath: resolveCircuitChoices(circuitChoices("hard"), $itemDb, $inventoryData),
+    circuitNormal: resolveCircuitChoices(circuitChoices(wd, "normal"), $itemDb, $inventoryData),
+    circuitSteelPath: resolveCircuitChoices(circuitChoices(wd, "hard"), $itemDb, $inventoryData),
   });
 
   const vendorStock = $derived({
@@ -163,10 +164,6 @@
     const entry = $itemDb[uniqueName];
     if (!entry) return;
     activeItem.set(buildParsedItemFromDb(uniqueName, entry, $componentOwnership));
-  }
-
-  function circuitChoices(category: string): string[] {
-    return (wd?.duviriCycle?.choices ?? []).find((set) => set.category === category)?.choices ?? [];
   }
 
   function builtinRows(t: Translator): Row[] {

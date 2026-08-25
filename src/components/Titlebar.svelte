@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { DAY_MS } from "../lib/format.js";
   import { invoke, send } from "../lib/ipc.js";
   import { locale, tr, type MessageKey } from "../lib/i18n.js";
   import { useInterval } from "../lib/timers.js";
@@ -11,7 +12,6 @@
 
   const HELPER_STATUS_POLL_MS = 5_000;
   const INVENTORY_OLD_MS = 60 * 60 * 1000;
-  const DAY_MS = 24 * 60 * 60 * 1000;
 
   $: logoUrl = $themeSettings.branding.logoDataUrl;
   $: appName = $themeSettings.branding.appName || DEFAULT_APP_NAME;

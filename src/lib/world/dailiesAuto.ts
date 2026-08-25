@@ -1,5 +1,5 @@
 import { toFiniteNumber } from "../../../config/shared/numeric.js";
-import { nextDailyResetUtc, nextWeeklyResetUtc } from "../format.js";
+import { DAY_MS, nextDailyResetUtc, nextWeeklyResetUtc, WEEK_MS } from "../format.js";
 import type { MessageKey } from "../i18n.js";
 import type { RawInventoryData } from "../../types/inventory.js";
 import type { WorldState } from "../../types/world.js";
@@ -46,8 +46,6 @@ function rewardMatches(rewards: unknown, activeId: string | undefined): boolean 
   });
 }
 
-const DAY_MS = 86_400_000;
-const WEEK_MS = 7 * DAY_MS;
 /** Kahl WeeklyMissions count weeks from Monday 2014-02-10 00:00 UTC. */
 const KAHL_EPOCH_MS = Date.UTC(2014, 1, 10);
 

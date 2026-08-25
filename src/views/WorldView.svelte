@@ -4,7 +4,6 @@
   import { worldData, worldLoading, worldFissureMode } from "../stores/world.js";
   import { inventoryData, itemDb, componentOwnership, wfmItems } from "../stores/data.js";
   import {
-    activeWindow,
     buildBountyGroups,
     buildBountyTimers,
     buildCycleRows,
@@ -19,7 +18,7 @@
     toggleCollapsedSection,
     toggleCycleAlert,
   } from "../lib/world/useWorldView.js";
-  import { parseIsoDate, timeTo } from "../lib/format.js";
+  import { activeWindow, parseIsoDate, timeTo } from "../lib/format.js";
   import {
     CIRCUIT_HARD_ROTATION,
     CIRCUIT_NORMAL_ROTATION,
@@ -385,6 +384,7 @@
                     name={itemLabel(p)}
                     imageUrl={p.imageUrl}
                     owned={p.owned}
+                    subsumed={p.subsumed}
                     onClick={() => openItemDetail(p.uniqueName)}
                     size={100}
                     hoverScale={105}

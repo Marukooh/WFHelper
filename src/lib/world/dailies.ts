@@ -85,9 +85,9 @@ export interface TrackerExpiries {
 /** Community-maintained epochs for the two 4-day vendor grids (wiki Countdown
  *  templates; Tenet and Coda run offset by one day). The worldstate carries no
  *  rotation data for either, so a re-seeded cycle needs a new anchor here. */
-const FOUR_DAY_MS = 4 * 24 * 60 * 60_000;
+export const FOUR_DAY_MS = 4 * 24 * 60 * 60_000;
 type FourDayPeriod = "tenet" | "coda";
-const FOUR_DAY_ANCHORS: Record<FourDayPeriod, number> = {
+export const FOUR_DAY_ANCHORS: Record<FourDayPeriod, number> = {
   tenet: Date.UTC(2015, 11, 3),
   coda: Date.UTC(2025, 2, 18),
 };
