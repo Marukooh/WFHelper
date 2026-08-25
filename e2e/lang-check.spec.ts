@@ -8,7 +8,9 @@ import {
 } from "./electronTestHarness";
 
 test("language dropdown flips the UI to German live", async () => {
-  test.setTimeout(120_000);
+  // Same budget as the overlay specs: harness boot alone may take two 90s
+  // waits under pre-push worker contention.
+  test.setTimeout(180_000);
   let harness: ElectronTestHarness | undefined;
   try {
     harness = await launchElectronTestHarness("wfh-lang-e2e-");
@@ -36,7 +38,7 @@ test("language dropdown flips the UI to German live", async () => {
 });
 
 test("unset language falls back to the OS locale", async () => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   let harness: ElectronTestHarness | undefined;
   try {
     harness = await launchElectronTestHarness("wfh-lang-os-e2e-", {
