@@ -227,8 +227,7 @@
       >
     </svelte:fragment>
     <svelte:fragment slot="fullBody">
-      <!-- fullContentClass is "contents", so fullBody is one grid cell: keep the
-           summary and the warning in a single wrapper. -->
+      <!-- fullContentClass is "contents", so this wrapper is the single grid cell. -->
       <div class="flex min-w-0 flex-col gap-1">
         <MarketOrderSummary {isRankedListing} {summaryRank} {wtsLabel} {wtbLabel} {medianLabel} />
         {#if warning}

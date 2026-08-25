@@ -154,9 +154,8 @@
       moveSuggestion(-1);
       return;
     }
-    // warframe.market opens the highlighted row on Tab; only steal the key
-    // while the list is actually offering something, and leave Shift+Tab to
-    // normal backwards focus traversal.
+    // warframe.market opens the highlighted row on Tab, so steal the key only while
+    // the list offers something; Shift+Tab stays normal focus traversal.
     const opensSuggestion = event.key === "Enter" || (event.key === "Tab" && !event.shiftKey);
     if (opensSuggestion && showSuggestions && suggestions.length > 0) {
       const target = suggestions[activeSuggestion] ?? suggestions[0];

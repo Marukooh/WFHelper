@@ -24,9 +24,8 @@ test.describe("Foundry buildable-set filter", () => {
     harness = await launchElectronTestHarness("wfh-foundry-", { inventory: inventory() });
     await harness.page.locator('#sidebar [data-view="foundry"]').click();
     await expect(harness.page.locator("[data-foundry-state]")).toBeVisible({ timeout: 30_000 });
-    // Startup awaits the snapshot fetch (20s cap) before the item database, so
-    // the rows arrive well after their filter bar and an empty list is not "no
-    // matches" yet. Gate on a row, at the harness boot timeout.
+    // Startup awaits the snapshot fetch (20s cap) before the item database, so an
+    // empty list is not "no matches" yet. Gate on a row, at the boot timeout.
     await expect(harness.page.locator(".resource-card").first()).toBeVisible({ timeout: 90_000 });
   });
 

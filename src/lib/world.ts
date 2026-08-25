@@ -360,9 +360,8 @@ function buildSubsumedSets(
   };
 }
 
-/** The suit that was actually fed always flags. Family matching then catches the
- *  same frame under another uniqueName, but never a Prime, whose base being fed
- *  says nothing about the Prime itself. */
+/** Family matching catches the same frame under another uniqueName, but never a
+ *  Prime: its base being fed says nothing about the Prime. */
 function isSubsumedFrame(entry: ItemDbEntry, uniqueName: string, sets: SubsumedSets): boolean {
   if (!WARFRAME_CATS.has(entryCategory(entry))) return false;
   if (sets.uniqueNames.has(uniqueName)) return true;
@@ -402,8 +401,7 @@ interface ResolvedEntry extends ItemDbEntry {
   imageUrl: string;
 }
 
-/** A frame fed to the Helminth left Suits but is still owned, so subsumption
- *  refines `owned` instead of replacing it; weapons use their own collections. */
+/** A fed frame left Suits but is still owned, so this refines `owned`, never replaces it. */
 function toCircuitChoice(entry: ResolvedEntry, sets: OwnedSets): CircuitChoice {
   const subsumed = isSubsumedFrame(entry, entry.uniqueName, sets.subsumed);
   const owned = WARFRAME_CATS.has(entryCategory(entry))
@@ -443,10 +441,8 @@ function circuitResolver(
   itemDb: Record<string, ItemDbEntry>,
   inventoryData: RawInventoryData | null,
 ): (names: string[]) => CircuitChoice[] {
-  // Build name -> item-db entry lookup
   const byName = new Map<string, ResolvedEntry>();
-  // Steel Path rewards the Incarnon Genesis adapter, whose art is the evolved
-  // weapon - closer to what the reward actually is than the base weapon icon.
+  // Steel Path rewards the Incarnon Genesis adapter, so its art is the evolved weapon.
   const incarnonArt = new Map<string, string>();
   for (const [uniqueName, entry] of Object.entries(itemDb)) {
     if (!entry?.name || !entry.imageUrl) continue;

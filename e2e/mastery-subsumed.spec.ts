@@ -53,14 +53,12 @@ test.describe("Mastery subsumed filter", () => {
     const ring = row.locator('svg[viewBox="0 0 120 120"]');
     await expect(ring).toBeVisible();
 
-    // The ring drives the row height, so an oversized ring or cell font shows up
-    // here as a taller row.
+    // The ring drives the row height, so an oversized ring shows up as a taller row.
     const box = await row.boundingBox();
     expect(box?.height ?? 0).toBeLessThan(130);
     expect(box?.width ?? 0).toBeGreaterThan(600);
 
-    // Ring outside the panel: the panel starts right of the ring and stops well
-    // short of the card grid's right edge, which is the fit-content proof.
+    // Panel starts right of the ring and stops short of the grid edge: fit-content.
     const ringBox = await ring.boundingBox();
     const panelBox = await row.locator(":scope > div").nth(1).boundingBox();
     const gridBox = await page.locator("#content .view.active .item-grid").boundingBox();

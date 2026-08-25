@@ -245,9 +245,8 @@ export function buildCodexRows(scans: CodexScanEntry[]): CodexRow[] {
     const faction = [...factions.entries()].reduce((best, entry) =>
       entry[1] > best[1] ? entry : best,
     )[0];
-    // The base requirement is part of the group key, so any member states it;
-    // its wildlife fallback keys off the merged faction to stay consistent with
-    // the row (no current group's members disagree, so nothing moves today).
+    // The base requirement is part of the group key, so any member states it; its
+    // wildlife fallback keys off the merged faction to stay consistent with the row.
     const required =
       CODEX_EXTRA_INFO[type].scans ?? (faction === "wildlife" ? WILDLIFE_REQUIRED_SCANS : null);
     rows.push(makeRow(type, name, scanned, required, faction, icon));

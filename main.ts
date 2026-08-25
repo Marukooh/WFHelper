@@ -325,17 +325,16 @@ function logStartupPaths(profileStage: ProfileStage): void {
   reportSessionHealth(profileStage);
 }
 
-// A native crash leaves no error and no log line, so the previous run has to be
-// judged by what it left behind. Named injectors are only worth accusing once
-// something actually died.
+// A native crash leaves no error and no log line, so the previous run is judged
+// by what it left behind; injectors are only worth naming once something died.
 function reportSessionHealth(profileStage: ProfileStage): void {
   log.info(`[Startup] injection guard: ${injectionGuard}`);
 
   const foreignStart = Date.now();
   const foreign = listForeignModules();
   profileStage("foreign-modules:scan", foreignStart);
-  // Names only: a full path carries the Windows username, and main.log is what
-  // users paste into support threads.
+  // Names only here: a full path carries the Windows username and main.log gets
+  // pasted into support threads. The crash path below keeps full paths on purpose.
   if (foreign.length > 0) {
     log.info(
       `[Startup] foreign modules loaded: ${foreign.map((f) => path.basename(f)).join(", ")}`,

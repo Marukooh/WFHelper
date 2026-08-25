@@ -52,10 +52,9 @@ export function enrichComponents(
 let _marketRefsWfmRef: WfmItemsLookup | null = null;
 let _marketRefsCache: ReadonlySet<string> = new Set();
 
-/** Game references warframe.market lists, so the parser can spare the handful of
- *  tradable items that sit inside an otherwise hidden class. A failed catalog
- *  load leaves this empty and hides those keys again; the market side goes
- *  equally quiet with no gameRef, so the two degrade together. */
+/** Game references warframe.market lists, so the parser can spare the tradable
+ *  items inside an otherwise hidden class. A failed catalog load leaves this empty
+ *  and the market side goes equally quiet, so the two degrade together. */
 const marketGameRefs = derived(wfmItems, ($wfm): ReadonlySet<string> => {
   if ($wfm === _marketRefsWfmRef) return _marketRefsCache;
   const refs = new Set<string>();

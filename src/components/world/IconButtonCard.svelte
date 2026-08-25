@@ -48,7 +48,6 @@
     {/if}
     {#if subsumed}
       <span class="absolute right-0.5 top-0.5 leading-none" title={$tr("common.subsumed")}>
-        <!-- Hexagon echoes the in-game Helminth segment, so it does not read as a download. -->
         <svg viewBox="0 0 12 12" class="h-4 w-4">
           <polygon
             points="6,0.7 10.6,3.35 10.6,8.65 6,11.3 1.4,8.65 1.4,3.35"
@@ -68,7 +67,6 @@
 </button>
 
 <style>
-  /* color-mix keeps the subsumed glow on the --info token instead of a literal. */
   .subsumed-glow {
     box-shadow: 0 0 6px color-mix(in oklab, var(--info) 30%, transparent);
   }

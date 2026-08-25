@@ -12,10 +12,9 @@ import type {
 // Two passes: one right after the map, one late enough for a slow compositor.
 const CLICK_THROUGH_REASSERT_DELAYS_MS = [250, 1_500];
 
-// Shared with the z-order poll: re-stacking a window in its last seconds
-// before a queued hide is what crashed under injected hooks. Lives here so
-// zOrder.ts (which imports electron at module load) stays out of this
-// module's dependency-injected, electron-free import graph.
+// Shared with the z-order poll: re-stacking a window in its last seconds before a
+// queued hide is what crashed under injected hooks. Lives here to keep zOrder.ts
+// out of this module's electron-free import graph.
 export const HIDE_IMMINENT_MS = 3_000;
 
 const OVERLAY_WINDOW_BOUNDS = Object.freeze({
@@ -534,8 +533,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     raiseReassertTimers = CLICK_THROUGH_REASSERT_DELAYS_MS.map((delay) =>
       setTimeout(() => {
         if (overlayWindow.isDestroyed() || !isOverlayWindowVisible()) return;
-        // Same imminent-hide guard as the z-order poll: re-stacking a window
-        // that is about to be torn down is what crashed under injected hooks.
+        // Same imminent-hide guard as the z-order poll.
         const hideDueIn = overlayHideDueIn();
         if (hideDueIn !== null && hideDueIn <= HIDE_IMMINENT_MS) return;
         keepOverlayAboveGame(overlayWindow);
@@ -750,9 +748,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     onWindowCreated?.(createdWindow);
   }
 
-  /** Milliseconds until the queued hide, null when none is queued. Callers mean
-   *  "about to vanish": the planner arms its hide two minutes ahead and needs
-   *  its stacking maintained for all of it. */
+  /** Milliseconds until the queued hide, null when none is queued. The planner arms
+   *  its hide two minutes ahead, so that alone is not "about to vanish". */
   function overlayHideDueIn(): number | null {
     if (overlayAutoHideTimer === null) return null;
     return Math.max(0, overlayAutoHideAt - Date.now());

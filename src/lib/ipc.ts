@@ -49,8 +49,8 @@ export function invoke<K extends ReadOnlyInvokeKey>(
   return fn(...args);
 }
 
-/** Native main-process confirm; window.confirm freezes keyboard input on
- *  Windows after closing, which is why no call site may use it directly. */
+/** Native main-process confirm; no call site may use window.confirm directly.
+ *  Reason in the SYSTEM_CONFIRM handler (ipc/systemIpc.ts). */
 export function confirmWithDialog(message: string, t: Translator): Promise<boolean> {
   return invoke("confirmDialog", {
     message,

@@ -187,9 +187,7 @@ const { downloaded, skipped, failures } = await runPool(entries);
 fs.writeFileSync(failuresPath, `${JSON.stringify(failures, null, 2)}\n`);
 
 // A 404 means DE never published that texture, so no retry fixes it and one gap
-// must not block the deploy. A fallback retry appends its own reason, so a texture
-// missing from both hosts reads "HTTP 404; fallback: HTTP 404". Only an all-404
-// chain is a permanent gap; a flood of them means the path scheme moved.
+// must not block the deploy. A flood of them means the path scheme moved.
 const isMissingUpstream = (entry) =>
   String(entry.reason || "")
     .split("; fallback: ")

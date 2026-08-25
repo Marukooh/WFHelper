@@ -98,9 +98,8 @@
     key: `cat:${cat}` as FilterKey,
     label: cat,
   }));
-  // persistedString drops the retired Ready-to-build key from the store without
-  // writing, so raw storage is the only trace of that preference left. Read it
-  // before persistedString below, which is why this line comes first.
+  // Must precede the persistedString below, which drops this retired key from the
+  // store without writing it back.
   const retiredReadyTab = readStorage(FILTER_KEY) === "status:ready" && claimReadyTabMigration();
   // persistedString reads at init, so its key list must not wait on the translator.
   const activeFilter = persistedString<FilterKey>(
@@ -300,8 +299,7 @@
       status: masteryStateFor(row.e),
       vaulted: db?.vaulted === true,
       foundryState: FOUNDRY_STATE_BY_STATUS[row.status],
-      // A part blueprint is a piece of something bigger, so the full-set view
-      // hides it rather than listing it beside the parent it belongs to.
+      // A part blueprint belongs to a parent, so the full-set view hides it.
       looseComponent: Boolean(db?.componentOf),
       subsumed:
         row.e.category === "Warframe" && isSubsumableFrame(row.e.name)

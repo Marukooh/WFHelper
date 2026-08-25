@@ -78,8 +78,7 @@ describe("applyInjectionGuard", () => {
     expect(PROCESS_EXTENSION_POINT_DISABLE_POLICY).toBe(6);
   });
 
-  // Guards against reintroducing ProcessSignaturePolicy: MicrosoftSignedOnly makes
-  // every unsigned native, sharp included, fail to load with Win32 error 577.
+  // Guards against reintroducing ProcessSignaturePolicy.
   it.runIf(process.platform === "win32")("leaves unsigned native modules loadable", async () => {
     expect(applyInjectionGuard(true)).toBe("applied");
     await expect(import("sharp")).resolves.toBeDefined();

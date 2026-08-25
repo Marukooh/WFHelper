@@ -178,9 +178,8 @@ async function _load(): Promise<void> {
           _byNameLc.set(slugNameLc, item);
         }
 
-        // A few listings append "(Key)" or "(Veiled)" to keep names apart while
-        // the game says the bare name. Real names are set unconditionally above,
-        // so an alias never displaces the item that owns the name.
+        // A few listings append "(Key)" or "(Veiled)" while the game says the bare
+        // name. Real names are set above, so an alias never displaces one.
         const parenBaseLc = (NAME_PAREN_SUFFIX_RE.exec(nameLc)?.[1] ?? "").trim();
         if (parenBaseLc && !_byNameLc.has(parenBaseLc)) {
           _byNameLc.set(parenBaseLc, item);

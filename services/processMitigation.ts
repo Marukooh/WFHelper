@@ -53,10 +53,7 @@ export function applyInjectionGuard(enabled: boolean): InjectionGuardResult {
   }
 }
 
-/**
- * Read straight off disk because the guard runs before the settings controller
- * exists, and one sync read is cheaper than being too late to matter.
- */
+/** Read straight off disk: the guard runs before the settings controller exists. */
 export function injectionGuardEnabled(userDataPath: string): boolean {
   const fallback = OVERLAY_SETTINGS_DEFAULTS.blockThirdPartyInjection;
   try {
@@ -71,9 +68,8 @@ export function injectionGuardEnabled(userDataPath: string): boolean {
   }
 }
 
-/** The guard can be what kills the process, and a process that dies at startup
- *  never reaches Settings to untick it. One unclean exit disarms it for the next
- *  run; a clean quit re-arms it. */
+/** The guard can be what kills the process, and a dead startup never reaches
+ *  Settings to untick it, so one unclean exit disarms it for the next run. */
 function injectionGuardSkipReason(userDataPath: string): string | null {
   if (process.env.WFHELPER_NO_INJECTION_GUARD === "1") return "WFHELPER_NO_INJECTION_GUARD=1";
   if (peekPreviousSessionEnd(userDataPath) === "unclean") return "previous session ended unclean";

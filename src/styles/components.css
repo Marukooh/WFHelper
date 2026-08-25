@@ -203,9 +203,7 @@
   .shared-chip-group .filter-tabs {
     flex-wrap: nowrap;
   }
-  /* Filter-bar chip groups hold a handful of chips and stay inline; a row that
-     carries a whole category list gets its own block-level row and wraps. The
-     doubled class outranks the nowrap rule above without relying on order. */
+  /* Doubled class outranks the nowrap rule above without relying on order. */
   .shared-chip-group.shared-chip-group--wrap {
     display: flex;
   }
@@ -599,9 +597,7 @@
     cursor: pointer;
     color: inherit;
   }
-  /* SVG caret shares the section title line-height, so alignment is controlled once.
-     Sized well under 1lh: the caret is an affordance, the surrounding button keeps the
-     hit target. */
+  /* lh so the caret tracks the section title line-height. */
   .world-toggle-icon {
     width: 0.75lh;
     height: 0.75lh;
@@ -612,8 +608,6 @@
     transition: transform 0.15s ease;
     transform-origin: center;
   }
-  /* Section headers carry the caret alone, so it has to read as the header control;
-     the in-row carets sit beside other icons and stay small. */
   .world-section-toggle .world-toggle-icon {
     width: 0.95lh;
     height: 0.95lh;
@@ -640,8 +634,6 @@
     border: 1px solid rgba(248, 113, 113, 0.35);
   }
 
-  /* Shared by riven contracts and item orders: the listing outruns the inventory
-     behind it - nothing owned, fewer owned than listed, or the wrong rank. */
   .listing-warning {
     width: fit-content;
     border: 1px solid color-mix(in oklab, var(--danger) 55%, transparent);

@@ -429,7 +429,7 @@ describe("arbiRunTracker", () => {
     const tracker = await freshTracker();
     feedRun(tracker);
     tracker.processArbiLine(missionLine(900, "Cetus (Earth)"), "file");
-    // The gzip pipeline is async - the record has not landed synchronously.
+    // The gzip pipeline is async, so the record has not landed synchronously.
     expect(tracker.getRuns()).toHaveLength(0);
     await tracker.awaitPendingArbiSaves();
     expect(tracker.getRuns()).toHaveLength(1);

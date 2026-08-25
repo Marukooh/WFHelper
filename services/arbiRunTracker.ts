@@ -281,8 +281,7 @@ function _finalizeRun(endReason: ArbiRunEndReason, sync: boolean): void {
       try {
         _addRecord(_buildRecord(run, parsed, endReason, size));
       } catch (err) {
-        // The index write already happened; a throwing onRunSaved (destroyed
-        // webContents, overlay window failing during shutdown) must not strand
+        // The index write already happened; a throwing onRunSaved must not strand
         // this promise in _pendingSaves and kill Refresh for the session.
         log.warn("[Arbi] Run-saved notification failed:", normalizeErrorMessage(err));
       } finally {

@@ -118,9 +118,8 @@ export function ownedCountForMarketOrder(
   return ownedCountForOrder(parsedItemForOrder(order, parsedItems, wfmItems));
 }
 
-// Mirrors the two early returns in parseInventory. An item the parser never
-// keeps can never be proven owned, so resources, gems and captura scenes must
-// stay unflagged however empty the inventory looks.
+// Mirrors the two early returns in parseInventory: an item the parser never keeps
+// can never be proven owned, so resources, gems and scenes stay unflagged.
 function inventoryCouldHoldOrder(
   order: WfmOrder,
   wfmItems: WfmItemsLookup,

@@ -80,9 +80,8 @@ export function parseInventory(
     if (isResourceItem(internalName, dbEntry, resolved)) return;
 
     let group = deriveGroup(sourceKey, internalName, dbEntry, resolved);
-    // With the catalog loaded, an unlisted recipe row is a crafted component
-    // nobody can sell. The parts tab would still price it through a display
-    // name collision with the blueprint, so it moves out of the group instead.
+    // With the catalog loaded, an unlisted recipe row is a crafted component nobody
+    // can sell, and a display-name collision would still price it in the parts tab.
     const recipePath = /\/Types\/Recipes\//i.test(internalName);
     if (group === "all_parts" && recipePath && marketGameRefs.size > 0 && !marketListed) {
       group = "misc";
@@ -103,9 +102,8 @@ export function parseInventory(
       group === "misc" &&
       (sourceKey === "LevelKeys" || isMarketListedMissionKey(internalName, marketListed))
     ) {
-      // LevelKeys defaults to the relic label because that is most of what it
-      // holds; market-listed mission keys can also arrive from other
-      // collections and are keys all the same.
+      // LevelKeys defaults to the relic label because that is most of what it holds;
+      // market-listed mission keys arrive from other collections and are keys too.
       finalCat = "misc";
       finalLabel = "Key";
     } else if (group === "misc" && (sourceKey === "Upgrades" || sourceKey === "RawUpgrades")) {

@@ -27,8 +27,7 @@
 </ModalShell>
 
 <style>
-  /* The chart sizes itself from clientWidth, so this one needs to be wider than
-     the 620px the shared detail modals settle on. */
+  /* The chart sizes off clientWidth, so this is wider than the shared 620px modals. */
   .market-stats-panel {
     width: min(1040px, calc(100vw - 3rem));
     padding: 1rem;

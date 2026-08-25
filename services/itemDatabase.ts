@@ -915,8 +915,6 @@ export function lookupItemByNameOrSlug(
   ].filter((bucket): bucket is NameIndexBucket => bucket != null);
   if (buckets.length === 0) return null;
 
-  // The scan returned the first part-metadata match it reached, else the first
-  // match of any kind, so both picks stay ordered by build position.
   const best =
     earliestEntry(buckets.map((bucket) => bucket.strong)) ??
     earliestEntry(buckets.map((bucket) => bucket.first));

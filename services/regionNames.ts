@@ -135,7 +135,7 @@ export function missionLabel(
   region: RegionEntry | undefined,
 ): string {
   // Per-node mission name from DE's own data (localization dict values are
-  // uppercase, e.g. "INFESTED SALVAGE") - truer than a hand-kept MT_ map.
+  // uppercase, e.g. "INFESTED SALVAGE"); truer than a hand-kept MT_ map.
   const resolved = resolveDict(translation.dict, region?.missionName);
   if (resolved) return titleCase(resolved);
   const mt = typeof region?.missionType === "string" ? region.missionType : "";

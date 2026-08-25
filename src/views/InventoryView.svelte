@@ -85,9 +85,8 @@
 
     const legacy = readStorage(LEGACY_EVERYTHING_SOURCES_KEY);
     if (legacy == null) return [...EVERYTHING_HIDDEN_BY_DEFAULT];
-    // Invert the old enabled list once and persist it: an empty legacy value was
-    // a real choice (all off), and re-deriving it on every mount would freeze out
-    // a source added after the upgrade.
+    // Invert once and persist: an empty legacy value was a real choice (all off),
+    // and re-deriving each mount would freeze out a source added later.
     const wasEnabled = new Set(parseKeyList(legacy));
     const hidden = EVERYTHING_SOURCES.filter((source) => !wasEnabled.has(source));
     writeStorage(EVERYTHING_HIDDEN_KEY, hidden.join(","));
@@ -446,8 +445,7 @@
     list: typeof resourceList,
     filters: typeof $inventoryFilters,
   ): typeof resourceList {
-    // Same rule as every other row, so one search box means one behaviour; the
-    // no-query skip keeps a thousands-row account from re-filtering for nothing.
+    // Skip on an empty query so a thousands-row account does not re-filter for nothing.
     const searched = filters.search.trim()
       ? list.filter((resource) => matchesSearch(resource, filters.search))
       : list;
@@ -573,8 +571,7 @@
         />
 
         {#if showEverythingResources && filteredResources.length > 0}
-          <!-- Resources have their own row shape, so Everything appends the real
-               Resources list rather than faking inventory cards for them. -->
+          <!-- Resources have their own row shape, so Everything appends the real list. -->
           <h3 class="mb-2 mt-4 font-display text-sm uppercase tracking-[0.05em] text-text-muted">
             {$tr("nav.resources")}
           </h3>

@@ -383,7 +383,6 @@ const REC_IMG_HEIGHT = 48;
 const REC_MAX_CHUNK = 6;
 const REC_OUTPUT_BUDGET = 48 * 1024 * 1024;
 // Padding a 691px crop out to a 3934px rule spends 5.7x the compute on zeros.
-// The stretch cap is what keeps the two apart; the budget bounds what is left.
 const REC_MAX_PAD_STRETCH = 2;
 
 function cropWidthAt48(crop: RgbCrop): number {

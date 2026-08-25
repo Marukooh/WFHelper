@@ -1,7 +1,6 @@
 <script lang="ts" context="module">
-  // Survives tab switches so failed loads and the audit toggle are not
-  // forgotten every time the panel remounts. See markBroken for why a
-  // SvelteSet would publish nothing to this component's markup.
+  // Survives tab switches so failed loads and the audit toggle are not forgotten
+  // on remount. See markBroken for why a SvelteSet publishes nothing here.
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
   const brokenImages = new Set<string>();
   // Only a load event proves an icon exists, so the audit filter hides a row
@@ -70,10 +69,9 @@
     void load();
   });
 
-  // This component is legacy mode, where only an instance-level assignment
-  // invalidates the markup, so the module-scoped Sets have to publish a tick
-  // that every reader takes as an argument. Naming it textually is the whole
-  // point: a reader that drops it silently stops reacting to probes.
+  // Legacy mode: only an instance-level assignment invalidates the markup, so the
+  // module-scoped Sets publish a tick every reader takes as an argument. A reader
+  // that drops it silently stops reacting to probes.
   let brokenTick = 0;
 
   function resetImageProbes(): void {

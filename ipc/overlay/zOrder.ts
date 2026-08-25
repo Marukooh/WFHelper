@@ -46,9 +46,8 @@ export function syncOverlayWindowZOrder(
   warframeFocused: boolean,
 ): void {
   if (!win || win.isDestroyed() || !controller.isOverlayWindowVisible()) return;
-  // The refocus that releases a held-open overlay schedules its hide 2.5s out,
-  // and re-stacking a window that is already being torn down is what crashed
-  // under an injected hook. Only the last seconds are skipped.
+  // A released hold-open schedules its hide 2.5s out, and re-stacking a window
+  // already being torn down is what crashed under an injected hook.
   const hideDueIn = controller.overlayHideDueIn();
   if (hideDueIn !== null && hideDueIn <= HIDE_IMMINENT_MS) return;
   applyOverlayZOrder(win, warframeFocused);

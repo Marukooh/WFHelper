@@ -54,7 +54,6 @@
   import { buildParsedItemFromDb } from "../lib/parsedItemFromDb.js";
   import { clockStore } from "../lib/timers.js";
 
-  // Collapse state per section - persisted to localStorage
   let collapsed: Record<string, boolean> = loadCollapsedSections();
   function toggleSection(key: string) {
     collapsed = toggleCollapsedSection(collapsed, key);

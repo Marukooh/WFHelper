@@ -502,9 +502,8 @@
     const nextVisible = !contract.visible;
     contractBusyIds = [...contractBusyIds, contract.id];
     try {
-      // PUT replaces the entry, so reputation and note have to be resent. A
-      // direct sell has no opening bid: sending its buyout as one would reprice
-      // the listing, so it goes as null and WFM keeps what it holds.
+      // PUT replaces the entry, so reputation and note must be resent. A direct
+      // sell sends a null starting price or WFM reprices it from the buyout.
       const result = await tradeInvoke("updateRivenAuction", {
         auctionId: contract.id,
         buyoutPrice: contract.buyoutPlatinum,
@@ -660,9 +659,7 @@
   }
 
   $: isRivensTab = $marketViewState.typeTab === "rivens";
-  // A decoded riven list is the proof a listing is dead, the same rule the order
-  // rows follow below: until one loads the map stays empty, so contracts get no
-  // markers at all rather than a wall of them.
+  // Until a riven list decodes nothing is proven dead, so no markers rather than all.
   $: contractMatchById = new Map(
     ownedRivensLoaded && ownedRivens.length > 0
       ? $marketContracts.contracts.map((contract) => [
@@ -674,8 +671,7 @@
   $: activeOrders = isOrdersTab($marketViewState.typeTab)
     ? $marketOrders[$marketViewState.typeTab] || []
     : [];
-  // A parsed inventory is the proof a listing is dead, so an account that has
-  // not loaded one yet gets no markers at all rather than a wall of them.
+  // Same rule: no parsed inventory is no proof, so no markers rather than all.
   $: orderMatchById = new Map(
     $parsedItems.length > 0
       ? activeOrders.map((order) => [

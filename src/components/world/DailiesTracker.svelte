@@ -420,8 +420,7 @@
               <p class="dailies-subhead">{row.label}</p>
             {:else}
               {@const left = remainingMs(row.expiry)}
-              <!-- Without a period key the tick would be stored under no period and
-                   never read back, so the row waits instead of eating the click. -->
+              <!-- No period key means the tick would never be read back, so the row waits. -->
               {@const locked = row.periodKey === null && !row.custom}
               <div class="dailies-row" class:dailies-row--off={row.hidden}>
                 <label class="dailies-label" title={row.auto ? $tr("dailies.autoTracked") : null}>
@@ -1003,7 +1002,6 @@
     width: 0.6rem;
   }
 
-  /* Inventory-synced completion: same tick, marked by a soft glow, not clickable. */
   .dailies-check--auto:disabled {
     box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
     cursor: default;

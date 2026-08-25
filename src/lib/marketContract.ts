@@ -26,9 +26,8 @@ function weaponSlug(weaponName: string): string {
   return normalizeWfmSlugKey(weaponName.replace(/&/g, " and "));
 }
 
-// A riven covers the whole weapon family, so "rubico" and "rubico_prime" have to
-// match either way round. Both sides go through one slug rule or punctuation and
-// case differences read as a listing the inventory lost.
+// A riven covers the whole weapon family, so "rubico" and "rubico_prime" match
+// either way round; both sides fold through one slug rule or case reads as a loss.
 function sameWeapon(contractSlug: string, ownedWeaponName: string): boolean {
   const owned = weaponSlug(ownedWeaponName);
   if (!owned || !contractSlug) return false;

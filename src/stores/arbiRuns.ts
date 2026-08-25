@@ -20,9 +20,8 @@ export function loadArbiRuns(): Promise<void> {
   return fetchArbiRuns("getArbiRuns");
 }
 
-/** Refresh button: drains EE.log bytes already on disk before re-reading the
- * index. That only helps past one poll tick's 2 MiB read cap - the engine's
- * lazy flush is what usually delays fresh lines, and no poll shortens it. */
+/** Refresh button: drains EE.log bytes already on disk before re-reading the index.
+ * See forceEeLogPoll in services/eeLogMonitor.ts for what that cannot recover. */
 export function refreshArbiRuns(): Promise<void> {
   return fetchArbiRuns("refreshArbiRuns");
 }

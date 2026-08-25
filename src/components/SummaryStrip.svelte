@@ -62,8 +62,6 @@
         {/if}
       </div>
     {:else if variant === "mastery"}
-      <!-- The strip hugs its cells at the compact scale so a fullscreen row does
-           not blow the numbers up past the cards it sits above. -->
       <div class="flex flex-col justify-center gap-1 px-4">
         <div class="flex items-center gap-3">
           <span class="font-display text-3xl font-bold leading-none {toneClass(item.tone)}"

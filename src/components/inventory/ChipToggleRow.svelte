@@ -1,10 +1,7 @@
 <script lang="ts">
   export let label: string;
   export let options: Array<{ key: string; label: string }> = [];
-  /**
-   * Keys currently switched on. Anything absent renders as off; callers persist
-   * the complement so a key a later release adds defaults to on.
-   */
+  /** Keys switched on; callers persist the complement so later additions default on. */
   export let enabled: ReadonlySet<string>;
   export let onToggle: (key: string) => void;
   /** Identifies this row for tests; individual chips carry data-chip. */

@@ -161,8 +161,8 @@
   }
 
   async function autoFocusViewSearch(): Promise<void> {
-    // The tour switches tabs itself, and its root is not a [role="dialog"] the
-    // scoping below would catch, so focusing would steal it from every step.
+    // The tour's root is not a [role="dialog"] the scoping below catches, so
+    // focusing would steal focus from every step.
     if (!$autoFocusSearch || $tourActive) return;
     await tick();
     const target = findSearchTarget();

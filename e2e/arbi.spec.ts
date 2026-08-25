@@ -122,9 +122,8 @@ describeArbi("Arbitration schedule + post-run overlay", () => {
   });
 
   test("post-run overlay pops after a multi-rotation arbitration", async () => {
-    // Leave the Arbitrations view first: the run has to reach the store through
-    // the app-lifetime push, not a listener that only exists while that view is
-    // mounted, or the Details deep-link below lands on a stale list.
+    // Leave the Arbitrations view first, so the run has to arrive through the
+    // app-lifetime push rather than a view-mounted listener.
     await page.locator('#sidebar [data-view="inventory"]').click();
     await expect(page.locator("#content [data-arbi-runs]")).toHaveCount(0);
 

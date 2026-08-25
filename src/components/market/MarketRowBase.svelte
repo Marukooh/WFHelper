@@ -58,8 +58,7 @@
           {badgeLabel}
         </span>
       {/if}
-      <!-- Meta chips sit outside the truncating span so a long name clips
-           before it can push them out of the header. -->
+      <!-- Chips sit outside the truncating span so a long name clips instead of pushing them out. -->
       <span class="flex min-w-0 flex-1 items-baseline">
         <span class="min-w-0 truncate font-display text-sm font-bold text-text-primary" {title}>
           {title}

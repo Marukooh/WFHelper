@@ -9,10 +9,8 @@ function bankedMasteryRank(currentRank: number, totalXp: number): number {
   return Math.max(currentRank, masteryXpToRank(totalXp));
 }
 
-/**
- * Rank the Easy Mastery items would reach, or null when they stay inside a rank
- * the account already holds. Naming the current MR as a "potential" is noise.
- */
+/** Rank the Easy Mastery items would reach, or null when they stay inside a rank
+ *  the account already holds. */
 export function easyMasteryPotentialRank(
   currentRank: number | null,
   totalXp: number | null,

@@ -472,8 +472,6 @@
 
     <!-- Stats overview -->
     <div class="grid gap-3 mb-3.5">
-      <!-- Ring sits beside the panel, which hugs its own cells instead of
-           stretching; 92px keeps the ring at the compact scale. -->
       <div class="flex items-center gap-3.5" data-mastery-summary>
         <div class="shrink-0">
           <svg class="h-[92px] w-[92px]" viewBox="0 0 120 120">
