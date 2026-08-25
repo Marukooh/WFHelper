@@ -185,9 +185,6 @@ const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
 const { downloaded, skipped, failures } = await runPool(entries);
 
 fs.writeFileSync(failuresPath, `${JSON.stringify(failures, null, 2)}\n`);
-console.log(
-  `[icon-mirror] complete: ${downloaded} downloaded, ${skipped} skipped, ${failures.length} failed`,
-);
 
 // A 404 means DE never published that texture, so no retry fixes it and one gap
 // must not block the deploy. A fallback retry appends its own reason, so a texture
@@ -200,6 +197,10 @@ const isMissingUpstream = (entry) =>
 const missing = failures.filter(isMissingUpstream);
 const broken = failures.filter((entry) => !isMissingUpstream(entry));
 const missingCap = Math.max(20, Math.ceil(entries.length * 0.01));
+console.log(
+  `[icon-mirror] complete: ${downloaded} downloaded, ${skipped} skipped, ` +
+    `${broken.length} failed, ${missing.length} missing upstream`,
+);
 if (missing.length > 0) {
   console.warn(`[icon-mirror] ${missing.length} not published upstream (HTTP 404), skipped`);
 }
