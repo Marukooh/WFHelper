@@ -137,6 +137,12 @@ function buildNode(
   // Treat common resources as leaf nodes even if they have recipes
   const effectiveRecipe = isLeafResource(uniqueName) ? null : recipe;
 
+  // A run of the recipe can yield several units (num), so blueprints,
+  // ingredients, credits and time all scale with runs, not units.
+  const builds = effectiveRecipe
+    ? Math.max(1, Math.ceil(count / Math.max(1, effectiveRecipe.num || 1)))
+    : 0;
+
   const children: CraftingTreeNode[] = [];
   if (effectiveRecipe && depth < MAX_DEPTH) {
     // Blueprints are not listed as ingredients. Skip alternate component spellings
@@ -149,7 +155,7 @@ function buildNode(
       const bpItem = itemDb[bpUn];
       const bpOwned = ownedComponentCount(bpUn, ownership);
       // Reusable (infinite-use) blueprints cover any build count with one copy.
-      const bpNeeded = effectiveRecipe.reusableBlueprint ? 1 : count;
+      const bpNeeded = effectiveRecipe.reusableBlueprint ? 1 : builds;
       children.push({
         uniqueName: bpUn,
         name: bpItem?.name || `${name} Blueprint`,
@@ -169,7 +175,7 @@ function buildNode(
     for (const ing of aggregateIngredients(effectiveRecipe.ingredients)) {
       const ingItem = itemDb[ing.uniqueName];
       const ingRecipe = ingItem?.recipe || null;
-      const nextCount = ing.count * count;
+      const nextCount = ing.count * builds;
       if (ancestors.has(ing.uniqueName)) {
         children.push(buildNode(ing.uniqueName, nextCount, null, itemDb, ownership, depth + 1));
         continue;
@@ -255,8 +261,11 @@ export function computeCraftingSummary(tree: CraftingTreeNode): CraftingTreeSumm
   function walk(node: CraftingTreeNode, depth: number): number {
     let subtreeTime = 0;
     if (node.recipe) {
-      totalCredits += node.recipe.buildPrice;
-      subtreeTime = node.recipe.buildTime;
+      // Same yield rule as the tree: costs accrue per run, and one recipe
+      // cannot run twice in parallel, so repeat runs stack sequentially.
+      const runs = Math.max(1, Math.ceil(node.count / Math.max(1, node.recipe.num || 1)));
+      totalCredits += node.recipe.buildPrice * runs;
+      subtreeTime = node.recipe.buildTime * runs;
     }
 
     if (node.children.length === 0 && !node.isCraftable) {

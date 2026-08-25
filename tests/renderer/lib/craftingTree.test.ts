@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCraftingTree } from "../../../src/lib/craftingTree.js";
+import { buildCraftingTree, computeCraftingSummary } from "../../../src/lib/craftingTree.js";
 import type { ItemDbEntry } from "../../../src/types/inventory.js";
 
 function item(name: string, recipe?: ItemDbEntry["recipe"]): ItemDbEntry {
@@ -143,5 +143,83 @@ describe("crafting tree", () => {
 
     expect(repeatedA?.recipe).toBeNull();
     expect(repeatedA?.children).toHaveLength(0);
+  });
+
+  it("scales ingredients by recipe runs when a run yields several units", () => {
+    // Real case: Caliban needs 100 Hespazym Alloy; the alloy recipe yields 20
+    // per run, so 5 runs consume 1500 Plastids, not 30000.
+    const db: Record<string, ItemDbEntry> = {
+      "/items/Caliban": item("Caliban", {
+        blueprintUniqueName: "/blueprints/Caliban",
+        buildPrice: 25_000,
+        buildTime: 0,
+        num: 1,
+        ingredients: [{ uniqueName: "/items/HespazymAlloy", count: 100 }],
+      }),
+      "/items/HespazymAlloy": item("Hespazym Alloy", {
+        blueprintUniqueName: "/blueprints/HespazymAlloy",
+        buildPrice: 200,
+        buildTime: 60,
+        num: 20,
+        reusableBlueprint: true,
+        ingredients: [
+          { uniqueName: "/resources/Plastids", count: 300 },
+          { uniqueName: "/items/Hesperon", count: 20 },
+          { uniqueName: "/resources/Morphics", count: 2 },
+        ],
+      }),
+      "/items/Hesperon": item("Hesperon"),
+      "/resources/Plastids": item("Plastids"),
+      "/resources/Morphics": item("Morphics"),
+      "/blueprints/Caliban": item("Caliban Blueprint"),
+      "/blueprints/HespazymAlloy": item("Hespazym Alloy Blueprint"),
+    };
+
+    const tree = buildCraftingTree("/items/Caliban", db, new Map());
+    const alloy = tree?.children.find((child) => child.uniqueName === "/items/HespazymAlloy");
+    const byName = (un: string) => alloy?.children.find((child) => child.uniqueName === un);
+
+    expect(alloy?.count).toBe(100);
+    expect(byName("/resources/Plastids")?.count).toBe(1500);
+    expect(byName("/items/Hesperon")?.count).toBe(100);
+    expect(byName("/resources/Morphics")?.count).toBe(10);
+    expect(byName("/blueprints/HespazymAlloy")?.count).toBe(1);
+
+    const summary = computeCraftingSummary(tree!);
+    // 25000 for Caliban plus 5 alloy runs at 200 credits and 60s each.
+    expect(summary.totalCredits).toBe(25_000 + 5 * 200);
+    expect(summary.maxBuildTime).toBe(5 * 60);
+  });
+
+  it("needs one consumable blueprint per run, not per unit", () => {
+    const db: Record<string, ItemDbEntry> = {
+      "/items/Batch": item("Batch", {
+        blueprintUniqueName: "/blueprints/Batch",
+        buildPrice: 0,
+        buildTime: 0,
+        num: 10,
+        ingredients: [{ uniqueName: "/resources/Plastids", count: 5 }],
+      }),
+      "/items/Parent": item("Parent", {
+        blueprintUniqueName: "/blueprints/Parent",
+        buildPrice: 0,
+        buildTime: 0,
+        num: 1,
+        ingredients: [{ uniqueName: "/items/Batch", count: 25 }],
+      }),
+      "/resources/Plastids": item("Plastids"),
+      "/blueprints/Batch": item("Batch Blueprint"),
+      "/blueprints/Parent": item("Parent Blueprint"),
+    };
+
+    const tree = buildCraftingTree("/items/Parent", db, new Map());
+    const batch = tree?.children.find((child) => child.uniqueName === "/items/Batch");
+    const batchBp = batch?.children.find((child) => child.uniqueName === "/blueprints/Batch");
+
+    // 25 units at 10 per run = 3 runs = 3 blueprints and 15 Plastids.
+    expect(batchBp?.count).toBe(3);
+    expect(batch?.children.find((child) => child.uniqueName === "/resources/Plastids")?.count).toBe(
+      15,
+    );
   });
 });
