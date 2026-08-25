@@ -203,6 +203,15 @@
   .shared-chip-group .filter-tabs {
     flex-wrap: nowrap;
   }
+  /* Filter-bar chip groups hold a handful of chips and stay inline; a row that
+     carries a whole category list gets its own block-level row and wraps. The
+     doubled class outranks the nowrap rule above without relying on order. */
+  .shared-chip-group.shared-chip-group--wrap {
+    display: flex;
+  }
+  .shared-chip-group.shared-chip-group--wrap .filter-tabs {
+    flex-wrap: wrap;
+  }
   .shared-chip-group .filter-tab {
     padding: 0.34rem 0.62rem;
   }

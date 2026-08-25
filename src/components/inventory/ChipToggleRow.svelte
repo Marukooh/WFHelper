@@ -12,7 +12,7 @@
 </script>
 
 {#if options.length > 0}
-  <div class="shared-chip-group mb-2 flex w-fit" data-chip-row={rowName}>
+  <div class="shared-chip-group shared-chip-group--wrap mb-2 w-fit" data-chip-row={rowName}>
     <span class="shared-chip-label">{label}</span>
     <div class="filter-tabs">
       {#each options as option (option.key)}
@@ -27,11 +27,3 @@
     </div>
   </div>
 {/if}
-
-<style>
-  /* Filter-bar chip groups hold a handful of chips; these rows carry a whole
-     category list, so they wrap instead of overflowing the view. */
-  .filter-tabs {
-    flex-wrap: wrap;
-  }
-</style>
