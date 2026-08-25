@@ -102,13 +102,49 @@ Subtype entries stay out of the snapshot; the desktop requests them on demand.
 
 Bare `/v1/order-summary/{slug}` requests keep the existing rank-required behavior.
 
+## Patreon supporters
+
+`GET /v1/supporters` serves KV key `patreon:supporters:v1` as
+`{ ok: true, updatedAt, supporters: [{ name, tier }] }` with tier `basic | big | biggest`. The route
+is public, needs no bootstrap token, uses the price/meta rate-limit class, and is edge-cached for one
+hour. A missing or empty key returns `updatedAt: null` with an empty list and is never edge-cached,
+so the first sync after setup appears immediately.
+
+`services/patreon.ts` owns the sync. It walks the Patreon v2 campaign members endpoint, follows
+`links.next` only while it stays on the Patreon API, keeps `active_patron` members, maps entitled
+tier ids through `PATREON_TIER_MAP`, and takes the highest tier when a member holds several. Members
+with no mapped tier are dropped. Sync is a logged no-op when the campaign id or the tokens are
+absent, so a deploy without Patreon configuration stays green.
+
+Creator tokens expire. A 401 from the members call triggers one refresh through
+`https://www.patreon.com/api/oauth2/token`; the rotated pair is written to `patreon:tokens:v1` and
+the members walk is retried once. Tokens in KV always win over the `PATREON_ACCESS_TOKEN` and
+`PATREON_REFRESH_TOKEN` seeds.
+
+`patreon:exclusions:v1` is a JSON array of strings. A supporter is excluded when the Patreon member
+id or the case-insensitive, whitespace-collapsed full name matches an entry (published names are
+whitespace-collapsed the same way). `POST /admin/patreon/exclusions` (`{ set: string[] }`) replaces
+the list and immediately drops matching names from the published KV value; a body whose `set` is not
+an array is rejected with 400 so a malformed call cannot wipe the list. Raw member ids are never
+retained, so an id exclusion applies at the next sync.
+`POST /admin/patreon/sync` runs the sync and returns `{ ok: true, count, status }`.
+
+Opt-out latency: KV drops the name immediately, but the edge cache can serve the previous list for
+up to one hour and the desktop app caches a non-empty list for up to 24 hours, so an excluded name
+can stay visible on clients for up to a day after the admin call.
+
+Configuration: vars `PATREON_CAMPAIGN_ID`, `PATREON_CLIENT_ID`, `PATREON_TIER_MAP` (JSON tier id to
+tier) parsed in `src/config.ts`; secrets `PATREON_CLIENT_SECRET`, `PATREON_ACCESS_TOKEN`,
+`PATREON_REFRESH_TOKEN`. All three Patreon KV keys live in `ITEM_META` and carry no expiration.
+
 ## Read-through and prewarm
 
 Confirmed misses use `miss:price:*`, `miss:meta:*`, `miss:orders:*`, and
 `miss:orders-summary:*`. Transient upstream errors must not create negative markers.
 `skip:untradable:*` prevents repeated metadata requests for excluded items.
 
-Cron runs every 15 minutes. Current production defaults are:
+Prewarm cron runs every 15 minutes; the separate daily `0 4 * * *` trigger runs only the Patreon
+sync. Current production defaults are:
 
 - `PREWARM_BATCH_SIZE=125`
 - `ORDER_SUMMARY_PREWARM_BATCH_SIZE=36`

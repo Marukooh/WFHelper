@@ -6,6 +6,7 @@ import { resetRankedCatalogCacheForTest } from '../src/routes/public';
 import type { Env } from '../src/types';
 import { buildOrderSummaryPayload, prewarmBatch, prewarmOrderSummaryCatalog } from '../src/services/prewarm';
 import { fetchCatalogSlugs } from '../src/services/prewarmCatalog';
+import { syncPatreonSupporters } from '../src/services/patreon';
 import { WFM_SNAPSHOT_CLIENT_CACHE_VERSION } from '../../../config/shared/wfmSnapshotValidation';
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
@@ -2215,6 +2216,308 @@ describe('relic order summary subtypes', () => {
 		await waitOnExecutionContext(ctx);
 
 		expect(response.status).toBe(404);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe('patreon supporters', () => {
+	const TIER_MAP = JSON.stringify({ t_basic: 'basic', t_big: 'big', t_biggest: 'biggest' });
+	const MEMBERS_URL = 'https://www.patreon.com/api/oauth2/v2/campaigns/camp-1/members';
+	const TOKEN_URL = 'https://www.patreon.com/api/oauth2/token';
+
+	function patreonEnv(overrides: Record<string, string> = {}): Env {
+		return {
+			...env,
+			PATREON_CAMPAIGN_ID: 'camp-1',
+			PATREON_CLIENT_ID: 'client-1',
+			PATREON_CLIENT_SECRET: 'secret-1',
+			PATREON_ACCESS_TOKEN: 'seed-access',
+			PATREON_REFRESH_TOKEN: 'seed-refresh',
+			PATREON_TIER_MAP: TIER_MAP,
+			...overrides,
+		} as unknown as Env;
+	}
+
+	function patreonMember(id: string, name: string, status: string, tierIds: string[]): Record<string, unknown> {
+		return {
+			id,
+			type: 'member',
+			attributes: { full_name: name, patron_status: status },
+			relationships: { currently_entitled_tiers: { data: tierIds.map((tierId) => ({ id: tierId, type: 'tier' })) } },
+		};
+	}
+
+	function jsonPage(body: Record<string, unknown>, status = 200): Response {
+		return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+	}
+
+	async function storedSupporters(): Promise<{ updatedAt?: unknown; supporters?: Array<{ name: string; tier: string }> }> {
+		const raw = await env.ITEM_META.get('patreon:supporters:v1');
+		return raw ? (JSON.parse(raw) as { updatedAt?: unknown; supporters?: Array<{ name: string; tier: string }> }) : {};
+	}
+
+	beforeEach(async () => {
+		await caches.default.delete(new Request('https://example.com/v1/supporters?v=1'));
+	});
+
+	it('keeps only active patrons and maps the highest entitled tier', async () => {
+		globalThis.fetch = vi.fn(async () =>
+			jsonPage({
+				data: [
+					patreonMember('m-1', 'Basic Betty', 'active_patron', ['t_basic']),
+					patreonMember('m-2', 'Multi Mike', 'active_patron', ['t_basic', 't_biggest', 't_big']),
+					patreonMember('m-3', 'Former Fred', 'former_patron', ['t_biggest']),
+					patreonMember('m-4', 'Unmapped Ursula', 'active_patron', ['t_unknown']),
+					patreonMember('m-5', 'Tierless Tom', 'active_patron', []),
+				],
+			}),
+		) as unknown as typeof fetch;
+
+		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+
+		expect(result).toEqual({ ok: true, status: 'synced', count: 2 });
+		const stored = await storedSupporters();
+		expect(stored.supporters).toEqual([
+			{ name: 'Multi Mike', tier: 'biggest' },
+			{ name: 'Basic Betty', tier: 'basic' },
+		]);
+		expect(typeof stored.updatedAt).toBe('string');
+	});
+
+	it('follows links.next pagination', async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input instanceof URL ? input : typeof input === 'string' ? input : input.url);
+			if (url.startsWith(MEMBERS_URL) && url.includes('cursor=page-2')) {
+				return jsonPage({ data: [patreonMember('m-2', 'Page Two Pat', 'active_patron', ['t_big'])] });
+			}
+			if (url.startsWith(MEMBERS_URL)) {
+				return jsonPage({
+					data: [patreonMember('m-1', 'Page One Paul', 'active_patron', ['t_basic'])],
+					links: { next: `${MEMBERS_URL}?cursor=page-2` },
+				});
+			}
+			throw new Error(`Unexpected url: ${url}`);
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+
+		expect(result).toMatchObject({ ok: true, count: 2 });
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect((await storedSupporters()).supporters).toEqual([
+			{ name: 'Page Two Pat', tier: 'big' },
+			{ name: 'Page One Paul', tier: 'basic' },
+		]);
+	});
+
+	it('ignores a links.next pointing off the Patreon API', async () => {
+		const fetchMock = vi.fn(async () =>
+			jsonPage({
+				data: [patreonMember('m-1', 'Only One', 'active_patron', ['t_basic'])],
+				links: { next: 'https://evil.example/api/oauth2/v2/campaigns/camp-1/members' },
+			}),
+		);
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+
+		expect(result).toMatchObject({ ok: true, count: 1 });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('drops supporters excluded by member id or by case-insensitive name', async () => {
+		await env.ITEM_META.put('patreon:exclusions:v1', JSON.stringify(['m-2', '  bIg SpEnDeR  ']));
+		globalThis.fetch = vi.fn(async () =>
+			jsonPage({
+				data: [
+					patreonMember('m-1', 'Visible Vic', 'active_patron', ['t_basic']),
+					patreonMember('m-2', 'Hidden By Id', 'active_patron', ['t_big']),
+					patreonMember('m-3', 'Big Spender', 'active_patron', ['t_biggest']),
+				],
+			}),
+		) as unknown as typeof fetch;
+
+		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+
+		expect(result).toMatchObject({ ok: true, count: 1 });
+		expect((await storedSupporters()).supporters).toEqual([{ name: 'Visible Vic', tier: 'basic' }]);
+	});
+
+	it('refreshes an expired token, persists the rotated pair, and retries once', async () => {
+		const authHeaders: string[] = [];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input instanceof URL ? input : typeof input === 'string' ? input : input.url);
+			if (url === TOKEN_URL) {
+				return jsonPage({ access_token: 'fresh-access', refresh_token: 'fresh-refresh' });
+			}
+			if (url.startsWith(MEMBERS_URL)) {
+				const auth = String((init?.headers as Record<string, string> | undefined)?.authorization || '');
+				authHeaders.push(auth);
+				if (auth === 'Bearer seed-access') return jsonPage({ errors: [] }, 401);
+				return jsonPage({ data: [patreonMember('m-1', 'Renewed Rita', 'active_patron', ['t_big'])] });
+			}
+			throw new Error(`Unexpected url: ${url}`);
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+
+		expect(result).toMatchObject({ ok: true, count: 1 });
+		expect(authHeaders).toEqual(['Bearer seed-access', 'Bearer fresh-access']);
+		const tokens = JSON.parse(String(await env.ITEM_META.get('patreon:tokens:v1'))) as Record<string, unknown>;
+		expect(tokens).toMatchObject({ accessToken: 'fresh-access', refreshToken: 'fresh-refresh' });
+	});
+
+	it('fails without retrying again when the refresh itself fails', async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input instanceof URL ? input : typeof input === 'string' ? input : input.url);
+			if (url === TOKEN_URL) return jsonPage({ error: 'invalid_grant' }, 400);
+			return jsonPage({ errors: [] }, 401);
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+
+		expect(result).toEqual({ ok: false, error: 'patreon_token_refresh_failed' });
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('prefers tokens stored in KV over the env seed', async () => {
+		await env.ITEM_META.put(
+			'patreon:tokens:v1',
+			JSON.stringify({ accessToken: 'kv-access', refreshToken: 'kv-refresh', updatedAt: new Date().toISOString() }),
+		);
+		const authHeaders: string[] = [];
+		globalThis.fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			authHeaders.push(String((init?.headers as Record<string, string> | undefined)?.authorization || ''));
+			return jsonPage({ data: [patreonMember('m-1', 'Stored Sam', 'active_patron', ['t_basic'])] });
+		}) as unknown as typeof fetch;
+
+		await syncPatreonSupporters(patreonEnv(), 'manual');
+
+		expect(authHeaders).toEqual(['Bearer kv-access']);
+	});
+
+	it('no-ops without a campaign id or tokens', async () => {
+		const fetchMock = vi.fn(async () => {
+			throw new Error('unconfigured patreon sync must not call upstream');
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		expect(await syncPatreonSupporters(patreonEnv({ PATREON_CAMPAIGN_ID: '' }), 'cron')).toEqual({
+			ok: true,
+			status: 'not_configured',
+			count: 0,
+		});
+		expect(await syncPatreonSupporters(patreonEnv({ PATREON_ACCESS_TOKEN: '', PATREON_REFRESH_TOKEN: '' }), 'cron')).toEqual({
+			ok: true,
+			status: 'not_configured',
+			count: 0,
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('serves an empty supporters payload when the key is missing', async () => {
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(new IncomingRequest('https://example.com/v1/supporters'), env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ ok: true, updatedAt: null, supporters: [] });
+	});
+
+	it('serves the published supporters with an hour of edge cache', async () => {
+		await env.ITEM_META.put(
+			'patreon:supporters:v1',
+			JSON.stringify({
+				updatedAt: '2026-08-25T00:00:00.000Z',
+				supporters: [
+					{ name: 'Biggest Bea', tier: 'biggest' },
+					{ name: 'Basic Bob', tier: 'basic' },
+					{ name: '', tier: 'big' },
+					{ name: 'Bogus Tier', tier: 'platinum' },
+				],
+			}),
+		);
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(new IncomingRequest('https://example.com/v1/supporters'), env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get('cache-control')).toBe('public, max-age=3600');
+		expect(await response.json()).toEqual({
+			ok: true,
+			updatedAt: '2026-08-25T00:00:00.000Z',
+			supporters: [
+				{ name: 'Biggest Bea', tier: 'biggest' },
+				{ name: 'Basic Bob', tier: 'basic' },
+			],
+		});
+	});
+
+	it('replaces the exclusion list and hides matching names immediately', async () => {
+		await env.ITEM_META.put(
+			'patreon:supporters:v1',
+			JSON.stringify({
+				updatedAt: '2026-08-25T00:00:00.000Z',
+				supporters: [
+					{ name: 'Stays Steve', tier: 'big' },
+					{ name: 'Leaves Lena', tier: 'basic' },
+				],
+			}),
+		);
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(
+			new IncomingRequest('https://example.com/admin/patreon/exclusions', {
+				method: 'POST',
+				headers: { authorization: 'Bearer test-key', 'content-type': 'application/json' },
+				body: JSON.stringify({ set: ['leaves lena', 'm-99', '', 'm-99'] }),
+			}),
+			{ ...env, ADMIN_API_KEY: 'test-key' } as unknown as Env,
+			ctx,
+		);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ ok: true, result: { exclusions: 2, removed: 1 } });
+		expect(JSON.parse(String(await env.ITEM_META.get('patreon:exclusions:v1')))).toEqual(['leaves lena', 'm-99']);
+		expect((await storedSupporters()).supporters).toEqual([{ name: 'Stays Steve', tier: 'big' }]);
+	});
+
+	it('runs the sync from the admin route', async () => {
+		globalThis.fetch = vi.fn(async () =>
+			jsonPage({ data: [patreonMember('m-1', 'Admin Amy', 'active_patron', ['t_biggest'])] }),
+		) as unknown as typeof fetch;
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(
+			new IncomingRequest('https://example.com/admin/patreon/sync', {
+				method: 'POST',
+				headers: { authorization: 'Bearer test-key' },
+			}),
+			patreonEnv({ ADMIN_API_KEY: 'test-key' }),
+			ctx,
+		);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ ok: true, count: 1, status: 'synced' });
+	});
+
+	it('runs the patreon sync on the daily cron only', async () => {
+		const fetchMock = vi.fn(async () => {
+			throw new Error('unconfigured patreon sync must not call upstream');
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+		const ctx = createExecutionContext();
+		await worker.scheduled({ cron: '0 4 * * *', scheduledTime: Date.now(), noRetry: () => undefined }, env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'cron', route: 'patreon:sync', status: 204 }));
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });

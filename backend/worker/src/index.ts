@@ -5,7 +5,11 @@ import { checkDailyBudget, isDailyBudgetExceeded } from './security/dailyBudget'
 import { getWorkerConfig } from './config';
 import { logEvent, takeResponseLogFields } from './services/logging';
 import { prewarmBatch, prewarmOrderSummaryCatalog } from './services/prewarm';
+import { syncPatreonSupporters } from './services/patreon';
 import type { Env } from './types';
+
+// Must match the daily trigger in wrangler.jsonc; every other cron tick prewarms.
+const PATREON_SYNC_CRON = '0 4 * * *';
 
 export { DailyBudgetCounter } from './security/dailyBudget';
 export { SnapshotCoordinator } from './services/prewarm';
@@ -25,6 +29,7 @@ function routeMetadata(req: Request): RouteMetadata {
 	if (pathname === '/v1/bootstrap') return { type: 'request', route: '/v1/bootstrap' };
 	if (pathname === '/v1/snapshot') return { type: 'request', route: '/v1/snapshot' };
 	if (pathname === '/v1/wfm-items') return { type: 'request', route: '/v1/wfm-items' };
+	if (pathname === '/v1/supporters') return { type: 'request', route: '/v1/supporters' };
 
 	const publicSlugRoutes = [
 		['/v1/prices/', '/v1/prices/:slug'],
@@ -104,6 +109,17 @@ export default {
 					type: 'cron',
 					route,
 					status: 204,
+					latencyMs: Math.round(performance.now() - start),
+				});
+				return;
+			}
+
+			if (controller.cron === PATREON_SYNC_CRON) {
+				await syncPatreonSupporters(env, 'cron');
+				logEvent({
+					type: 'cron',
+					route,
+					status: 200,
 					latencyMs: Math.round(performance.now() - start),
 				});
 				return;

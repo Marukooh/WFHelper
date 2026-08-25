@@ -13,6 +13,7 @@ Public:
 - `GET /v1/prices/:slug`
 - `GET /v1/meta/:slug`
 - `GET /v1/order-summary/:slug`, with `?subtype=` for relic refinements
+- `GET /v1/supporters`
 - `GET /v1/orders/:slug`, disabled by default
 
 Admin routes require `Authorization: Bearer <ADMIN_API_KEY>`:
@@ -25,6 +26,8 @@ Admin routes require `Authorization: Bearer <ADMIN_API_KEY>`:
 - `POST /admin/prewarm/order-summaries`
 - `GET /admin/prewarm/order-summaries/status`
 - `GET /admin/snapshot/status`
+- `POST /admin/patreon/exclusions`
+- `POST /admin/patreon/sync`
 
 ## Automatic flow
 
@@ -37,8 +40,9 @@ Admin routes require `Authorization: Bearer <ADMIN_API_KEY>`:
 7. Cron walks the catalog and refreshes entries outside the 21-hour freshness window.
 8. Each batch patches the bulk snapshot through a Durable Object coordinator.
 
-Cron runs every 15 minutes. Production batches currently process 125 catalog items and 36 ranked
-summary entries per tick. Manual prewarm remains an operator tool, not a correctness requirement.
+Prewarm cron runs every 15 minutes. Production batches currently process 125 catalog items and 36
+ranked summary entries per tick. A separate daily trigger runs the Patreon supporter sync. Manual
+prewarm remains an operator tool, not a correctness requirement.
 
 ## Configuration
 
@@ -79,11 +83,17 @@ Important variables:
 - `PUBLIC_RATE_LIMIT_ENABLED`
 - `PUBLIC_BOOTSTRAP_REQUIRED`
 - `BOOTSTRAP_TOKEN_TTL_SEC`
+- `PATREON_CAMPAIGN_ID`
+- `PATREON_CLIENT_ID`
+- `PATREON_TIER_MAP`
 
 Secrets:
 
 - `ADMIN_API_KEY`
 - `BOOTSTRAP_TOKEN_SECRET`
+- `PATREON_CLIENT_SECRET`
+- `PATREON_ACCESS_TOKEN`
+- `PATREON_REFRESH_TOKEN`
 
 Production values and binding identifiers live in `wrangler.jsonc`.
 

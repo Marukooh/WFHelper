@@ -6,6 +6,7 @@ type WorkerLogEntry = {
 	latencyMs?: number;
 	slug?: string;
 	cacheHit?: boolean;
+	count?: number;
 	error?: string;
 };
 
@@ -35,6 +36,7 @@ export function logEvent(entry: WorkerLogEntry): void {
 	if (entry.latencyMs !== undefined) cleanEntry.latencyMs = entry.latencyMs;
 	if (entry.slug !== undefined) cleanEntry.slug = entry.slug;
 	if (entry.cacheHit !== undefined) cleanEntry.cacheHit = entry.cacheHit;
+	if (entry.count !== undefined) cleanEntry.count = entry.count;
 	if (entry.error !== undefined) cleanEntry.error = entry.error;
 
 	console.log(cleanEntry);

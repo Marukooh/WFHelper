@@ -12,6 +12,7 @@ import {
 	getOrHydratePrice,
 } from '../services/readThrough';
 import { isRelicSlug, normalizeOrderSubtype } from '../services/orderSubtype';
+import { readPublishedSupporters } from '../services/patreon';
 import { recordActiveUser } from '../services/activeUsers';
 import { readRankedSummaryCatalogFromKv, sanitizeSnapshotForClient } from '../services/prewarm';
 import { fetchCatalogSlugs, readClientCatalogFromKv } from '../services/prewarmCatalog';
@@ -35,6 +36,7 @@ const routeStats = {
 	metaRequests: 0,
 	orderSummaryRequests: 0,
 	wfmItemsRequests: 0,
+	supportersRequests: 0,
 };
 
 const PUBLIC_JSON_CACHE_HEADERS = { 'cache-control': 'public, max-age=60' };
@@ -42,6 +44,8 @@ const EXCLUDED_MARKET_HEADERS = { 'cache-control': 'public, max-age=3600' };
 const SNAPSHOT_CACHE_CONTROL = 'public, max-age=7200';
 const WFM_ITEMS_CACHE_CONTROL = 'public, max-age=21600';
 const WFM_ITEMS_CACHE_VERSION = 2;
+const SUPPORTERS_CACHE_CONTROL = 'public, max-age=3600';
+const SUPPORTERS_CACHE_VERSION = 1;
 const RANKED_CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
 
 let rankedCatalogCache: { expiresAt: number; bySlug: Map<string, number> } | null = null;
@@ -371,6 +375,35 @@ export async function handlePublicRoutes(req: Request, url: URL, env: Env, ctx?:
 		const response = rawJsonResponse(body, req, env, 200, responseHeaders);
 
 		if (ctx) {
+			ctx.waitUntil(edgeCache.put(cacheKey, new Response(body, { status: 200, headers: responseHeaders })));
+		}
+
+		return annotateResponse(response, { cacheHit: false });
+	}
+
+	if (req.method === 'GET' && url.pathname === '/v1/supporters') {
+		// Public and bootstrap-free: the app renders this before it holds a token.
+		const guardResponse = await guardPublicRequest(req, env, 'supporters');
+		if (guardResponse) return guardResponse;
+
+		routeStats.supportersRequests += 1;
+		const cacheKey = new Request(`${url.origin}/v1/supporters?v=${SUPPORTERS_CACHE_VERSION}`, { method: 'GET' });
+		const edgeCache = caches.default;
+		const cachedResponse = await edgeCache.match(cacheKey);
+		if (cachedResponse) {
+			return annotateResponse(streamJsonResponse(cachedResponse.body, req, env, 200, { 'cache-control': SUPPORTERS_CACHE_CONTROL }), {
+				cacheHit: true,
+			});
+		}
+
+		const published = await readPublishedSupporters(env);
+		const body = JSON.stringify({ ok: true, updatedAt: published.updatedAt, supporters: published.supporters });
+		const responseHeaders = { 'cache-control': SUPPORTERS_CACHE_CONTROL };
+		const response = rawJsonResponse(body, req, env, 200, responseHeaders);
+
+		// An empty list is never edge-cached, so the first sync after setup shows up
+		// immediately instead of an hour later.
+		if (ctx && published.supporters.length > 0) {
 			ctx.waitUntil(edgeCache.put(cacheKey, new Response(body, { status: 200, headers: responseHeaders })));
 		}
 

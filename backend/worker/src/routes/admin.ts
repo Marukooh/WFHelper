@@ -16,6 +16,7 @@ import {
 	saveOrderSummaryHotset,
 	sanitizeOrderSummaryHotsetEntries,
 } from '../services/prewarm';
+import { replacePatreonExclusions, syncPatreonSupporters } from '../services/patreon';
 import { getWorkerConfig } from '../config';
 import { jsonResponse } from '../security/cors';
 import { isAdminAuthorized } from '../security/adminAuth';
@@ -156,6 +157,29 @@ export async function handleAdminRoutes(req: Request, url: URL, env: Env): Promi
 			slugCount: Array.isArray(cached?.slugs) ? cached.slugs.length : 0,
 		};
 		return jsonResponse({ ok: true, result }, req, env, 200);
+	}
+
+	if (req.method === 'POST' && url.pathname === '/admin/patreon/exclusions') {
+		const guardResponse = await guardAdmin(req, env);
+		if (guardResponse) return guardResponse;
+
+		const body = parseJsonBody(await req.text());
+		// Replacing the whole list with a missing or malformed `set` would
+		// silently wipe every privacy opt-out, so reject anything but an array.
+		if (!Array.isArray(body.set)) {
+			return jsonResponse({ ok: false, error: 'set_must_be_array' }, req, env, 400);
+		}
+		const result = await replacePatreonExclusions(env, body.set);
+		return jsonResponse({ ok: true, result }, req, env, 200);
+	}
+
+	if (req.method === 'POST' && url.pathname === '/admin/patreon/sync') {
+		const guardResponse = await guardAdmin(req, env);
+		if (guardResponse) return guardResponse;
+
+		const result = await syncPatreonSupporters(env, 'manual');
+		if (!result.ok) return jsonResponse({ ok: false, error: result.error }, req, env, 502);
+		return jsonResponse({ ok: true, count: result.count, status: result.status }, req, env, 200);
 	}
 
 	if (req.method === 'GET' && url.pathname === '/admin/snapshot/status') {

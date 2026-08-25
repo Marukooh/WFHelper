@@ -1,5 +1,26 @@
-import type { Env } from './types';
+import type { Env, SupporterTier } from './types';
 import { clamp, parsePositiveInt } from './utils';
+
+// Tier ids are opaque Patreon strings, so the map is validated by value only.
+function parsePatreonTierMap(raw: string | undefined): Record<string, SupporterTier> {
+	const map: Record<string, SupporterTier> = {};
+	if (!raw || !raw.trim()) return map;
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw) as unknown;
+	} catch {
+		return map;
+	}
+	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return map;
+
+	for (const [tierId, tier] of Object.entries(parsed as Record<string, unknown>)) {
+		const id = tierId.trim();
+		if (!id) continue;
+		if (tier === 'basic' || tier === 'big' || tier === 'biggest') map[id] = tier;
+	}
+	return map;
+}
 
 interface WorkerConfig {
 	cacheTtlSec: number;
@@ -17,6 +38,9 @@ interface WorkerConfig {
 	catalogSlugGuardEnabled: boolean;
 	dailyBudgetMaxRequests: number;
 	dailyBudgetSampleRate: number;
+	patreonCampaignId: string;
+	patreonClientId: string;
+	patreonTierMap: Record<string, SupporterTier>;
 }
 
 export function getWorkerConfig(env: Env): WorkerConfig {
@@ -36,5 +60,8 @@ export function getWorkerConfig(env: Env): WorkerConfig {
 		catalogSlugGuardEnabled: (env.CATALOG_SLUG_GUARD_ENABLED || '1').trim() !== '0',
 		dailyBudgetMaxRequests: clamp(parsePositiveInt(env.DAILY_BUDGET_MAX_REQUESTS, 300000), 1, 10000000),
 		dailyBudgetSampleRate: clamp(parsePositiveInt(env.DAILY_BUDGET_SAMPLE_RATE, 100), 1, 1000),
+		patreonCampaignId: (env.PATREON_CAMPAIGN_ID || '').trim(),
+		patreonClientId: (env.PATREON_CLIENT_ID || '').trim(),
+		patreonTierMap: parsePatreonTierMap(env.PATREON_TIER_MAP),
 	};
 }
