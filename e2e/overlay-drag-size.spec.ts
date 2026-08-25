@@ -111,6 +111,19 @@ test("a resized riven overlay reopens at the size it was left at", async () => {
         .setRivenInteractiveMode(true);
     });
 
+    // The base zoom lands after the renderer signals ready. On a hosted runner
+    // with a small display (base 0.8) an early read still sees Chromium's
+    // pristine 1.0 and inflates the before ratio to 1.25, failing the compare.
+    const zoomHarness = harness;
+    await expect
+      .poll(
+        async () => {
+          const now = await leftRivenSize(zoomHarness);
+          return now.zoom > 0 && Math.abs(now.zoom - baseZoomForDisplay(now.workArea)) < 0.011;
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(true);
     const before = await leftRivenSize(harness);
     expect(before.w).toBeGreaterThan(0);
 
