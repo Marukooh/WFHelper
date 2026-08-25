@@ -51,6 +51,8 @@ export interface InventoryBaseItem extends ParsedItem {
   completeSets: number | boolean | null;
   marketSlug: string | null;
   marketThumb: string | null;
+  /** Relic refinement, doubling as the WFM order subtype for this row. */
+  subtype: string | null;
 }
 
 export interface InventoryViewItem extends InventoryBaseItem {
@@ -309,14 +311,21 @@ export function metricNeedsFromFilters(
 /** Order ranks per key; RANKLESS_ORDER marks orders without a modRank. */
 type OrderRankLookup = Record<string, number[]>;
 
+/** Order subtypes per key; null marks orders without one. */
+type OrderSubtypeLookup = Record<string, (string | null)[]>;
+
 const RANKLESS_ORDER = -1;
 
 export function buildOrderLookups(orders: WfmOrdersResult): {
   orderedNames: OrderRankLookup;
   orderedSlugs: OrderRankLookup;
+  orderedSubtypes: OrderSubtypeLookup;
 } {
   const orderedNames: OrderRankLookup = {};
   const orderedSlugs: OrderRankLookup = {};
+  // Name and slug keys cannot collide (slugs carry underscores), so subtype
+  // marks share one map keyed by both.
+  const orderedSubtypes: OrderSubtypeLookup = {};
   const mark = (lookup: OrderRankLookup, key: string, modRank: unknown): void => {
     if (!key) return;
     const rank =
@@ -325,12 +334,22 @@ export function buildOrderLookups(orders: WfmOrdersResult): {
         : RANKLESS_ORDER;
     (lookup[key] ??= []).push(rank);
   };
+  const markSubtype = (key: string, subtype: unknown): void => {
+    if (!key) return;
+    (orderedSubtypes[key] ??= []).push(
+      typeof subtype === "string" && subtype ? subtype.toLowerCase() : null,
+    );
+  };
 
   for (const order of [...orders.sell, ...orders.buy]) {
-    mark(orderedNames, normalizeMarketName(order.itemName || ""), order.modRank);
-    mark(orderedSlugs, (order.itemUrlName || "").trim().toLowerCase(), order.modRank);
+    const nameKey = normalizeMarketName(order.itemName || "");
+    const slugKey = (order.itemUrlName || "").trim().toLowerCase();
+    mark(orderedNames, nameKey, order.modRank);
+    mark(orderedSlugs, slugKey, order.modRank);
+    markSubtype(nameKey, order.subtype);
+    markSubtype(slugKey, order.subtype);
   }
-  return { orderedNames, orderedSlugs };
+  return { orderedNames, orderedSlugs, orderedSubtypes };
 }
 
 export function buildBaseInventoryItems(
@@ -340,6 +359,7 @@ export function buildBaseInventoryItems(
   orderedNames: OrderRankLookup,
   orderedSlugs: OrderRankLookup,
   relicDb?: RelicDatabase | null,
+  orderedSubtypes?: OrderSubtypeLookup,
 ): InventoryBaseItem[] {
   // DE exports cannot distinguish sellable sets such as Shedu from junk such as
   // Seer. Prefer the complete snapshot index; legacy snapshots fall back here.
@@ -375,6 +395,11 @@ export function buildBaseInventoryItems(
         : undefined;
       const displayName = relicGroupName || item.name;
       const fallbackRelicSlug = group === "relics" ? toMarketSlug(displayName) : null;
+      // WFM knows one relic item per group; the refinement is the order subtype.
+      const relicQuality = relicLookupInfo?.quality ?? null;
+      const visibleName = relicQuality
+        ? `${displayName} (${relicQuality.charAt(0).toUpperCase()}${relicQuality.slice(1)})`
+        : displayName;
       const excludedRankedItem =
         isRankedGroup(group) &&
         isExcludedRankedMarketItem(
@@ -430,16 +455,23 @@ export function buildBaseInventoryItems(
         ...(orderedNames[normalizeMarketName(displayName)] ?? []),
         ...((marketSlug && orderedSlugs[marketSlug]) || []),
       ];
+      const orderSubtypes = [
+        ...(orderedSubtypes?.[normalizeMarketName(displayName)] ?? []),
+        ...((marketSlug && orderedSubtypes?.[marketSlug]) || []),
+      ];
       // Rank-split rows only match orders for their own rank; a rank-less
-      // order (parts, sets) marks every row of the item.
+      // order (parts, sets) marks every row of the item. Refinement rows only
+      // match orders for their own subtype; a subtype-less order marks all.
       const orderPlaced =
         orderRanks.length > 0 &&
         (!isRankedListingItem ||
-          orderRanks.some((rank) => rank === RANKLESS_ORDER || rank === resolvedRank));
+          orderRanks.some((rank) => rank === RANKLESS_ORDER || rank === resolvedRank)) &&
+        (relicQuality == null ||
+          orderSubtypes.some((subtype) => subtype === null || subtype === relicQuality));
 
       return {
         ...item,
-        name: displayName,
+        name: visibleName,
         internalName:
           typeof item.inventoryKey === "string" && item.inventoryKey.trim().length > 0
             ? item.inventoryKey
@@ -458,6 +490,7 @@ export function buildBaseInventoryItems(
             : null,
         marketSlug,
         marketThumb,
+        subtype: relicQuality,
       };
     })
     .filter((item): item is InventoryBaseItem => item != null);

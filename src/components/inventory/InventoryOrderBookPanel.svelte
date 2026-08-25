@@ -59,6 +59,7 @@
 
   let currentSlug: string | null = null;
   let currentRankFilter: number | null = null;
+  let currentSubtype: string | null = null;
   let orderBook: ItemOrderBook | null = null;
   let loading = false;
   let errorMessage = "";
@@ -146,12 +147,16 @@
   $: buyRows = sortEntries(filteredBuyBase, "buy", buySort).slice(0, DISPLAY_ROWS_PER_SIDE);
 
   $: slug = item?.marketSlug || null;
-  $: requestKey = slug ? `${slug}|${requestRank == null ? "all" : `r${requestRank}`}` : null;
+  $: itemSubtype = item?.subtype ?? null;
+  $: requestKey = slug
+    ? `${slug}|${requestRank == null ? "all" : `r${requestRank}`}|${itemSubtype ?? "all"}`
+    : null;
   $: if (didRequestKeyChange(requestKey)) {
     currentSlug = slug;
     currentRankFilter = requestRank;
+    currentSubtype = itemSubtype;
     resetAutoRefresh(null, null);
-    void load(currentSlug, currentRankFilter);
+    void load(currentSlug, currentRankFilter, currentSubtype);
   }
 
   onDestroy(() => {
@@ -178,12 +183,16 @@
     autoRefreshTimer = setTimeout(() => {
       if (nextSlug !== currentSlug) return;
       if (nextRank !== currentRankFilter) return;
-      clearOrderBookCache(nextSlug, nextRank);
-      void load(nextSlug, nextRank);
+      clearOrderBookCache(nextSlug, nextRank, currentSubtype);
+      void load(nextSlug, nextRank, currentSubtype);
     }, AUTO_REFRESH_MS);
   }
 
-  async function load(slugToLoad: string | null, rankToLoad: number | null): Promise<void> {
+  async function load(
+    slugToLoad: string | null,
+    rankToLoad: number | null,
+    subtypeToLoad: string | null = null,
+  ): Promise<void> {
     const token = ++requestToken;
 
     orderBook = null;
@@ -198,10 +207,16 @@
 
     loading = true;
 
-    let result = await fetchItemOrderBookBySlug(slugToLoad, { rank: rankToLoad });
+    let result = await fetchItemOrderBookBySlug(slugToLoad, {
+      rank: rankToLoad,
+      subtype: subtypeToLoad,
+    });
     if (result.status === "error") {
-      clearOrderBookCache(slugToLoad, rankToLoad);
-      result = await fetchItemOrderBookBySlug(slugToLoad, { rank: rankToLoad });
+      clearOrderBookCache(slugToLoad, rankToLoad, subtypeToLoad);
+      result = await fetchItemOrderBookBySlug(slugToLoad, {
+        rank: rankToLoad,
+        subtype: subtypeToLoad,
+      });
     }
     if (token !== requestToken) return;
 
@@ -239,8 +254,8 @@
 
   function refresh(): void {
     if (!currentSlug) return;
-    clearOrderBookCache(currentSlug, currentRankFilter);
-    void load(currentSlug, currentRankFilter);
+    clearOrderBookCache(currentSlug, currentRankFilter, currentSubtype);
+    void load(currentSlug, currentRankFilter, currentSubtype);
   }
 
   function openOnWarframeMarket(): void {
@@ -398,6 +413,7 @@
         orderType,
         modRank: requestRank,
         maxRank: isRankedListingItem ? itemMaxRankValue : null,
+        subtype: itemSubtype,
       },
     });
   }

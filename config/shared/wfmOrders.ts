@@ -1,3 +1,17 @@
+// The relic refinements WFM prices through the order `subtype` field, and the
+// only subtypes the app places or filters on. Single source for all runtimes.
+export const WFM_ORDER_SUBTYPES = ["intact", "exceptional", "flawless", "radiant"] as const;
+export type WfmOrderSubtype = (typeof WFM_ORDER_SUBTYPES)[number];
+
+const WFM_ORDER_SUBTYPE_SET = new Set<string>(WFM_ORDER_SUBTYPES);
+
+/** Case-insensitive subtype allowlist; null for anything else. */
+export function normalizeWfmOrderSubtype(value: unknown): WfmOrderSubtype | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return WFM_ORDER_SUBTYPE_SET.has(normalized) ? (normalized as WfmOrderSubtype) : null;
+}
+
 export interface WfmOrderBookEntry {
   userName: string;
   status: string | null;
@@ -92,6 +106,7 @@ export function normalizeWfmOrderBookSide(
   orderType: WfmOrderType,
   rankFilter: number | null,
   limit: number = MAX_ORDER_BOOK_ENTRIES_PER_SIDE,
+  subtypeFilter: string | null = null,
 ): WfmOrderBookEntry[] {
   if (!Array.isArray(rawOrders)) return [];
 
@@ -106,6 +121,16 @@ export function normalizeWfmOrderBookSide(
 
       const rank = parseOrderRank(order);
       if (rankFilter != null && rank !== rankFilter) return null;
+
+      // Relic orders carry a refinement subtype; a filtered book only shows
+      // orders for that refinement (missing subtype counts as intact).
+      if (subtypeFilter != null) {
+        const subtype =
+          typeof order.subtype === "string" && order.subtype
+            ? order.subtype.toLowerCase()
+            : "intact";
+        if (subtype !== subtypeFilter.toLowerCase()) return null;
+      }
 
       const userName = parseOrderUserName(order);
       if (!userName) return null;

@@ -340,7 +340,7 @@
     hydration.pause();
   });
 
-  $: ({ orderedNames, orderedSlugs } = buildOrderLookups($marketOrders));
+  $: ({ orderedNames, orderedSlugs, orderedSubtypes } = buildOrderLookups($marketOrders));
   $: incompleteSetBaseItems =
     filter === "full_sets" && showIncompleteSets
       ? buildBaseInventoryItems(
@@ -350,6 +350,7 @@
           orderedNames,
           orderedSlugs,
           $relicDb,
+          orderedSubtypes,
         )
       : [];
   $: everythingSourceOptions = EVERYTHING_SOURCES.flatMap((source) => {
@@ -379,6 +380,7 @@
         orderedNames,
         orderedSlugs,
         $relicDb,
+        orderedSubtypes,
       ),
       ...incompleteSetBaseItems,
     ],
@@ -393,6 +395,7 @@
       orderedNames,
       orderedSlugs,
       $relicDb,
+      orderedSubtypes,
     ),
     ...buildBaseInventoryItems(
       $parsedItems,
@@ -401,6 +404,7 @@
       orderedNames,
       orderedSlugs,
       $relicDb,
+      orderedSubtypes,
     ),
   ];
   $: tabItems = buildInventoryViewItems(tabBaseItems, $hydrationMetrics);

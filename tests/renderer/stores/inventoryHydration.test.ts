@@ -47,6 +47,7 @@ function makeItem(index: number): InventoryBaseItem {
     completeSets: null,
     marketSlug: `test_item_${index}`,
     marketThumb: null,
+    subtype: null,
   };
 }
 

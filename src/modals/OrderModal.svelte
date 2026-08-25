@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { orderModalState } from "../stores/market.js";
+  import { WFM_ORDER_SUBTYPES } from "../../config/shared/wfmOrders.js";
   import { invoke, tradeInvoke } from "../lib/ipc.js";
   import { isIpcError } from "../lib/ipcGuards.js";
   import { refreshMarketOrders } from "../lib/marketOrdersSync.js";
@@ -16,6 +17,13 @@
     WfmUpdateOrderInput,
     OrderType,
   } from "../types/market.js";
+
+  // WFM prices relics per refinement via an order subtype.
+  const RELIC_SUBTYPES = WFM_ORDER_SUBTYPES;
+
+  function isRelicName(name: unknown): boolean {
+    return typeof name === "string" && /\brelic$/i.test(name.trim());
+  }
 
   const ITEM_SEARCH_MIN_CHARS = 2;
   const ITEM_SEARCH_LIMIT = 15;
@@ -37,6 +45,8 @@
   let visible = true;
   let modRank = 0;
   let showRankField = false;
+  let subtype = "intact";
+  let showSubtypeField = false;
   let submitting = false;
   let errorMsg = "";
   let platinumEl: HTMLInputElement | null = null;
@@ -77,6 +87,8 @@
       visible = Boolean(order.visible);
       modRank = order.modRank ?? 0;
       showRankField = order.modRank != null;
+      subtype = typeof order.subtype === "string" && order.subtype ? order.subtype : "intact";
+      showSubtypeField = order.subtype != null || isRelicName(order.itemName);
     } else {
       const draftItem = (draft?.item || null) as WfmLookupItem | null;
       orderType = draft?.orderType === "buy" ? "buy" : "sell";
@@ -92,6 +104,8 @@
       showRankField =
         (typeof draft?.modRank === "number" && Number.isFinite(draft.modRank)) ||
         (typeof draft?.maxRank === "number" && draft.maxRank > 0);
+      subtype = typeof draft?.subtype === "string" && draft.subtype ? draft.subtype : "intact";
+      showSubtypeField = draft?.subtype != null || isRelicName(draftItem?.item_name);
 
       if (draftItem && typeof draftItem.id === "string" && draftItem.id.trim()) {
         itemSelected = {
@@ -138,11 +152,14 @@
     // WFM v2 rejects rank-less orders for mods/arcanes (rank: app.field.required).
     showRankField = typeof item.maxRank === "number" && item.maxRank > 0;
     modRank = 0;
+    showSubtypeField = isRelicName(item.item_name);
+    subtype = "intact";
   }
 
   function clearItem(): void {
     itemSelected = null;
     showRankField = false;
+    showSubtypeField = false;
   }
 
   async function submit(e: SubmitEvent): Promise<void> {
@@ -169,6 +186,9 @@
         if (showRankField && !Number.isNaN(Number(modRank))) {
           updates.modRank = Number(modRank);
         }
+        if (showSubtypeField && subtype) {
+          updates.subtype = subtype;
+        }
         result = await tradeInvoke("wfmUpdateOrder", order.id, updates);
       } else {
         if (!itemSelected) {
@@ -189,9 +209,13 @@
           quantity: number;
           visible: boolean;
           modRank?: number;
+          subtype?: string;
         };
         if (showRankField && !Number.isNaN(Number(modRank))) {
           payload.modRank = Number(modRank);
+        }
+        if (showSubtypeField && subtype) {
+          payload.subtype = subtype;
         }
         result = await tradeInvoke("wfmCreateOrder", payload);
       }
@@ -408,6 +432,24 @@
                 max={itemSelected?.maxRank ?? 20}
                 bind:value={modRank}
               />
+            </div>
+          {/if}
+
+          {#if showSubtypeField}
+            <div class="grid gap-1 mb-2">
+              <label for="order-subtype" class="text-sm font-medium text-text-secondary"
+                >{$tr("orderModal.refinement")}</label
+              >
+              <select
+                id="order-subtype"
+                class="shared-filter-select w-full"
+                bind:value={subtype}
+                data-order-subtype
+              >
+                {#each RELIC_SUBTYPES as option (option)}
+                  <option value={option}>{option.charAt(0).toUpperCase() + option.slice(1)}</option>
+                {/each}
+              </select>
             </div>
           {/if}
 

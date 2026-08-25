@@ -48,6 +48,7 @@ export interface WfmRawOrder {
   visible: boolean;
   rank?: number | null;
   mod_rank?: number | null;
+  subtype?: string | null;
   itemId?: string;
   item?: WfmRawOrderItem;
   _catalogItem?: WfmRawOrderItem;

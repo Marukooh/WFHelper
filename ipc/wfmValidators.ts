@@ -1,9 +1,12 @@
 import { toFiniteNumber } from "../config/shared/numeric";
+import { WFM_ORDER_SUBTYPES } from "../config/shared/wfmOrders";
 import { isObject } from "./ipcValidators";
 import { toNonEmptyString } from "../config/shared/stringValidation";
 
 const WFM_ID_RE = /^[a-f0-9]{24}$/i;
 const VALID_ORDER_TYPES = new Set(["sell", "buy"]);
+// Relic refinements are the only order subtypes the app places today.
+const VALID_ORDER_SUBTYPES = new Set<string>(WFM_ORDER_SUBTYPES);
 const VALID_STATUSES = new Set(["online", "ingame", "invisible"]);
 
 const EMAIL_MAX_LENGTH = 254;
@@ -32,6 +35,7 @@ type ParsedCreateOrderParams = {
   quantity: number;
   visible: boolean;
   modRank?: number;
+  subtype?: string;
 };
 type ParsedUpdateOrderPayload = {
   orderId: string;
@@ -40,6 +44,7 @@ type ParsedUpdateOrderPayload = {
     quantity?: number;
     visible?: boolean;
     modRank?: number;
+    subtype?: string;
   };
 };
 type ParsedDeleteOrderPayload = { orderId: string };
@@ -97,6 +102,12 @@ function parseCreateOrderParams(payload: unknown): ParsedCreateOrderParams | nul
     parsed.modRank = modRank;
   }
 
+  if (payload.subtype !== undefined) {
+    const subtype = toNonEmptyString(payload.subtype, 20)?.toLowerCase() ?? null;
+    if (!subtype || !VALID_ORDER_SUBTYPES.has(subtype)) return null;
+    parsed.subtype = subtype;
+  }
+
   return parsed;
 }
 
@@ -129,6 +140,12 @@ function parseUpdateOrderPayload(payload: unknown): ParsedUpdateOrderPayload | n
     const modRank = toClampedInteger(updates.modRank, MIN_MOD_RANK, MAX_MOD_RANK);
     if (modRank == null) return null;
     parsedUpdates.modRank = modRank;
+  }
+
+  if (updates.subtype !== undefined) {
+    const subtype = toNonEmptyString(updates.subtype, 20)?.toLowerCase() ?? null;
+    if (!subtype || !VALID_ORDER_SUBTYPES.has(subtype)) return null;
+    parsedUpdates.subtype = subtype;
   }
 
   return { orderId, updates: parsedUpdates };

@@ -24,6 +24,7 @@ export interface WfmOrder {
   perTrade?: number;
   visible: boolean;
   modRank: number | null;
+  subtype?: string | null;
   itemId: string | null;
   itemName: string;
   itemUrlName: string | null;
@@ -88,6 +89,7 @@ export interface WfmCreateOrderInput {
   quantity: number;
   visible?: boolean;
   modRank?: number;
+  subtype?: string;
 }
 
 export interface WfmUpdateOrderInput {
@@ -95,6 +97,7 @@ export interface WfmUpdateOrderInput {
   quantity?: number;
   visible?: boolean;
   modRank?: number;
+  subtype?: string;
 }
 
 /** Market snapshot labels shown next to the price field while editing. */
@@ -113,5 +116,7 @@ export interface OrderModalState {
     orderType?: OrderType;
     modRank?: number | null;
     maxRank?: number | null;
+    /** Preselected order subtype, e.g. a relic refinement. */
+    subtype?: string | null;
   };
 }

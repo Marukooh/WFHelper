@@ -72,6 +72,7 @@ function makeBaseItem(overrides: Partial<InventoryBaseItem> = {}): InventoryBase
     completeSets: null,
     marketSlug: "sample_item",
     marketThumb: "https://warframe.market/static/assets/sample_market_thumb.png",
+    subtype: null,
     ...overrides,
   };
 }
@@ -483,8 +484,89 @@ describe("inventoryMarket view mapping", () => {
     };
 
     const [mapped] = buildBaseInventoryItems([relicItem], "relics", {}, {}, {}, relicDb);
-    expect(mapped.name).toBe("Axi A1 Relic");
+    expect(mapped.name).toBe("Axi A1 Relic (Intact)");
+    expect(mapped.subtype).toBe("intact");
     expect(mapped.marketSlug).toBe("axi_a1_relic");
+  });
+
+  it("keeps refinements apart: names, subtypes and order markers", () => {
+    const relicDb: RelicDatabase = {
+      groups: {
+        "Axi A1": {
+          key: "Axi A1",
+          name: "Axi A1",
+          tier: "Axi",
+          code: "A1",
+          imageUrl: null,
+          qualities: {},
+        },
+      },
+      byUniqueName: {
+        "/Lotus/Types/Game/Projections/T4VoidProjectionEBronze": {
+          groupKey: "Axi A1",
+          quality: "intact",
+        },
+        "/Lotus/Types/Game/Projections/T4VoidProjectionEPlatinum": {
+          groupKey: "Axi A1",
+          quality: "radiant",
+        },
+      },
+    };
+    const rows = [
+      makeBaseItem({
+        name: "Axi A1 Relic",
+        internalName: "/Lotus/Types/Game/Projections/T4VoidProjectionEBronze",
+        category: "relics",
+        categoryLabel: "Relic",
+        inventoryGroup: "relics",
+        maxRank: 0,
+        rank: 0,
+      }),
+      makeBaseItem({
+        name: "Axi A1 Relic (Radiant)",
+        internalName: "/Lotus/Types/Game/Projections/T4VoidProjectionEPlatinum",
+        category: "relics",
+        categoryLabel: "Relic",
+        inventoryGroup: "relics",
+        maxRank: 0,
+        rank: 0,
+      }),
+    ];
+
+    const { orderedNames, orderedSlugs, orderedSubtypes } = buildOrderLookups({
+      sell: [
+        {
+          id: "o1",
+          orderType: "sell",
+          platinum: 10,
+          quantity: 1,
+          visible: true,
+          modRank: null,
+          subtype: "radiant",
+          itemId: null,
+          itemName: "Axi A1 Relic",
+          itemUrlName: "axi_a1_relic",
+          itemThumb: null,
+        },
+      ],
+      buy: [],
+    });
+
+    const mapped = buildBaseInventoryItems(
+      rows,
+      "relics",
+      {},
+      orderedNames,
+      orderedSlugs,
+      relicDb,
+      orderedSubtypes,
+    );
+    expect(mapped.map((row) => row.name)).toEqual([
+      "Axi A1 Relic (Intact)",
+      "Axi A1 Relic (Radiant)",
+    ]);
+    // The radiant sell order marks only the radiant row.
+    expect(mapped.map((row) => row.orderPlaced)).toEqual([false, true]);
   });
 
   it("sanitizes non-finite metric numbers to avoid NaN display values", () => {

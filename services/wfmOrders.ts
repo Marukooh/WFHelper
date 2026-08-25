@@ -22,6 +22,7 @@ export interface NormalisedOrder {
   perTrade?: number;
   visible: boolean;
   modRank: number | null;
+  subtype: string | null;
   itemId: string | null;
   itemName: string;
   itemUrlName: string | null;
@@ -49,6 +50,7 @@ function normalise(raw: WfmRawOrder, forcedType?: string): NormalisedOrder {
     visible: raw.visible ?? true,
     // v2 uses 'rank', v1 used 'mod_rank'
     modRank: raw.rank ?? raw.mod_rank ?? null,
+    subtype: typeof raw.subtype === "string" && raw.subtype ? raw.subtype : null,
     itemId: item.id || raw.itemId || null,
     itemName:
       item.en?.item_name || item.i18n?.en?.item_name || item.item_name || item.name || "(unknown)",
@@ -151,6 +153,7 @@ export async function createOrder({
   visible = true,
   modRank,
   perTrade,
+  subtype,
 }: {
   itemId: string;
   orderType: string;
@@ -159,6 +162,7 @@ export async function createOrder({
   visible?: boolean;
   modRank?: number | null;
   perTrade?: number | null;
+  subtype?: string | null;
 }): Promise<NormalisedOrder> {
   if (!itemId || !orderType || platinum == null || quantity == null) {
     throw new Error("createOrder: itemId, orderType, platinum, and quantity are required.");
@@ -178,6 +182,7 @@ export async function createOrder({
       body.perTrade = Math.min(Math.max(1, Math.floor(Number(perTrade) || 1)), Math.max(1, qty));
     }
     if (modRank != null) body.rank = Number(modRank); // v2: 'rank' not 'mod_rank'
+    if (subtype != null) body.subtype = String(subtype);
     return body;
   };
 
@@ -224,7 +229,14 @@ export async function updateOrder(
     quantity,
     visible,
     modRank,
-  }: { platinum?: number; quantity?: number; visible?: boolean; modRank?: number | null } = {},
+    subtype,
+  }: {
+    platinum?: number;
+    quantity?: number;
+    visible?: boolean;
+    modRank?: number | null;
+    subtype?: string | null;
+  } = {},
 ): Promise<NormalisedOrder> {
   if (!orderId) throw new Error("updateOrder: orderId is required.");
   const body: Record<string, unknown> = {};
@@ -232,6 +244,7 @@ export async function updateOrder(
   if (quantity != null) body.quantity = Number(quantity);
   if (visible != null) body.visible = !!visible;
   if (modRank != null) body.rank = Number(modRank); // v2: 'rank' not 'mod_rank'
+  if (subtype != null) body.subtype = String(subtype);
   if (Object.keys(body).length === 0) throw new Error("updateOrder: no fields to update.");
 
   // v2: PATCH /order/{id}

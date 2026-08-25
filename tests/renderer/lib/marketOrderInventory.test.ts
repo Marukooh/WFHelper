@@ -164,6 +164,68 @@ describe("orderInventoryMatch", () => {
     expect(orderInventoryMatch(order({}), [], {}, {})).toEqual({ state: "match" });
   });
 
+  const relicOrder = (subtype: string | null): WfmOrder =>
+    order({
+      itemName: "Axi A1 Relic",
+      itemUrlName: "axi_a1_relic",
+      subtype,
+    });
+  const RELIC_REF = "/Lotus/Types/Game/Projections/T4VoidProjectionEBronze";
+  const relicCatalog = (): WfmItemsLookup => catalog(RELIC_REF, "axi_a1_relic");
+
+  // Production shape: the item DB names every refinement identically, so the
+  // quality only exists in the projection uniqueName's metal suffix.
+  const relicRow = (metal: "Bronze" | "Silver" | "Gold" | "Platinum", amount: number): ParsedItem =>
+    parsedItem({
+      name: "Axi A1 Relic",
+      internalName: `/Lotus/Types/Game/Projections/T4VoidProjectionE${metal}`,
+      amount,
+    });
+
+  it("backs a refinement listing only with that refinement", () => {
+    const radiantOwned = [relicRow("Platinum", 2)];
+    expect(orderInventoryMatch(relicOrder("radiant"), radiantOwned, relicCatalog(), {})).toEqual({
+      state: "match",
+    });
+    // An intact stack cannot fulfil a radiant order, even though both rows
+    // carry the identical display name.
+    const intactOwned = [relicRow("Bronze", 4)];
+    expect(orderInventoryMatch(relicOrder("radiant"), intactOwned, relicCatalog(), {})).toEqual({
+      state: "missing",
+    });
+    expect(
+      orderInventoryMatch(relicOrder("exceptional"), [relicRow("Silver", 1)], relicCatalog(), {}),
+    ).toEqual({
+      state: "match",
+    });
+  });
+
+  it("matches an intact listing to the bronze projection", () => {
+    const intactOwned = [relicRow("Bronze", 4)];
+    expect(orderInventoryMatch(relicOrder("intact"), intactOwned, relicCatalog(), {})).toEqual({
+      state: "match",
+    });
+    expect(
+      orderInventoryMatch(relicOrder("intact"), [relicRow("Gold", 4)], relicCatalog(), {}),
+    ).toEqual({
+      state: "missing",
+    });
+  });
+
+  it("still reads a quality-suffixed display name when no uniqueName is present", () => {
+    const radiantOwned = [parsedItem({ name: "Axi A1 Relic (Radiant)", amount: 2 })];
+    expect(orderInventoryMatch(relicOrder("radiant"), radiantOwned, relicCatalog(), {})).toEqual({
+      state: "match",
+    });
+  });
+
+  it("lets a subtype-less relic listing match any refinement", () => {
+    const radiantOwned = [relicRow("Platinum", 1)];
+    expect(orderInventoryMatch(relicOrder(null), radiantOwned, relicCatalog(), {})).toEqual({
+      state: "match",
+    });
+  });
+
   it("flags a listing the inventory only partly backs", () => {
     const listing = order({ quantity: 10 });
     expect(

@@ -62,6 +62,7 @@ function makeItem(): InventoryBaseItem {
     completeSets: null,
     marketSlug: "high_noon",
     marketThumb: null,
+    subtype: null,
   };
 }
 

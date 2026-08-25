@@ -902,6 +902,7 @@
   "orderModal.marketHint": "Markt: niedrigster Verkauf {wts} · höchster Kauf {wtb} · Median {median}",
   "orderModal.newOrder": "Neue Order",
   "orderModal.priceMin": "Preis muss mindestens 1 Platinum sein.",
+  "orderModal.refinement": "Veredelung",
   "orderModal.quantityMin": "Anzahl muss mindestens 1 sein.",
   "orderModal.saveChanges": "Änderungen speichern",
   "orderModal.searchItemsPlaceholder": "Items suchen...",

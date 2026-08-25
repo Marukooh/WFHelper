@@ -708,6 +708,7 @@
   "orderModal.marketHint": "Market: lowest sell {wts} · highest buy {wtb} · median {median}",
   "orderModal.newOrder": "New Order",
   "orderModal.priceMin": "Price must be at least 1 platinum.",
+  "orderModal.refinement": "Refinement",
   "orderModal.quantityMin": "Quantity must be at least 1.",
   "orderModal.saveChanges": "Save Changes",
   "orderModal.searchItemsPlaceholder": "Search items...",

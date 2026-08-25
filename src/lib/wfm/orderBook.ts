@@ -97,6 +97,7 @@ async function fetchRawOrdersFromEndpoint(
 async function fetchDirectOrderBook(
   slug: string,
   rank: number | null,
+  subtype: string | null,
 ): Promise<ItemOrderBookResult> {
   const v2Attempt = await fetchRawOrdersFromEndpoint(
     `https://api.warframe.market/v2/orders/item/${slug}`,
@@ -109,8 +110,20 @@ async function fetchDirectOrderBook(
         slug,
         // Renderer keeps the FULL book - the browse tab pages through it; the
         // default 500 cap is for the worker's KV-bound prewarm path only.
-        sell: normalizeWfmOrderBookSide(v2Attempt.data, "sell", rank, Number.MAX_SAFE_INTEGER),
-        buy: normalizeWfmOrderBookSide(v2Attempt.data, "buy", rank, Number.MAX_SAFE_INTEGER),
+        sell: normalizeWfmOrderBookSide(
+          v2Attempt.data,
+          "sell",
+          rank,
+          Number.MAX_SAFE_INTEGER,
+          subtype,
+        ),
+        buy: normalizeWfmOrderBookSide(
+          v2Attempt.data,
+          "buy",
+          rank,
+          Number.MAX_SAFE_INTEGER,
+          subtype,
+        ),
         timestamp: Date.now(),
       },
     };
@@ -130,8 +143,20 @@ async function fetchDirectOrderBook(
       status: "ok",
       data: {
         slug,
-        sell: normalizeWfmOrderBookSide(v1Attempt.data, "sell", rank, Number.MAX_SAFE_INTEGER),
-        buy: normalizeWfmOrderBookSide(v1Attempt.data, "buy", rank, Number.MAX_SAFE_INTEGER),
+        sell: normalizeWfmOrderBookSide(
+          v1Attempt.data,
+          "sell",
+          rank,
+          Number.MAX_SAFE_INTEGER,
+          subtype,
+        ),
+        buy: normalizeWfmOrderBookSide(
+          v1Attempt.data,
+          "buy",
+          rank,
+          Number.MAX_SAFE_INTEGER,
+          subtype,
+        ),
         timestamp: Date.now(),
       },
     };
@@ -147,7 +172,20 @@ export function resetOrderBookDebugCounters(): void {
   }
 }
 
-export function clearOrderBookCache(slug?: string | null, rank?: number | null): void {
+function subtypedCacheKey(slug: string, rank: number | null, subtype: string | null): string {
+  const base = rendererOrderBookCacheKey(slug, rank);
+  return subtype ? `${base}:st-${subtype}` : base;
+}
+
+function normalizeSubtype(subtype: string | null | undefined): string | null {
+  return typeof subtype === "string" && subtype.trim() ? subtype.trim().toLowerCase() : null;
+}
+
+export function clearOrderBookCache(
+  slug?: string | null,
+  rank?: number | null,
+  subtype?: string | null,
+): void {
   const normalizedSlug = normalizeWfmSlug(slug);
   if (!normalizedSlug) {
     clearGeneration += 1;
@@ -158,7 +196,7 @@ export function clearOrderBookCache(slug?: string | null, rank?: number | null):
   }
 
   const normalizedRank = normalizeRank(rank);
-  const key = rendererOrderBookCacheKey(normalizedSlug, normalizedRank);
+  const key = subtypedCacheKey(normalizedSlug, normalizedRank, normalizeSubtype(subtype));
   cacheBySlug.delete(key);
   inFlightBySlug.delete(key);
   generationBySlug.set(key, (generationBySlug.get(key) ?? 0) + 1);
@@ -166,7 +204,7 @@ export function clearOrderBookCache(slug?: string | null, rank?: number | null):
 
 export async function fetchItemOrderBookBySlug(
   slug: string | null | undefined,
-  options?: { rank?: number | null },
+  options?: { rank?: number | null; subtype?: string | null },
 ): Promise<ItemOrderBookResult> {
   const normalizedSlug = normalizeWfmSlug(slug);
   bumpCounter("requests");
@@ -176,7 +214,8 @@ export async function fetchItemOrderBookBySlug(
   }
 
   const normalizedRank = normalizeRank(options?.rank ?? null);
-  const key = rendererOrderBookCacheKey(normalizedSlug, normalizedRank);
+  const normalizedSubtype = normalizeSubtype(options?.subtype);
+  const key = subtypedCacheKey(normalizedSlug, normalizedRank, normalizedSubtype);
 
   const cached = cacheBySlug.get(key);
   if (cached && isFresh(cached)) {
@@ -200,7 +239,7 @@ export async function fetchItemOrderBookBySlug(
   const requestOwner = Symbol(key);
   const request = (async (): Promise<ItemOrderBookResult> => {
     try {
-      const result = await fetchDirectOrderBook(normalizedSlug, normalizedRank);
+      const result = await fetchDirectOrderBook(normalizedSlug, normalizedRank, normalizedSubtype);
       if (result.status === "ok") {
         const data: ItemOrderBook = result.data;
         if (isCurrentRequest()) {

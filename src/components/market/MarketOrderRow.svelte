@@ -128,6 +128,14 @@
       >
     </svelte:fragment>
     <svelte:fragment slot="headerEnd">
+      {#if order.subtype}
+        <span
+          class="shrink-0 rounded-sm bg-accent/20 px-1 py-0.5 text-xs font-bold text-accent"
+          data-order-subtype-chip
+        >
+          {order.subtype.charAt(0).toUpperCase() + order.subtype.slice(1)}
+        </span>
+      {/if}
       {#if order.modRank != null}
         <span class="shrink-0 rounded-sm bg-accent/20 px-1 py-0.5 text-xs font-bold text-accent">
           R{order.modRank}

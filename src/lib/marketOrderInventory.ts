@@ -1,4 +1,5 @@
 import { isRankedGroup, toFinitePositiveInt } from "../../config/shared/numeric.js";
+import { WFM_ORDER_SUBTYPES } from "../../config/shared/wfmOrders.js";
 import { isResourceItem, resolveItem, shouldHide } from "./inventory/itemClassification.js";
 import { gameRefKey, normalizeMarketName, toMarketSlug } from "./marketNaming.js";
 import { type InventoryBaseItem } from "./inventoryMarket.js";
@@ -43,6 +44,36 @@ type ParsedItemIndex = {
   byGameRef: Map<string, ParsedItem[]>;
 };
 
+// The item database names every refinement of a relic identically ("Axi A1
+// Relic"); this pattern only recognises quality-suffixed name variants.
+const RELIC_REFINEMENT_RE = new RegExp(
+  `^(.+\\brelic)\\s*\\(?\\s*(${WFM_ORDER_SUBTYPES.join("|")})\\s*\\)?$`,
+  "i",
+);
+
+function relicBaseName(name: string): string | null {
+  const match = RELIC_REFINEMENT_RE.exec(name.trim());
+  return match ? match[1].trim() : null;
+}
+
+// DE encodes the refinement as a metal suffix on the projection uniqueName
+// (verified 1:1 across all 3096 catalog relics); display names never carry it.
+const RELIC_QUALITY_BY_METAL: Record<string, string> = {
+  Bronze: "intact",
+  Silver: "exceptional",
+  Gold: "flawless",
+  Platinum: "radiant",
+};
+
+function relicQualityForItem(item: ParsedItem): string {
+  if (typeof item.internalName === "string" && item.internalName.includes("/Projections/")) {
+    const metal = /(Bronze|Silver|Gold|Platinum)$/.exec(item.internalName)?.[1];
+    if (metal) return RELIC_QUALITY_BY_METAL[metal];
+  }
+  const match = RELIC_REFINEMENT_RE.exec(item.name.trim());
+  return match ? match[2].toLowerCase() : "intact";
+}
+
 // Three reactive computations call this per order, so scanning the inventory
 // three times each was O(orders * inventory).
 const indexParsedItems = createLazyIdentityCache((parsedItems: ParsedItem[]) => {
@@ -56,6 +87,11 @@ const indexParsedItems = createLazyIdentityCache((parsedItems: ParsedItem[]) => 
     add(index.byName, normalizeMarketName(item.name), item);
     add(index.bySlug, toMarketSlug(item.name), item);
     add(index.byGameRef, gameRefKey(item.internalName), item);
+    const relicBase = relicBaseName(item.name);
+    if (relicBase) {
+      add(index.byName, normalizeMarketName(relicBase), item);
+      add(index.bySlug, toMarketSlug(relicBase), item);
+    }
   }
   return index;
 });
@@ -143,9 +179,15 @@ export function orderInventoryMatch(
 ): ListingInventoryMatch {
   if (order.orderType !== "sell") return { state: "match" };
 
-  const owned = matchingParsedItems(order, parsedItems, wfmItems).filter(
+  let owned = matchingParsedItems(order, parsedItems, wfmItems).filter(
     (item) => ownedCountForOrder(item) > 0,
   );
+  // A refinement-specific listing is only backed by that refinement; an intact
+  // stack cannot fulfil a radiant order.
+  const orderSubtype = typeof order.subtype === "string" ? order.subtype.toLowerCase() : null;
+  if (orderSubtype && RELIC_REFINEMENT_RE.exec(`${order.itemName} (${orderSubtype})`)) {
+    owned = owned.filter((item) => relicQualityForItem(item) === orderSubtype);
+  }
   if (owned.length === 0) {
     return inventoryCouldHoldOrder(order, wfmItems, itemDb)
       ? { state: "missing" }
@@ -187,12 +229,16 @@ export function buildMarketOrderInventoryItem(
     (inventoryGroup === "mods" ? 10 : inventoryGroup === "arcanes" ? 5 : 0);
   const marketSlug = toMarketSlug(order.itemUrlName || order.itemName);
   const ownedCount = ownedCountForOrder(parsedItem);
+  const subtype = typeof order.subtype === "string" && order.subtype ? order.subtype : null;
+  const subtypeName = subtype
+    ? `${order.itemName} (${subtype.charAt(0).toUpperCase()}${subtype.slice(1)})`
+    : order.itemName;
 
   return {
     ...(parsedItem ?? {}),
     sourceOrderId: order.id,
-    name: order.itemName,
-    internalName: `market-order:${marketSlug || order.id}:r${rank}`,
+    name: subtypeName,
+    internalName: `market-order:${marketSlug || order.id}:r${rank}${subtype ? `:${subtype}` : ""}`,
     category: parsedItem?.category ?? (inventoryGroup === "mods" ? "Mods" : "Market"),
     categoryLabel: parsedItem?.categoryLabel ?? (inventoryGroup === "mods" ? "Mod" : "Market Item"),
     rank,
@@ -215,5 +261,6 @@ export function buildMarketOrderInventoryItem(
     completeSets: parsedItem?.completeSets ?? null,
     marketSlug: marketSlug || null,
     marketThumb: order.itemThumb ?? null,
+    subtype,
   };
 }
