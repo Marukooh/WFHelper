@@ -98,4 +98,53 @@ describe("createInventoryHydrationController", () => {
     expect(hydratedKeys).toHaveLength(items.length);
     expect(new Set(hydratedKeys).size).toBe(items.length);
   });
+
+  it("batches metric flushes while the queue drains and flushes the tail on drain", async () => {
+    const { createInventoryHydrationController } =
+      await import("../../../src/stores/inventoryHydration.js");
+    const { HYDRATION_BATCH_SIZE, HYDRATION_TICK_MS, METRIC_FLUSH_MS, METRIC_FLUSH_BUSY_MS } =
+      await import("../../../src/stores/hydration/hydrationTypes.js");
+
+    hydrateItemMetricsMock.mockImplementation(
+      async (ctx: HydrationContext, item: InventoryBaseItem) => {
+        ctx.queueMetricPatch(item.internalName, {
+          platinum: 1,
+          ducats: null,
+          slug: item.marketSlug,
+          thumb: null,
+          icon: null,
+          hasPrice: true,
+          hasDucats: true,
+          hasMeta: true,
+        });
+        await Promise.resolve();
+      },
+    );
+
+    const controller = createInventoryHydrationController();
+    const storeUpdates: number[] = [];
+    const unsubscribe = controller.metricsByKey.subscribe((metrics) => {
+      const size = Object.keys(metrics).length;
+      if (size > 0) storeUpdates.push(size);
+    });
+
+    // Three batches: the queue stays busy past the idle flush delay.
+    const items = Array.from({ length: HYDRATION_BATCH_SIZE * 2 + 1 }, (_, index) =>
+      makeItem(index),
+    );
+    controller.enqueue(items, {}, { price: true, ducats: false, orders: false });
+
+    // The idle delay must NOT flush while later batches are still queued.
+    await vi.advanceTimersByTimeAsync(METRIC_FLUSH_MS);
+    expect(storeUpdates).toHaveLength(0);
+
+    // Drain happens well before the busy delay; the tail must not wait for it.
+    await vi.advanceTimersByTimeAsync(HYDRATION_TICK_MS * 2);
+    expect(storeUpdates).toEqual([items.length]);
+
+    await vi.advanceTimersByTimeAsync(METRIC_FLUSH_BUSY_MS);
+    expect(storeUpdates).toEqual([items.length]);
+
+    unsubscribe();
+  });
 });

@@ -5,6 +5,9 @@ import type { Readable } from "svelte/store";
 export const HYDRATION_BATCH_SIZE = 12;
 export const HYDRATION_TICK_MS = 45;
 export const METRIC_FLUSH_MS = 80;
+// While the pump is still draining, every flush re-runs the tab's whole
+// reactive pipeline; batch harder and let the drain flush deliver the tail.
+export const METRIC_FLUSH_BUSY_MS = 250;
 export const MAX_DUCAT_RETRY_PER_ITEM = 2;
 export const PRICE_TRANSIENT_RETRY_MS = 20_000;
 export const PRICE_NO_DATA_RETRY_MS = 120_000;

@@ -8,6 +8,7 @@ import type { HydrationTask, InventoryHydrationController } from "./hydration/hy
 import {
   HYDRATION_BATCH_SIZE,
   HYDRATION_TICK_MS,
+  METRIC_FLUSH_BUSY_MS,
   METRIC_FLUSH_MS,
 } from "./hydration/hydrationTypes.js";
 import {
@@ -47,6 +48,22 @@ export function createInventoryHydrationController(): InventoryHydrationControll
   const missingDucatRetryCountByKey = new Map<string, number>();
   const priceTransientRetryAtByKey = new Map<string, number>();
   const orderTransientRetryAtByKey = new Map<string, number>();
+
+  const flushPendingMetricPatches = (): void => {
+    if (metricFlushTimer) {
+      clearTimeout(metricFlushTimer);
+      metricFlushTimer = null;
+    }
+    if (pendingMetricPatches.size === 0) return;
+
+    const nextMetrics = { ...metricsByKey };
+    for (const [patchKey, patchMetric] of pendingMetricPatches) {
+      nextMetrics[patchKey] = patchMetric;
+    }
+    pendingMetricPatches.clear();
+    metricsByKey = nextMetrics;
+    metricsByKeyStore.set(metricsByKey);
+  };
 
   const ctx: HydrationContext = {
     getMetric: (key) => metricsByKey[key],
@@ -88,18 +105,8 @@ export function createInventoryHydrationController(): InventoryHydrationControll
 
       if (metricFlushTimer) return;
 
-      metricFlushTimer = setTimeout(() => {
-        metricFlushTimer = null;
-        if (pendingMetricPatches.size === 0) return;
-
-        const nextMetrics = { ...metricsByKey };
-        for (const [patchKey, patchMetric] of pendingMetricPatches) {
-          nextMetrics[patchKey] = patchMetric;
-        }
-        pendingMetricPatches.clear();
-        metricsByKey = nextMetrics;
-        metricsByKeyStore.set(metricsByKey);
-      }, METRIC_FLUSH_MS);
+      const delayMs = hydrationQueue.length > 0 ? METRIC_FLUSH_BUSY_MS : METRIC_FLUSH_MS;
+      metricFlushTimer = setTimeout(flushPendingMetricPatches, delayMs);
     },
 
     markPending(key) {
@@ -136,6 +143,8 @@ export function createInventoryHydrationController(): InventoryHydrationControll
       hydrationRunning = false;
       if (isMounted && hydrationQueue.length > 0) {
         void runHydrationPump();
+      } else {
+        flushPendingMetricPatches();
       }
     }
   }
