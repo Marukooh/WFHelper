@@ -9,12 +9,28 @@
   export let showDucats = true;
   /** Internal names the detail modal can actually open; null = no gating. */
   export let detailKeys: Set<string> | null = null;
+  /** Unsliced result count; null means `items` is already the complete list. */
+  export let totalCount: number | null = null;
 
   const dispatch = createEventDispatcher<{
     select: InventoryViewItem;
     visible: InventoryViewItem;
     expand: InventoryViewItem;
+    more: void;
   }>();
+
+  // Fires once per sentinel node; the {#key} below remounts it after every
+  // extension so a viewport taller than one page keeps filling.
+  function observeMore(node: HTMLElement): { destroy: () => void } {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) dispatch("more");
+      },
+      { rootMargin: "600px" },
+    );
+    io.observe(node);
+    return { destroy: () => io.disconnect() };
+  }
 
   function handleSelect(event: CustomEvent<InventoryViewItem>): void {
     dispatch("select", event.detail);
@@ -49,5 +65,10 @@
         on:expand={handleExpand}
       />
     {/each}
+    {#if totalCount != null && items.length < totalCount}
+      {#key items.length}
+        <div class="col-span-full h-px" use:observeMore aria-hidden="true"></div>
+      {/key}
+    {/if}
   {/if}
 </div>

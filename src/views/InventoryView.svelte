@@ -441,6 +441,16 @@
             $degradedIcons.has(item.name),
         )
       : filtered;
+  // Mount the grid a page at a time: a thousands-row tab (Everything) otherwise
+  // creates every card synchronously and re-diffs them on each metric patch.
+  const GRID_PAGE_SIZE = 120;
+  let gridLimit = GRID_PAGE_SIZE;
+  function resetGridLimit(_tab: InventoryFilterTab, _filters: SharedFiltersState): void {
+    gridLimit = GRID_PAGE_SIZE;
+  }
+  // Listing the tab and filter state textually keeps this reactive to both.
+  $: resetGridLimit(filter, $inventoryFilters);
+  $: gridItems = gridLimit < visibleItems.length ? visibleItems.slice(0, gridLimit) : visibleItems;
   $: resourceList =
     $inventoryData && Object.keys($itemDb).length > 0
       ? parseResources($inventoryData, $itemDb)
@@ -566,12 +576,14 @@
           </label>
         {/if}
         <InventoryGrid
-          items={visibleItems}
+          items={gridItems}
+          totalCount={visibleItems.length}
           {showDucats}
           {detailKeys}
           on:select={handleItemSelect}
           on:visible={handleItemVisible}
           on:expand={handleItemExpand}
+          on:more={() => (gridLimit += GRID_PAGE_SIZE)}
         />
 
         {#if showEverythingResources && filteredResources.length > 0}
