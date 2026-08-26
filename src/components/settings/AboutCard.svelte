@@ -77,8 +77,8 @@
           onclick={() => openLink("https://github.com/sponsors/MrZockerator")}
           >&hearts; {$tr("settings.creditSponsors")}</button
         >
-        <button class="settings-link" onclick={() => openLink("https://ko-fi.com/WFHelper")}
-          >Ko-fi</button
+        <button class="settings-link" onclick={() => openLink("https://www.patreon.com/WFHelper")}
+          >Patreon</button
         >
       </span>
     </div>
