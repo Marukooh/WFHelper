@@ -240,6 +240,14 @@ export function matchesSharedFilters(item: FilterableItem, filters: SharedFilter
   return true;
 }
 
+// localeCompare spins up a fresh collator per call, which dominates
+// Everything-tab sorts; one shared collator is roughly 10x cheaper.
+const NAME_COLLATOR = new Intl.Collator();
+
+export function compareNames(a: string, b: string): number {
+  return NAME_COLLATOR.compare(a, b);
+}
+
 export function compareSharedFilterSort<T extends FilterableItem>(
   a: T,
   b: T,
@@ -248,14 +256,14 @@ export function compareSharedFilterSort<T extends FilterableItem>(
   const direction = filters.sortDirection === "asc" ? 1 : -1;
 
   if (filters.sortBy === "name") {
-    return direction * a.name.localeCompare(b.name);
+    return direction * compareNames(a.name, b.name);
   }
 
   const aMetric = toMetric(a, filters.sortBy);
   const bMetric = toMetric(b, filters.sortBy);
   const numeric = compareNullableNumber(aMetric, bMetric, direction);
   if (numeric !== 0) return numeric;
-  return a.name.localeCompare(b.name);
+  return compareNames(a.name, b.name);
 }
 
 export function applySharedFiltersAndSort<T extends FilterableItem>(
