@@ -52,10 +52,47 @@ describe("circuit choice art", () => {
     expect(torid.displayName).toBe("토리드");
   });
 
-  it("still reads ownership off the base weapon", () => {
+  it("does not mark an adapter owned just because the weapon is", () => {
     const [torid] = resolveCircuitChoices(["Torid"], DB, { LongGuns: [{ ItemType: TORID }] });
 
+    expect(torid.owned).toBe(false);
+  });
+
+  it("marks the adapter owned from a spare unlocker in MiscItems", () => {
+    const [torid] = resolveCircuitChoices(["Torid"], DB, {
+      MiscItems: [{ ItemType: ADAPTER }],
+    });
+
     expect(torid.owned).toBe(true);
+  });
+
+  it("marks the adapter owned when installed on a weapon variant", () => {
+    const PRIME_TORID = "/Lotus/Weapons/Tenno/LongGuns/PrimeTorid";
+    const db = {
+      ...DB,
+      [PRIME_TORID]: {
+        name: "Torid Prime",
+        imageUrl: "torid-prime.png",
+        category: "Primary" as const,
+      },
+    };
+    const installed = resolveCircuitChoices(["Torid"], db, {
+      LongGuns: [{ ItemType: PRIME_TORID, Features: 547 }],
+    });
+    const uninstalled = resolveCircuitChoices(["Torid"], db, {
+      LongGuns: [{ ItemType: PRIME_TORID, Features: 35 }],
+    });
+
+    expect(installed[0].owned).toBe(true);
+    expect(uninstalled[0].owned).toBe(false);
+  });
+
+  it("tracks vendor-strip adapter stock the same way", () => {
+    const [without] = resolveVendorItems([ADAPTER], DB, { LongGuns: [{ ItemType: TORID }] });
+    const [withSpare] = resolveVendorItems([ADAPTER], DB, { MiscItems: [{ ItemType: ADAPTER }] });
+
+    expect(without.owned).toBe(false);
+    expect(withSpare.owned).toBe(true);
   });
 
   it("leaves warframes on their own portrait", () => {

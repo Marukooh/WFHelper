@@ -372,7 +372,21 @@ function isSubsumedFrame(entry: ItemDbEntry, uniqueName: string, sets: SubsumedS
 interface OwnedSets {
   ownedSuits: Set<string>;
   ownedWeapons: Set<string>;
+  /** Uninstalled adapter unlockers sitting in MiscItems, by uniqueName. */
+  ownedAdapterTypes: Set<string>;
+  /** Base-weapon name keys whose adapter is installed (Features bit on a weapon). */
+  installedIncarnonKeys: Set<string>;
   subsumed: SubsumedSets;
+}
+
+// EquipmentFeatures.INCARNON_GENESIS per SpaceNinjaServer; set on the weapon
+// instance once the adapter is installed (and consumed from MiscItems).
+const INCARNON_GENESIS_FEATURE = 512;
+
+/** Adapters fit every variant of their weapon (Prisma Skana, Dex Furis, Braton
+ *  Vandal all take the base adapter), so installed detection folds variants. */
+function incarnonBaseName(name: string): string {
+  return name.replace(/^(MK1-|Prisma |Mara |Dex )/i, "").replace(/ (Prime|Vandal|Wraith)$/i, "");
 }
 
 function buildOwnedSets(
@@ -381,18 +395,35 @@ function buildOwnedSets(
 ): OwnedSets {
   const ownedSuits = new Set<string>();
   const ownedWeapons = new Set<string>();
+  const ownedAdapterTypes = new Set<string>();
+  const installedIncarnonKeys = new Set<string>();
   if (inventoryData) {
     for (const suit of (inventoryData.Suits || []) as Array<{ ItemType?: string }>) {
       if (suit.ItemType) ownedSuits.add(suit.ItemType);
     }
+    for (const misc of (inventoryData.MiscItems || []) as Array<{ ItemType?: string }>) {
+      if (misc.ItemType?.includes("/IncarnonAdapters/")) ownedAdapterTypes.add(misc.ItemType);
+    }
     const weaponKeys: Array<keyof RawInventoryData> = ["LongGuns", "Pistols", "Melee"];
     for (const k of weaponKeys) {
-      for (const wpn of (inventoryData[k] || []) as Array<{ ItemType?: string }>) {
-        if (wpn.ItemType) ownedWeapons.add(wpn.ItemType);
+      const rows = (inventoryData[k] || []) as Array<{ ItemType?: string; Features?: number }>;
+      for (const wpn of rows) {
+        if (!wpn.ItemType) continue;
+        ownedWeapons.add(wpn.ItemType);
+        if (typeof wpn.Features === "number" && wpn.Features & INCARNON_GENESIS_FEATURE) {
+          const name = itemDb[wpn.ItemType]?.name;
+          if (name) installedIncarnonKeys.add(circuitNameKey(incarnonBaseName(name)));
+        }
       }
     }
   }
-  return { ownedSuits, ownedWeapons, subsumed: buildSubsumedSets(itemDb, inventoryData) };
+  return {
+    ownedSuits,
+    ownedWeapons,
+    ownedAdapterTypes,
+    installedIncarnonKeys,
+    subsumed: buildSubsumedSets(itemDb, inventoryData),
+  };
 }
 
 interface ResolvedEntry extends ItemDbEntry {
@@ -401,12 +432,24 @@ interface ResolvedEntry extends ItemDbEntry {
   imageUrl: string;
 }
 
+/** Owning the base weapon says nothing about the adapter reward. */
+function incarnonAdapterOwned(
+  adapterUniqueName: string,
+  baseKey: string,
+  sets: OwnedSets,
+): boolean {
+  return sets.ownedAdapterTypes.has(adapterUniqueName) || sets.installedIncarnonKeys.has(baseKey);
+}
+
 /** A fed frame left Suits but is still owned, so this refines `owned`, never replaces it. */
 function toCircuitChoice(entry: ResolvedEntry, sets: OwnedSets): CircuitChoice {
   const subsumed = isSubsumedFrame(entry, entry.uniqueName, sets.subsumed);
-  const owned = WARFRAME_CATS.has(entryCategory(entry))
-    ? sets.ownedSuits.has(entry.uniqueName) || subsumed
-    : sets.ownedWeapons.has(entry.uniqueName);
+  const nameKey = circuitNameKey(entry.name);
+  const owned = nameKey.endsWith(INCARNON_SUFFIX)
+    ? incarnonAdapterOwned(entry.uniqueName, nameKey.slice(0, -INCARNON_SUFFIX.length), sets)
+    : WARFRAME_CATS.has(entryCategory(entry))
+      ? sets.ownedSuits.has(entry.uniqueName) || subsumed
+      : sets.ownedWeapons.has(entry.uniqueName);
   return {
     name: entry.name,
     ...(entry.displayName ? { displayName: entry.displayName } : {}),
@@ -444,6 +487,7 @@ function circuitResolver(
   const byName = new Map<string, ResolvedEntry>();
   // Steel Path rewards the Incarnon Genesis adapter, so its art is the evolved weapon.
   const incarnonArt = new Map<string, string>();
+  const incarnonAdapters = new Map<string, string>();
   for (const [uniqueName, entry] of Object.entries(itemDb)) {
     if (!entry?.name || !entry.imageUrl) continue;
     const key = circuitNameKey(entry.name);
@@ -452,17 +496,23 @@ function circuitResolver(
     }
     const base = key.endsWith(INCARNON_SUFFIX) ? key.slice(0, -INCARNON_SUFFIX.length) : null;
     if (base && !incarnonArt.has(base)) incarnonArt.set(base, entry.imageUrl);
+    if (base && !incarnonAdapters.has(base)) incarnonAdapters.set(base, uniqueName);
   }
 
   const sets = buildOwnedSets(itemDb, inventoryData);
 
   return (names) =>
     names.map((name) => {
-      const match = byName.get(circuitNameKey(name));
+      const baseKey = circuitNameKey(name);
+      const match = byName.get(baseKey);
       if (!match) return { name, imageUrl: "", owned: false, uniqueName: "" };
 
-      // Art only - ownership still tracks the base weapon the adapter fits.
-      const imageUrl = incarnonArt.get(circuitNameKey(name)) || match.imageUrl;
-      return toCircuitChoice({ ...match, imageUrl }, sets);
+      const imageUrl = incarnonArt.get(baseKey) || match.imageUrl;
+      const choice = toCircuitChoice({ ...match, imageUrl }, sets);
+      // Steel Path rewards the adapter, so ownership tracks the adapter (spare
+      // unlocker or installed on any weapon variant), never the base weapon.
+      const adapter = incarnonAdapters.get(baseKey);
+      if (adapter) choice.owned = incarnonAdapterOwned(adapter, baseKey, sets);
+      return choice;
     });
 }
