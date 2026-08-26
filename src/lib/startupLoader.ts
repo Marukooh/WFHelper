@@ -37,56 +37,67 @@ export function initStartup(): StartupHandle {
 
   startupPriceCacheReady.set(false);
 
+  // The steps below are independent, so they run concurrently: a slow (or
+  // missing) snapshot network fetch must not hold the local IPC loads hostage;
+  // worst-case startup is max(network, local), not their sum.
   void (async () => {
-    try {
-      const stageStart = Date.now();
-      const rankedHotset = await invoke("loadRankedHotset");
-      if (disposed) return;
-      if (rankedHotset) {
-        const count = importRankedHotset(rankedHotset);
-        log.info(`[Startup] Restored ${count} ranked hotset entries from disk cache`);
+    // Hotset and snapshot both write the shared price caches, so only these
+    // two stay ordered relative to each other.
+    const priceCacheTask = (async () => {
+      try {
+        const stageStart = Date.now();
+        const rankedHotset = await invoke("loadRankedHotset");
+        if (disposed) return;
+        if (rankedHotset) {
+          const count = importRankedHotset(rankedHotset);
+          log.info(`[Startup] Restored ${count} ranked hotset entries from disk cache`);
+        }
+        profileStage("ranked-hotset:load", stageStart);
+      } catch (e) {
+        log.warn("[Startup] loadRankedHotset failed:", e);
       }
-      profileStage("ranked-hotset:load", stageStart);
-    } catch (e) {
-      log.warn("[Startup] loadRankedHotset failed:", e);
-    }
 
-    // Bulk snapshot - populates all three caches in one network request (best-effort)
-    try {
-      const stageStart = Date.now();
-      await tryLoadSnapshot();
-      if (disposed) return;
-      log.info(`[StartupProfile] snapshot:load: ${Date.now() - stageStart}ms`);
-    } catch {
-      // tryLoadSnapshot never throws, this is just a safety net
-    } finally {
-      if (!disposed) startupPriceCacheReady.set(true);
-    }
+      // Bulk snapshot: populates all three caches in one network request (best-effort)
+      try {
+        const stageStart = Date.now();
+        await tryLoadSnapshot();
+        if (disposed) return;
+        log.info(`[StartupProfile] snapshot:load: ${Date.now() - stageStart}ms`);
+      } catch {
+        // tryLoadSnapshot never throws, this is just a safety net
+      } finally {
+        if (!disposed) startupPriceCacheReady.set(true);
+      }
+    })();
 
-    try {
-      const stageStart = Date.now();
-      const db = await invoke("getItemDatabase");
-      if (disposed) return;
-      itemDb.set(db || {});
-      profileStage("item-db:load", stageStart);
-    } catch (e) {
-      log.error("[Startup] getItemDatabase failed:", e);
-    }
+    const itemDbTask = (async () => {
+      try {
+        const stageStart = Date.now();
+        const db = await invoke("getItemDatabase");
+        if (disposed) return;
+        itemDb.set(db || {});
+        profileStage("item-db:load", stageStart);
+      } catch (e) {
+        log.error("[Startup] getItemDatabase failed:", e);
+      }
+    })();
 
     // Main pushes inventory once, on the window's first load. A reload past that
     // point kept the stores empty until the helper next rewrote the file, so pull
     // it here too; onInventoryLoaded is idempotent and a push may still beat us.
-    try {
-      const stageStart = Date.now();
-      const inventory = await invoke("getInventory");
-      if (disposed) return;
-      if (inventory && !(inventory as { error?: unknown }).error) {
-        await onInventoryLoaded(inventory as Parameters<typeof onInventoryLoaded>[0]);
+    const inventoryTask = (async () => {
+      try {
+        const stageStart = Date.now();
+        const inventory = await invoke("getInventory");
+        if (disposed) return;
+        if (inventory && !(inventory as { error?: unknown }).error) {
+          await onInventoryLoaded(inventory as Parameters<typeof onInventoryLoaded>[0]);
+        }
+        profileStage("inventory:load", stageStart);
+      } catch (e) {
+        log.error("[Startup] getInventory failed:", e);
       }
-      profileStage("inventory:load", stageStart);
-    } catch (e) {
-      log.error("[Startup] getInventory failed:", e);
-    }
+    })();
 
     // A WFM outage at startup must not brick the market for the session:
     // keep re-asking the main process until the catalog comes back non-empty.
@@ -117,27 +128,38 @@ export function initStartup(): StartupHandle {
       }, delayMs);
     };
 
-    try {
-      const stageStart = Date.now();
-      const ok = await loadWfmItems();
-      if (disposed) return;
-      profileStage("wfm-items:load", stageStart);
-      if (!ok) scheduleWfmItemsRetry(WFM_ITEMS_RETRY_BASE_MS);
-    } catch (e) {
-      log.error("[Startup] getWfmItems failed:", e);
-      scheduleWfmItemsRetry(WFM_ITEMS_RETRY_BASE_MS);
-    }
+    const wfmItemsTask = (async () => {
+      try {
+        const stageStart = Date.now();
+        const ok = await loadWfmItems();
+        if (disposed) return;
+        profileStage("wfm-items:load", stageStart);
+        if (!ok) scheduleWfmItemsRetry(WFM_ITEMS_RETRY_BASE_MS);
+      } catch (e) {
+        log.error("[Startup] getWfmItems failed:", e);
+        scheduleWfmItemsRetry(WFM_ITEMS_RETRY_BASE_MS);
+      }
+    })();
 
-    try {
-      const stageStart = Date.now();
-      const state = await invoke("getAppUpdateState");
-      if (disposed) return;
-      applyUpdateState(state, false);
-      profileStage("app-update-state:load", stageStart);
-    } catch {
-      // optional feature, non-blocking
-    }
+    const updateStateTask = (async () => {
+      try {
+        const stageStart = Date.now();
+        const state = await invoke("getAppUpdateState");
+        if (disposed) return;
+        applyUpdateState(state, false);
+        profileStage("app-update-state:load", stageStart);
+      } catch {
+        // optional feature, non-blocking
+      }
+    })();
 
+    await Promise.allSettled([
+      priceCacheTask,
+      itemDbTask,
+      inventoryTask,
+      wfmItemsTask,
+      updateStateTask,
+    ]);
     if (disposed) return;
     warmupTimer = setTimeout(() => {
       if (disposed) return;
