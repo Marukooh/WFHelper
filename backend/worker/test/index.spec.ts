@@ -6,7 +6,7 @@ import { resetRankedCatalogCacheForTest } from '../src/routes/public';
 import type { Env } from '../src/types';
 import { buildOrderSummaryPayload, prewarmBatch, prewarmOrderSummaryCatalog } from '../src/services/prewarm';
 import { fetchCatalogSlugs } from '../src/services/prewarmCatalog';
-import { syncPatreonSupporters } from '../src/services/patreon';
+import { syncSupporters } from '../src/services/supporters';
 import { WFM_SNAPSHOT_CLIENT_CACHE_VERSION } from '../../../config/shared/wfmSnapshotValidation';
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
@@ -2220,39 +2220,43 @@ describe('relic order summary subtypes', () => {
 	});
 });
 
-describe('patreon supporters', () => {
-	const TIER_MAP = JSON.stringify({ t_basic: 'basic', t_big: 'big', t_biggest: 'biggest' });
-	const MEMBERS_URL = 'https://www.patreon.com/api/oauth2/v2/campaigns/camp-1/members';
-	const TOKEN_URL = 'https://www.patreon.com/api/oauth2/token';
+describe('discord supporters', () => {
+	const ROLE_MAP = JSON.stringify({ r_basic: 'basic', r_big: 'big', r_biggest: 'biggest' });
+	const MEMBERS_URL = 'https://discord.com/api/v10/guilds/guild-1/members';
 
-	function patreonEnv(overrides: Record<string, string> = {}): Env {
+	function discordEnv(overrides: Record<string, string> = {}): Env {
 		return {
 			...env,
-			PATREON_CAMPAIGN_ID: 'camp-1',
-			PATREON_CLIENT_ID: 'client-1',
-			PATREON_CLIENT_SECRET: 'secret-1',
-			PATREON_ACCESS_TOKEN: 'seed-access',
-			PATREON_REFRESH_TOKEN: 'seed-refresh',
-			PATREON_TIER_MAP: TIER_MAP,
+			DISCORD_GUILD_ID: 'guild-1',
+			DISCORD_BOT_TOKEN: 'bot-token',
+			DISCORD_ROLE_TIER_MAP: ROLE_MAP,
 			...overrides,
 		} as unknown as Env;
 	}
 
-	function patreonMember(id: string, name: string, status: string, tierIds: string[]): Record<string, unknown> {
+	function guildMember(
+		id: string,
+		roles: string[],
+		names: { nick?: string | null; globalName?: string | null; username?: string; bot?: boolean } = {},
+	): Record<string, unknown> {
 		return {
-			id,
-			type: 'member',
-			attributes: { full_name: name, patron_status: status },
-			relationships: { currently_entitled_tiers: { data: tierIds.map((tierId) => ({ id: tierId, type: 'tier' })) } },
+			nick: names.nick ?? null,
+			roles,
+			user: {
+				id,
+				username: names.username ?? `user-${id}`,
+				global_name: names.globalName ?? null,
+				bot: names.bot === true,
+			},
 		};
 	}
 
-	function jsonPage(body: Record<string, unknown>, status = 200): Response {
+	function jsonPage(body: unknown, status = 200): Response {
 		return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 	}
 
 	async function storedSupporters(): Promise<{ updatedAt?: unknown; supporters?: Array<{ name: string; tier: string }> }> {
-		const raw = await env.ITEM_META.get('patreon:supporters:v1');
+		const raw = await env.ITEM_META.get('supporters:discord:v1');
 		return raw ? (JSON.parse(raw) as { updatedAt?: unknown; supporters?: Array<{ name: string; tier: string }> }) : {};
 	}
 
@@ -2260,20 +2264,18 @@ describe('patreon supporters', () => {
 		await caches.default.delete(new Request('https://example.com/v1/supporters?v=1'));
 	});
 
-	it('keeps only active patrons and maps the highest entitled tier', async () => {
+	it('publishes only human members holding a mapped role, at their highest tier', async () => {
 		globalThis.fetch = vi.fn(async () =>
-			jsonPage({
-				data: [
-					patreonMember('m-1', 'Basic Betty', 'active_patron', ['t_basic']),
-					patreonMember('m-2', 'Multi Mike', 'active_patron', ['t_basic', 't_biggest', 't_big']),
-					patreonMember('m-3', 'Former Fred', 'former_patron', ['t_biggest']),
-					patreonMember('m-4', 'Unmapped Ursula', 'active_patron', ['t_unknown']),
-					patreonMember('m-5', 'Tierless Tom', 'active_patron', []),
-				],
-			}),
+			jsonPage([
+				guildMember('1', ['r_basic'], { nick: 'Basic Betty' }),
+				guildMember('2', ['r_basic', 'r_biggest', 'r_big'], { nick: 'Multi Mike' }),
+				guildMember('3', ['r_unknown'], { nick: 'Roleless Rita' }),
+				guildMember('4', [], { nick: 'Plain Pam' }),
+				guildMember('5', ['r_biggest'], { nick: 'Bot Bert', bot: true }),
+			]),
 		) as unknown as typeof fetch;
 
-		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+		const result = await syncSupporters(discordEnv(), 'manual');
 
 		expect(result).toEqual({ ok: true, status: 'synced', count: 2 });
 		const stored = await storedSupporters();
@@ -2284,137 +2286,98 @@ describe('patreon supporters', () => {
 		expect(typeof stored.updatedAt).toBe('string');
 	});
 
-	it('follows links.next pagination', async () => {
+	it('prefers the server nickname, then the global name, then the username', async () => {
+		globalThis.fetch = vi.fn(async () =>
+			jsonPage([
+				guildMember('1', ['r_basic'], { nick: 'Chosen Nick', globalName: 'Global One', username: 'raw1' }),
+				guildMember('2', ['r_basic'], { globalName: 'Global Gal', username: 'raw2' }),
+				guildMember('3', ['r_basic'], { username: 'Raw Handle' }),
+			]),
+		) as unknown as typeof fetch;
+
+		const result = await syncSupporters(discordEnv(), 'manual');
+
+		expect(result).toMatchObject({ ok: true, count: 3 });
+		expect((await storedSupporters()).supporters).toEqual([
+			{ name: 'Chosen Nick', tier: 'basic' },
+			{ name: 'Global Gal', tier: 'basic' },
+			{ name: 'Raw Handle', tier: 'basic' },
+		]);
+	});
+
+	it('pages with after until a short page arrives', async () => {
+		const firstPage = Array.from({ length: 1000 }, (_, index) =>
+			guildMember(String(index + 1), index === 0 ? ['r_basic'] : [], { nick: `Member ${index + 1}` }),
+		);
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input instanceof URL ? input : typeof input === 'string' ? input : input.url);
-			if (url.startsWith(MEMBERS_URL) && url.includes('cursor=page-2')) {
-				return jsonPage({ data: [patreonMember('m-2', 'Page Two Pat', 'active_patron', ['t_big'])] });
+			if (!url.startsWith(MEMBERS_URL)) throw new Error(`Unexpected url: ${url}`);
+			if (url.includes('after=1000')) {
+				return jsonPage([guildMember('1001', ['r_big'], { nick: 'Page Two Pat' })]);
 			}
-			if (url.startsWith(MEMBERS_URL)) {
-				return jsonPage({
-					data: [patreonMember('m-1', 'Page One Paul', 'active_patron', ['t_basic'])],
-					links: { next: `${MEMBERS_URL}?cursor=page-2` },
-				});
-			}
-			throw new Error(`Unexpected url: ${url}`);
+			return jsonPage(firstPage);
 		});
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+		const result = await syncSupporters(discordEnv(), 'manual');
 
 		expect(result).toMatchObject({ ok: true, count: 2 });
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 		expect((await storedSupporters()).supporters).toEqual([
 			{ name: 'Page Two Pat', tier: 'big' },
-			{ name: 'Page One Paul', tier: 'basic' },
+			{ name: 'Member 1', tier: 'basic' },
 		]);
 	});
 
-	it('ignores a links.next pointing off the Patreon API', async () => {
-		const fetchMock = vi.fn(async () =>
-			jsonPage({
-				data: [patreonMember('m-1', 'Only One', 'active_patron', ['t_basic'])],
-				links: { next: 'https://evil.example/api/oauth2/v2/campaigns/camp-1/members' },
-			}),
-		);
-		globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
-
-		expect(result).toMatchObject({ ok: true, count: 1 });
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-	});
-
-	it('drops supporters excluded by member id or by case-insensitive name', async () => {
-		await env.ITEM_META.put('patreon:exclusions:v1', JSON.stringify(['m-2', '  bIg SpEnDeR  ']));
+	it('drops supporters excluded by user id or by case-insensitive name', async () => {
+		await env.ITEM_META.put('supporters:exclusions:v1', JSON.stringify(['2', '  bIg SpEnDeR  ']));
 		globalThis.fetch = vi.fn(async () =>
-			jsonPage({
-				data: [
-					patreonMember('m-1', 'Visible Vic', 'active_patron', ['t_basic']),
-					patreonMember('m-2', 'Hidden By Id', 'active_patron', ['t_big']),
-					patreonMember('m-3', 'Big Spender', 'active_patron', ['t_biggest']),
-				],
-			}),
+			jsonPage([
+				guildMember('1', ['r_basic'], { nick: 'Visible Vic' }),
+				guildMember('2', ['r_big'], { nick: 'Hidden By Id' }),
+				guildMember('3', ['r_biggest'], { nick: 'Big Spender' }),
+			]),
 		) as unknown as typeof fetch;
 
-		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+		const result = await syncSupporters(discordEnv(), 'manual');
 
 		expect(result).toMatchObject({ ok: true, count: 1 });
 		expect((await storedSupporters()).supporters).toEqual([{ name: 'Visible Vic', tier: 'basic' }]);
 	});
 
-	it('refreshes an expired token, persists the rotated pair, and retries once', async () => {
-		const authHeaders: string[] = [];
-		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-			const url = String(input instanceof URL ? input : typeof input === 'string' ? input : input.url);
-			if (url === TOKEN_URL) {
-				return jsonPage({ access_token: 'fresh-access', refresh_token: 'fresh-refresh' });
-			}
-			if (url.startsWith(MEMBERS_URL)) {
-				const auth = String((init?.headers as Record<string, string> | undefined)?.authorization || '');
-				authHeaders.push(auth);
-				if (auth === 'Bearer seed-access') return jsonPage({ errors: [] }, 401);
-				return jsonPage({ data: [patreonMember('m-1', 'Renewed Rita', 'active_patron', ['t_big'])] });
-			}
-			throw new Error(`Unexpected url: ${url}`);
+	it('fails closed on Discord auth and permission errors', async () => {
+		globalThis.fetch = vi.fn(async () => jsonPage({ message: '401: Unauthorized' }, 401)) as unknown as typeof fetch;
+		expect(await syncSupporters(discordEnv(), 'manual')).toEqual({ ok: false, error: 'discord_unauthorized' });
+
+		globalThis.fetch = vi.fn(async () => jsonPage({ message: 'Missing Access' }, 403)) as unknown as typeof fetch;
+		expect(await syncSupporters(discordEnv(), 'manual')).toEqual({ ok: false, error: 'discord_http_403' });
+	});
+
+	it('no-ops without a guild id, bot token, or role map', async () => {
+		const fetchMock = vi.fn(async () => {
+			throw new Error('unconfigured supporter sync must not call upstream');
 		});
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
+		const notConfigured = { ok: true, status: 'not_configured', count: 0 };
+		expect(await syncSupporters(discordEnv({ DISCORD_GUILD_ID: '' }), 'cron')).toEqual(notConfigured);
+		expect(await syncSupporters(discordEnv({ DISCORD_BOT_TOKEN: '' }), 'cron')).toEqual(notConfigured);
+		expect(await syncSupporters(discordEnv({ DISCORD_ROLE_TIER_MAP: '' }), 'cron')).toEqual(notConfigured);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('purges the legacy Patreon KV keys on sync', async () => {
+		await env.ITEM_META.put('patreon:supporters:v1', JSON.stringify({ supporters: [{ name: 'Real Name', tier: 'basic' }] }));
+		await env.ITEM_META.put('patreon:tokens:v1', JSON.stringify({ accessToken: 'a', refreshToken: 'r' }));
+		await env.ITEM_META.put('patreon:exclusions:v1', JSON.stringify(['old']));
+		globalThis.fetch = vi.fn(async () => jsonPage([guildMember('1', ['r_basic'], { nick: 'New Nick' })])) as unknown as typeof fetch;
+
+		const result = await syncSupporters(discordEnv(), 'manual');
 
 		expect(result).toMatchObject({ ok: true, count: 1 });
-		expect(authHeaders).toEqual(['Bearer seed-access', 'Bearer fresh-access']);
-		const tokens = JSON.parse(String(await env.ITEM_META.get('patreon:tokens:v1'))) as Record<string, unknown>;
-		expect(tokens).toMatchObject({ accessToken: 'fresh-access', refreshToken: 'fresh-refresh' });
-	});
-
-	it('fails without retrying again when the refresh itself fails', async () => {
-		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-			const url = String(input instanceof URL ? input : typeof input === 'string' ? input : input.url);
-			if (url === TOKEN_URL) return jsonPage({ error: 'invalid_grant' }, 400);
-			return jsonPage({ errors: [] }, 401);
-		});
-		globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-		const result = await syncPatreonSupporters(patreonEnv(), 'manual');
-
-		expect(result).toEqual({ ok: false, error: 'patreon_token_refresh_failed' });
-		expect(fetchMock).toHaveBeenCalledTimes(2);
-	});
-
-	it('prefers tokens stored in KV over the env seed', async () => {
-		await env.ITEM_META.put(
-			'patreon:tokens:v1',
-			JSON.stringify({ accessToken: 'kv-access', refreshToken: 'kv-refresh', updatedAt: new Date().toISOString() }),
-		);
-		const authHeaders: string[] = [];
-		globalThis.fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-			authHeaders.push(String((init?.headers as Record<string, string> | undefined)?.authorization || ''));
-			return jsonPage({ data: [patreonMember('m-1', 'Stored Sam', 'active_patron', ['t_basic'])] });
-		}) as unknown as typeof fetch;
-
-		await syncPatreonSupporters(patreonEnv(), 'manual');
-
-		expect(authHeaders).toEqual(['Bearer kv-access']);
-	});
-
-	it('no-ops without a campaign id or tokens', async () => {
-		const fetchMock = vi.fn(async () => {
-			throw new Error('unconfigured patreon sync must not call upstream');
-		});
-		globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-		expect(await syncPatreonSupporters(patreonEnv({ PATREON_CAMPAIGN_ID: '' }), 'cron')).toEqual({
-			ok: true,
-			status: 'not_configured',
-			count: 0,
-		});
-		expect(await syncPatreonSupporters(patreonEnv({ PATREON_ACCESS_TOKEN: '', PATREON_REFRESH_TOKEN: '' }), 'cron')).toEqual({
-			ok: true,
-			status: 'not_configured',
-			count: 0,
-		});
-		expect(fetchMock).not.toHaveBeenCalled();
+		expect(await env.ITEM_META.get('patreon:supporters:v1')).toBeNull();
+		expect(await env.ITEM_META.get('patreon:tokens:v1')).toBeNull();
+		expect(await env.ITEM_META.get('patreon:exclusions:v1')).toBeNull();
 	});
 
 	it('serves an empty supporters payload when the key is missing', async () => {
@@ -2428,7 +2391,7 @@ describe('patreon supporters', () => {
 
 	it('serves the published supporters with an hour of edge cache', async () => {
 		await env.ITEM_META.put(
-			'patreon:supporters:v1',
+			'supporters:discord:v1',
 			JSON.stringify({
 				updatedAt: '2026-08-25T00:00:00.000Z',
 				supporters: [
@@ -2456,9 +2419,23 @@ describe('patreon supporters', () => {
 		});
 	});
 
-	it('replaces the exclusion list and hides matching names immediately', async () => {
+	it('never serves names left behind by the retired Patreon pipeline', async () => {
 		await env.ITEM_META.put(
 			'patreon:supporters:v1',
+			JSON.stringify({ updatedAt: '2026-08-25T00:00:00.000Z', supporters: [{ name: 'Real Name', tier: 'biggest' }] }),
+		);
+
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(new IncomingRequest('https://example.com/v1/supporters'), env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ ok: true, updatedAt: null, supporters: [] });
+	});
+
+	it('replaces the exclusion list and hides matching names immediately', async () => {
+		await env.ITEM_META.put(
+			'supporters:discord:v1',
 			JSON.stringify({
 				updatedAt: '2026-08-25T00:00:00.000Z',
 				supporters: [
@@ -2470,10 +2447,10 @@ describe('patreon supporters', () => {
 
 		const ctx = createExecutionContext();
 		const response = await worker.fetch(
-			new IncomingRequest('https://example.com/admin/patreon/exclusions', {
+			new IncomingRequest('https://example.com/admin/supporters/exclusions', {
 				method: 'POST',
 				headers: { authorization: 'Bearer test-key', 'content-type': 'application/json' },
-				body: JSON.stringify({ set: ['leaves lena', 'm-99', '', 'm-99'] }),
+				body: JSON.stringify({ set: ['leaves lena', '99', '', '99'] }),
 			}),
 			{ ...env, ADMIN_API_KEY: 'test-key' } as unknown as Env,
 			ctx,
@@ -2482,22 +2459,20 @@ describe('patreon supporters', () => {
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({ ok: true, result: { exclusions: 2, removed: 1 } });
-		expect(JSON.parse(String(await env.ITEM_META.get('patreon:exclusions:v1')))).toEqual(['leaves lena', 'm-99']);
+		expect(JSON.parse(String(await env.ITEM_META.get('supporters:exclusions:v1')))).toEqual(['leaves lena', '99']);
 		expect((await storedSupporters()).supporters).toEqual([{ name: 'Stays Steve', tier: 'big' }]);
 	});
 
 	it('runs the sync from the admin route', async () => {
-		globalThis.fetch = vi.fn(async () =>
-			jsonPage({ data: [patreonMember('m-1', 'Admin Amy', 'active_patron', ['t_biggest'])] }),
-		) as unknown as typeof fetch;
+		globalThis.fetch = vi.fn(async () => jsonPage([guildMember('1', ['r_biggest'], { nick: 'Admin Amy' })])) as unknown as typeof fetch;
 
 		const ctx = createExecutionContext();
 		const response = await worker.fetch(
-			new IncomingRequest('https://example.com/admin/patreon/sync', {
+			new IncomingRequest('https://example.com/admin/supporters/sync', {
 				method: 'POST',
 				headers: { authorization: 'Bearer test-key' },
 			}),
-			patreonEnv({ ADMIN_API_KEY: 'test-key' }),
+			discordEnv({ ADMIN_API_KEY: 'test-key' }),
 			ctx,
 		);
 		await waitOnExecutionContext(ctx);
@@ -2506,9 +2481,9 @@ describe('patreon supporters', () => {
 		expect(await response.json()).toEqual({ ok: true, count: 1, status: 'synced' });
 	});
 
-	it('runs the patreon sync on the daily cron only', async () => {
+	it('runs the supporter sync on the daily cron only', async () => {
 		const fetchMock = vi.fn(async () => {
-			throw new Error('unconfigured patreon sync must not call upstream');
+			throw new Error('unconfigured supporter sync must not call upstream');
 		});
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 		const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -2517,7 +2492,7 @@ describe('patreon supporters', () => {
 		await worker.scheduled({ cron: '0 4 * * *', scheduledTime: Date.now(), noRetry: () => undefined }, env, ctx);
 		await waitOnExecutionContext(ctx);
 
-		expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'cron', route: 'patreon:sync', status: 204 }));
+		expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'cron', route: 'supporters:sync', status: 204 }));
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });

@@ -12,7 +12,7 @@ import {
 	getOrHydratePrice,
 } from '../services/readThrough';
 import { isRelicSlug, normalizeOrderSubtype } from '../services/orderSubtype';
-import { readPublishedSupporters } from '../services/patreon';
+import { readPublishedSupporters } from '../services/supporters';
 import { recordActiveUser } from '../services/activeUsers';
 import { readRankedSummaryCatalogFromKv, sanitizeSnapshotForClient } from '../services/prewarm';
 import { fetchCatalogSlugs, readClientCatalogFromKv } from '../services/prewarmCatalog';

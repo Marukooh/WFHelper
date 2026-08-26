@@ -5,11 +5,11 @@ import { checkDailyBudget, isDailyBudgetExceeded } from './security/dailyBudget'
 import { getWorkerConfig } from './config';
 import { logEvent, takeResponseLogFields } from './services/logging';
 import { prewarmBatch, prewarmOrderSummaryCatalog } from './services/prewarm';
-import { syncPatreonSupporters } from './services/patreon';
+import { syncSupporters } from './services/supporters';
 import type { Env } from './types';
 
 // Must match the daily trigger in wrangler.jsonc; every other cron tick prewarms.
-const PATREON_SYNC_CRON = '0 4 * * *';
+const SUPPORTERS_SYNC_CRON = '0 4 * * *';
 
 export { DailyBudgetCounter } from './security/dailyBudget';
 export { SnapshotCoordinator } from './services/prewarm';
@@ -114,8 +114,8 @@ export default {
 				return;
 			}
 
-			if (controller.cron === PATREON_SYNC_CRON) {
-				await syncPatreonSupporters(env, 'cron');
+			if (controller.cron === SUPPORTERS_SYNC_CRON) {
+				await syncSupporters(env, 'cron');
 				logEvent({
 					type: 'cron',
 					route,

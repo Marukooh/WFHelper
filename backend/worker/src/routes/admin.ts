@@ -16,7 +16,7 @@ import {
 	saveOrderSummaryHotset,
 	sanitizeOrderSummaryHotsetEntries,
 } from '../services/prewarm';
-import { replacePatreonExclusions, syncPatreonSupporters } from '../services/patreon';
+import { replaceSupporterExclusions, syncSupporters } from '../services/supporters';
 import { getWorkerConfig } from '../config';
 import { jsonResponse } from '../security/cors';
 import { isAdminAuthorized } from '../security/adminAuth';
@@ -159,7 +159,7 @@ export async function handleAdminRoutes(req: Request, url: URL, env: Env): Promi
 		return jsonResponse({ ok: true, result }, req, env, 200);
 	}
 
-	if (req.method === 'POST' && url.pathname === '/admin/patreon/exclusions') {
+	if (req.method === 'POST' && url.pathname === '/admin/supporters/exclusions') {
 		const guardResponse = await guardAdmin(req, env);
 		if (guardResponse) return guardResponse;
 
@@ -169,15 +169,15 @@ export async function handleAdminRoutes(req: Request, url: URL, env: Env): Promi
 		if (!Array.isArray(body.set)) {
 			return jsonResponse({ ok: false, error: 'set_must_be_array' }, req, env, 400);
 		}
-		const result = await replacePatreonExclusions(env, body.set);
+		const result = await replaceSupporterExclusions(env, body.set);
 		return jsonResponse({ ok: true, result }, req, env, 200);
 	}
 
-	if (req.method === 'POST' && url.pathname === '/admin/patreon/sync') {
+	if (req.method === 'POST' && url.pathname === '/admin/supporters/sync') {
 		const guardResponse = await guardAdmin(req, env);
 		if (guardResponse) return guardResponse;
 
-		const result = await syncPatreonSupporters(env, 'manual');
+		const result = await syncSupporters(env, 'manual');
 		if (!result.ok) return jsonResponse({ ok: false, error: result.error }, req, env, 502);
 		return jsonResponse({ ok: true, count: result.count, status: result.status }, req, env, 200);
 	}

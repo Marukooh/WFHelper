@@ -29,13 +29,10 @@ export interface Env {
 	BOOTSTRAP_TOKEN_SECRET?: string;
 	BOOTSTRAP_TOKEN_TTL_SEC?: string;
 	PUBLIC_BOOTSTRAP_REQUIRED?: string;
-	PATREON_CAMPAIGN_ID?: string;
-	PATREON_CLIENT_ID?: string;
-	/** JSON object mapping a Patreon tier id to "basic" | "big" | "biggest". */
-	PATREON_TIER_MAP?: string;
-	PATREON_CLIENT_SECRET?: string;
-	PATREON_ACCESS_TOKEN?: string;
-	PATREON_REFRESH_TOKEN?: string;
+	DISCORD_GUILD_ID?: string;
+	/** JSON object mapping a Discord role id to "basic" | "big" | "biggest". */
+	DISCORD_ROLE_TIER_MAP?: string;
+	DISCORD_BOT_TOKEN?: string;
 }
 
 export type SupporterTier = 'basic' | 'big' | 'biggest';

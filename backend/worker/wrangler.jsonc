@@ -82,16 +82,14 @@
 		"ADMIN_PREWARM_MAX_BATCH": "100",
 		"NO_DATA_TTL_SEC": "900",
 		"STALE_REFRESH_SEC": "75600",
-		// Patreon supporter sync. Empty means disabled; the tier map is
-		// {"<patreon tier id>":"basic"|"big"|"biggest"}. Tokens are secrets:
-		// PATREON_CLIENT_SECRET, PATREON_ACCESS_TOKEN, PATREON_REFRESH_TOKEN.
-		"PATREON_CAMPAIGN_ID": "16668982",
-		"PATREON_CLIENT_ID": "90LDR_fmq-xeCyoiFpfo_0MhXfXZKDQpYFtOKllMOwuStn2RLQIOS4WtucYZKK8w",
-		"PATREON_TIER_MAP": "{\"29436178\":\"basic\",\"29436185\":\"big\",\"29436189\":\"biggest\"}",
+		// Discord-sourced supporter credits. Empty means disabled; the map is
+		// {"<discord role id>":"basic"|"big"|"biggest"}. DISCORD_BOT_TOKEN is a secret.
+		"DISCORD_GUILD_ID": "",
+		"DISCORD_ROLE_TIER_MAP": "",
 	},
 
 	"triggers": {
-		// The 15-minute tick prewarms. The daily tick runs the Patreon sync, which
+		// The 15-minute tick prewarms. The daily tick runs the Discord supporter sync, which
 		// only needs a once-a-day walk and must not burn subrequests every 15 min.
 		"crons": ["*/15 * * * *", "0 4 * * *"],
 	},
@@ -145,9 +143,8 @@
 				"ADMIN_PREWARM_MAX_BATCH": "100",
 				"NO_DATA_TTL_SEC": "900",
 				"STALE_REFRESH_SEC": "75600",
-				"PATREON_CAMPAIGN_ID": "16668982",
-				"PATREON_CLIENT_ID": "90LDR_fmq-xeCyoiFpfo_0MhXfXZKDQpYFtOKllMOwuStn2RLQIOS4WtucYZKK8w",
-				"PATREON_TIER_MAP": "{\"29436178\":\"basic\",\"29436185\":\"big\",\"29436189\":\"biggest\"}",
+				"DISCORD_GUILD_ID": "",
+				"DISCORD_ROLE_TIER_MAP": "",
 			},
 		},
 	}

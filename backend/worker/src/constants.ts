@@ -13,6 +13,8 @@ export const MISS_PRICE_PREFIX = 'miss:price:v2:';
 export const MISS_META_PREFIX = 'miss:meta:';
 export const MISS_ORDER_SUMMARY_PREFIX = 'miss:orders-summary:v1:';
 export const SNAPSHOT_KEY = 'snapshot:full:v1';
-export const PATREON_SUPPORTERS_KEY = 'patreon:supporters:v1';
-export const PATREON_TOKENS_KEY = 'patreon:tokens:v1';
-export const PATREON_EXCLUSIONS_KEY = 'patreon:exclusions:v1';
+export const SUPPORTERS_KEY = 'supporters:discord:v1';
+export const SUPPORTER_EXCLUSIONS_KEY = 'supporters:exclusions:v1';
+// Retired Patreon pipeline keys (profile names, OAuth tokens); every
+// successful sync deletes them.
+export const LEGACY_PATREON_KEYS = ['patreon:supporters:v1', 'patreon:tokens:v1', 'patreon:exclusions:v1'] as const;
