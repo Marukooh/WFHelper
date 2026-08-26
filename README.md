@@ -1,6 +1,6 @@
 # WFHelper
 
-Unofficial Warframe companion app for Windows, with a Linux beta. Reads your
+Unofficial Warframe companion app for Windows and Linux. Reads your
 inventory, prices it with live warframe.market data, scans relic rewards on
 screen and tracks your arbitration runs straight from EE.log.
 
@@ -51,7 +51,7 @@ Download the latest `WFHelper-<version>-Setup.exe` from
 Windows SmartScreen may warn on first run because the installer is not
 code-signed: click "More info", then "Run anyway".
 
-### Linux (beta)
+### Linux
 
 Download `WFHelper-<version>.AppImage` from
 [Releases](https://github.com/WFHelper/WFHelper/releases), make it executable
