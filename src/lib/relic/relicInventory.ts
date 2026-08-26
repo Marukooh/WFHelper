@@ -1,6 +1,16 @@
 import { collectRelicInventoryCounts } from "../../../config/shared/relicCounts.js";
 import type { RawInventoryData } from "../../types/inventory.js";
-import type { OwnedCounts, RelicDatabase } from "../../types/relics.js";
+import type { OwnedCounts, RelicDatabase, RelicGroup } from "../../types/relics.js";
+
+/** Group for a projection uniqueName of any refinement; null when unknown or
+ *  the relic database has not loaded yet. */
+export function relicGroupForUniqueName(
+  relicDb: RelicDatabase | null,
+  uniqueName: string,
+): RelicGroup | null {
+  const ref = relicDb?.byUniqueName[uniqueName];
+  return ref ? (relicDb?.groups[ref.groupKey] ?? null) : null;
+}
 
 export function parseOwnedRelics(
   inventoryData: RawInventoryData | null,

@@ -14,7 +14,7 @@ export {
   buildRelicSearchKeywordIndex,
 } from "./relic/relicSearch.js";
 
-export { parseOwnedRelics } from "./relic/relicInventory.js";
+export { parseOwnedRelics, relicGroupForUniqueName } from "./relic/relicInventory.js";
 
 export { computeSquadEV } from "./relic/relicMath.js";
 

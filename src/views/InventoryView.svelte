@@ -35,7 +35,7 @@
     type InventoryViewItem,
     type MetricNeeds,
   } from "../lib/inventoryMarket.js";
-  import { buildRelicSearchKeywordIndex } from "../lib/relic.js";
+  import { buildRelicSearchKeywordIndex, relicGroupForUniqueName } from "../lib/relic.js";
   import { readStorage, writeStorage } from "../lib/persistence.js";
   import { startupPriceCacheReady } from "../lib/startupLoader.js";
   import { log } from "../lib/log.js";
@@ -48,7 +48,7 @@
   import { ARCANE_STAND_IN_ART } from "../data/arcaneStandInArt.js";
   import { devMode, degradedIcons } from "../stores/devMode.js";
   import { sharedFilters, updateSharedFilters } from "../stores/filters.js";
-  import { activeItem } from "../stores/modals.js";
+  import { activeItem, activeRelic } from "../stores/modals.js";
   import { isRankedGroup } from "../../config/shared/numeric.js";
   import type { SharedSortKey, SharedFiltersState } from "../types/filters.js";
 
@@ -212,6 +212,12 @@
   $: detailKeys = new Set($parsedItems.map((entry) => entry.internalName));
 
   function handleItemExpand(event: CustomEvent<InventoryViewItem>): void {
+    // Relic cards open the reward breakdown, matching the Relics tab.
+    const relicGroup = relicGroupForUniqueName($relicDb, event.detail.internalName);
+    if (relicGroup) {
+      activeRelic.set(relicGroup);
+      return;
+    }
     const parsed = $parsedItems.find((entry) => entry.internalName === event.detail.internalName);
     // Base items predate hydration - carry the slug so the modal prices by it.
     if (parsed) activeItem.set({ ...parsed, marketSlug: event.detail.marketSlug });

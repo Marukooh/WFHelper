@@ -11,7 +11,9 @@
     inventoryModifiedAt,
     itemDb,
   } from "../../stores/data.js";
-  import { activeItem } from "../../stores/modals.js";
+  import { activeItem, activeRelic } from "../../stores/modals.js";
+  import { relicDb } from "../../stores/relics.js";
+  import { relicGroupForUniqueName } from "../../lib/relic.js";
   import { buildParsedItemFromDb } from "../../lib/parsedItemFromDb.js";
   import { worldData } from "../../stores/world.js";
   import type { CalendarDay, NightwaveChallenge, WorldAlert } from "../../types/world.js";
@@ -161,6 +163,11 @@
   );
 
   function openItem(uniqueName: string): void {
+    const relicGroup = relicGroupForUniqueName($relicDb, uniqueName);
+    if (relicGroup) {
+      activeRelic.set(relicGroup);
+      return;
+    }
     const entry = $itemDb[uniqueName];
     if (!entry) return;
     activeItem.set(buildParsedItemFromDb(uniqueName, entry, $componentOwnership));

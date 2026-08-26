@@ -32,7 +32,9 @@
   } from "../lib/world.js";
   import type { ItemDbEntry, RawInventoryData } from "../types/inventory.js";
   import { overlaySettings } from "../stores/overlaySettings.js";
-  import { activeItem } from "../stores/modals.js";
+  import { activeItem, activeRelic } from "../stores/modals.js";
+  import { relicDb } from "../stores/relics.js";
+  import { relicGroupForUniqueName } from "../lib/relic.js";
   import type { Invasion, SteelPathHonors } from "../types/world.js";
   import FissureAlerts from "../components/settings/FissureAlerts.svelte";
   import CollapsibleSection from "../components/CollapsibleSection.svelte";
@@ -92,6 +94,13 @@
     extraDrops?: import("../types/inventory.js").DropInfo[],
   ) {
     if (!uniqueName) return;
+    // Relic tiles (Varzia's aged relics included) get the reward breakdown
+    // modal, not the generic item card.
+    const relicGroup = relicGroupForUniqueName($relicDb, uniqueName);
+    if (relicGroup) {
+      activeRelic.set(relicGroup);
+      return;
+    }
     const db = $itemDb[uniqueName];
     if (!db) return;
 
