@@ -474,7 +474,7 @@
     <div class="grid gap-3 mb-3.5">
       <div class="flex items-center gap-3.5" data-mastery-summary>
         <div class="shrink-0">
-          <svg class="h-[92px] w-[92px]" viewBox="0 0 120 120">
+          <svg class="h-[120px] w-[120px]" viewBox="0 0 120 120">
             <circle
               cx="60"
               cy="60"
@@ -497,20 +497,20 @@
             />
             <text
               x="60"
-              y="57"
+              y="55"
               text-anchor="middle"
               fill="var(--text-primary)"
-              font-size="26"
+              font-size="22"
               font-weight="700"
               font-family="Rajdhani">{masteredPct}%</text
             >
             <text
               class="ring-caption"
               x="60"
-              y="76"
+              y="72"
               text-anchor="middle"
               fill="var(--text-muted)"
-              font-size="13"
+              font-size="10"
               font-family="Barlow">{$tr("common.mastered")}</text
             >
           </svg>

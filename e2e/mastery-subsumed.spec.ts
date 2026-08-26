@@ -47,6 +47,11 @@ test.describe("Mastery subsumed filter", () => {
   });
 
   test("summary strip stays compact at full width", async () => {
+    // At the 1280 default the full-size strip fills the row, so w-fit and
+    // w-full look identical; widen until fit-content leaves a visible gap.
+    await harness.app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0]?.setBounds({ width: 1800, height: 900 });
+    });
     await page.locator("#content .view.active select[data-subsumed]").selectOption("all");
     const row = page.locator("#content .view.active [data-mastery-summary]");
     await expect(row).toBeVisible();
