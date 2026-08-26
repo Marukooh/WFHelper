@@ -114,9 +114,10 @@
       </span>
     </span>
 
-    <span class="ml-auto flex shrink-0 flex-col items-end gap-0.5">
+    <!-- min-w-0 lets the EV label truncate before it eats the relic name. -->
+    <span class="ml-auto flex min-w-0 flex-col items-end gap-0.5">
       <span
-        class="relic-compact-block-label text-right font-display text-[0.65rem] tracking-[0.06em] uppercase text-text-secondary"
+        class="relic-compact-block-label max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-right font-display text-[0.65rem] tracking-[0.06em] uppercase text-text-secondary"
         >{qualityHeader}</span
       >
       <MarketMetricStrip
