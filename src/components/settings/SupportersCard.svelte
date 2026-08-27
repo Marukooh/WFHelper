@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { tr } from "../../lib/i18n.js";
-  import SettingsSection from "./SettingsSection.svelte";
   import {
     loadSupporters,
     SUPPORTER_TIER_ORDER,
@@ -34,24 +33,41 @@
 </script>
 
 {#if groups.length > 0}
-  <SettingsSection
-    title={$tr("settings.supportersTitle")}
-    description={$tr("settings.supportersDesc")}
-  >
-    <div class="mt-2.5 grid gap-2.5" data-supporters>
+  <aside class="supporters-panel w-full rounded-[var(--radius-xl)] p-4" data-supporters>
+    <h3
+      class="m-0 mb-1 font-display text-[var(--font-heading-size,0.95rem)] font-semibold tracking-[0.03em] text-text-primary"
+    >
+      <span class="text-accent">&hearts;</span>
+      {$tr("settings.supportersTitle")}
+    </h3>
+    <p class="m-0 text-[var(--font-small-size,0.82rem)] text-text-secondary">
+      {$tr("settings.supportersDesc")}
+    </p>
+    <div class="mt-3 grid gap-3">
       {#each groups as group (group.tier)}
         <div>
-          <div
-            class="mb-1 text-[var(--font-small-size,0.82rem)] font-semibold uppercase tracking-[0.05em] text-text-muted"
-          >
-            {group.label}
+          <div class="mb-1.5 flex items-center gap-1.5">
+            <span
+              class={group.tier === "biggest"
+                ? "tier-dot tier-dot-biggest"
+                : group.tier === "big"
+                  ? "tier-dot tier-dot-big"
+                  : "tier-dot tier-dot-basic"}
+            ></span>
+            <span class="text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-text-muted">
+              {group.label}
+            </span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             <!-- Index key: patron display names are not unique and a duplicate
                  keyed entry is a fatal error in Svelte 5. -->
             {#each group.names as name, i (i)}
               <span
-                class="rounded-full border border-accent-dim bg-accent-glow px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-text-primary"
+                class={group.tier === "biggest"
+                  ? "rounded-full border border-accent-dim bg-accent-glow px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-accent"
+                  : group.tier === "big"
+                    ? "rounded-full border border-accent-dim px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-text-primary"
+                    : "rounded-full border border-border px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-text-secondary"}
                 >{name}</span
               >
             {/each}
@@ -59,5 +75,46 @@
         </div>
       {/each}
     </div>
-  </SettingsSection>
+  </aside>
 {/if}
+
+<style>
+  .supporters-panel {
+    border: 1px solid var(--ui-panel-border);
+    background: var(--ui-panel-bg);
+    box-shadow: var(--ui-panel-shadow);
+    backdrop-filter: var(--ui-backdrop-blur);
+  }
+
+  /* The settings content is capped at 1120px inside the .settings-shell
+     container; with enough dead space beside it the panel floats there
+     instead of joining the grid. Below that it flows underneath. */
+  @container (min-width: 1680px) {
+    .supporters-panel {
+      position: absolute;
+      left: 100%;
+      top: 0.75rem;
+      width: 260px;
+      margin-left: 0.85rem;
+    }
+  }
+
+  .tier-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+
+  .tier-dot-biggest {
+    background: var(--accent);
+  }
+
+  .tier-dot-big {
+    background: color-mix(in srgb, var(--accent) 65%, transparent);
+  }
+
+  .tier-dot-basic {
+    background: var(--text-muted);
+  }
+</style>

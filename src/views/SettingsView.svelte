@@ -341,511 +341,537 @@
   }
 </script>
 
-<section class="view active mx-auto w-full max-w-[1120px]">
-  <div class="view-header">
-    <h2>{$tr("common.settings")}</h2>
-  </div>
+<section class="view active settings-shell w-full">
+  <div class="mx-auto w-full max-w-[1120px]">
+    <div class="view-header">
+      <h2>{$tr("common.settings")}</h2>
+    </div>
 
-  <div class="tab-bar">
-    <button
-      class="tab-item"
-      class:active={settingsTab === "general"}
-      data-tour-tab="general"
-      on:click={() => (settingsTab = "general")}
-    >
-      <span>{$tr("settings.tabGeneral")}</span>
-    </button>
-    <button
-      class="tab-item"
-      class:active={settingsTab === "appearance"}
-      data-tour-tab="appearance"
-      on:click={() => (settingsTab = "appearance")}
-    >
-      <span>{$tr("common.appearance")}</span>
-    </button>
-    <button
-      class="tab-item"
-      class:active={settingsTab === "overlay"}
-      data-tour-tab="overlay"
-      on:click={() => (settingsTab = "overlay")}
-    >
-      <span>{$tr("common.overlays")}</span>
-    </button>
-  </div>
-
-  {#if settingsTab === "general"}
-    <div class="settings-tab-grid settings-masonry py-3">
-      <SettingsSection
-        title={$tr("settings.languageTitle")}
-        description={$tr("settings.languageDesc")}
+    <div class="tab-bar">
+      <button
+        class="tab-item"
+        class:active={settingsTab === "general"}
+        data-tour-tab="general"
+        on:click={() => (settingsTab = "general")}
       >
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow label={$tr("settings.languageRow")} dataSetting="language">
-            <ThemedSelect bind:value={languageChoice}>
-              {#each LOCALE_OPTIONS as option}
-                <option value={option.code}>{option.label}</option>
+        <span>{$tr("settings.tabGeneral")}</span>
+      </button>
+      <button
+        class="tab-item"
+        class:active={settingsTab === "appearance"}
+        data-tour-tab="appearance"
+        on:click={() => (settingsTab = "appearance")}
+      >
+        <span>{$tr("common.appearance")}</span>
+      </button>
+      <button
+        class="tab-item"
+        class:active={settingsTab === "overlay"}
+        data-tour-tab="overlay"
+        on:click={() => (settingsTab = "overlay")}
+      >
+        <span>{$tr("common.overlays")}</span>
+      </button>
+    </div>
+
+    {#if settingsTab === "general"}
+      <div class="settings-general-layout py-3">
+        <div class="settings-tab-grid settings-masonry">
+          <SettingsSection
+            title={$tr("settings.languageTitle")}
+            description={$tr("settings.languageDesc")}
+          >
+            <div class="mt-2.5 grid gap-1">
+              <SettingsRow label={$tr("settings.languageRow")} dataSetting="language">
+                <ThemedSelect bind:value={languageChoice}>
+                  {#each LOCALE_OPTIONS as option}
+                    <option value={option.code}>{option.label}</option>
+                  {/each}
+                </ThemedSelect>
+              </SettingsRow>
+              <SettingsRow label={$tr("settings.gameLanguageRow")} dataSetting="game-language">
+                <ThemedSelect bind:value={gameLanguageChoice}>
+                  <option value="auto">{$tr("settings.gameLanguageAuto")}</option>
+                  {#each GAME_LANGUAGE_OPTIONS as option}
+                    <option value={option.code}>{option.label}</option>
+                  {/each}
+                </ThemedSelect>
+              </SettingsRow>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            title={$tr("settings.notificationsTitle")}
+            description={$tr("settings.notificationsDesc")}
+          >
+            <div class="mt-2.5 grid gap-1">
+              <SettingsRow label={$tr("settings.windowsNotifSound")}>
+                <input
+                  type="checkbox"
+                  bind:checked={form.notificationSoundEnabled}
+                  on:change={autoSave}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.wfmDmNotifications")}>
+                <input
+                  type="checkbox"
+                  bind:checked={form.wfmNotificationsEnabled}
+                  on:change={autoSave}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.inGameMessageNotifications")}>
+                <input
+                  type="checkbox"
+                  bind:checked={form.messageNotificationsEnabled}
+                  on:change={autoSave}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow
+                label={$tr("settings.notifyWhileFocused")}
+                dimmed={!form.messageNotificationsEnabled}
+              >
+                <input
+                  type="checkbox"
+                  bind:checked={form.messageNotificationsWhileFocused}
+                  disabled={!form.messageNotificationsEnabled}
+                  on:change={autoSave}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.unlistOnTrade")}>
+                <input
+                  type="checkbox"
+                  bind:checked={form.autoCloseWfmOrders}
+                  on:change={autoSave}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.tradeRepKeybindEnable")}>
+                <input
+                  type="checkbox"
+                  bind:checked={form.tradeRepHotkeyEnabled}
+                  on:change={autoSave}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.tradeRepKeybind")} inputRow>
+                <input
+                  type="text"
+                  bind:value={form.tradeRepHotkey}
+                  disabled={!form.tradeRepHotkeyEnabled}
+                  placeholder={$tr("settings.pressKeyCombination")}
+                  on:keydown={(e) => recordHotkey("tradeRepHotkey", e)}
+                  on:change={autoSave}
+                  class="settings-input"
+                />
+              </SettingsRow>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            title={$tr("common.arbitrations")}
+            description={$tr("settings.arbitrationsDesc")}
+          >
+            <div class="mt-2.5 grid gap-1">
+              <SettingsRow label={$tr("settings.trackArbiRuns")}>
+                <input
+                  type="checkbox"
+                  bind:checked={form.arbiTrackingEnabled}
+                  on:change={autoSave}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            title={$tr("common.inventory")}
+            description={$tr("settings.inventoryDesc")}
+          >
+            <div class="mt-2.5 grid gap-1">
+              <SettingsRow
+                as="div"
+                label={$tr("common.source")}
+                hint={`${sourceLabel}${sourceDescription.detail ? ` - ${sourceDescription.detail}` : ""}`}
+                hintTitle={sourceTitle}
+              >
+                <SegmentedControl
+                  value={inventorySource}
+                  options={inventorySourceOptions}
+                  onChange={(next) => void selectInventorySource(next)}
+                  disabled={switchingSource}
+                />
+              </SettingsRow>
+              <SettingsRow
+                label={$tr("settings.autoInventorySync")}
+                hint={autoSyncApplies ? undefined : $tr("settings.helperSourceOnly")}
+              >
+                <input
+                  type="checkbox"
+                  bind:checked={form.autoInventorySyncEnabled}
+                  on:change={autoSave}
+                  disabled={!autoSyncApplies}
+                  class="accent-accent disabled:opacity-50"
+                />
+              </SettingsRow>
+              <SettingsRow label={$tr("settings.hideFoundryPending")}>
+                <input type="checkbox" bind:checked={$hideFoundryClaims} class="accent-accent" />
+              </SettingsRow>
+              <SettingsRow label={$tr("settings.autoFocusSearch")}>
+                <input
+                  type="checkbox"
+                  bind:checked={$autoFocusSearch}
+                  data-setting-auto-focus-search
+                  class="accent-accent"
+                />
+              </SettingsRow>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title={$tr("common.mastery")} description={$tr("settings.masteryDesc")}>
+            <div class="mt-2.5 grid gap-1">
+              <SettingsRow label={$tr("settings.hideFounderItems")}>
+                <input
+                  type="checkbox"
+                  bind:checked={$hideFounderMasteryItems}
+                  class="accent-accent"
+                />
+              </SettingsRow>
+            </div>
+          </SettingsSection>
+
+          {#if isWindows}
+            <SettingsSection
+              title={$tr("settings.compatibilityTitle")}
+              description={$tr("settings.compatibilityDesc")}
+            >
+              <div class="mt-2.5 grid gap-1">
+                <SettingsRow
+                  label={$tr("settings.blockInjection")}
+                  hint={$tr("settings.blockInjectionHint")}
+                >
+                  <input
+                    type="checkbox"
+                    bind:checked={form.blockThirdPartyInjection}
+                    on:change={autoSave}
+                    class="accent-accent"
+                  />
+                </SettingsRow>
+              </div>
+            </SettingsSection>
+          {/if}
+
+          <SettingsSection
+            title={$tr("settings.sidebarTabsTitle")}
+            description={$tr("settings.sidebarTabsDesc")}
+          >
+            <div class="mt-2.5 grid gap-1">
+              {#each TOGGLEABLE_TABS as tab (tab.view)}
+                <SettingsRow label={$tr(tab.labelKey)}>
+                  <input
+                    type="checkbox"
+                    bind:checked={tabChecked[tab.view]}
+                    on:change={() => setTabVisible(tab.view)}
+                    class="accent-accent"
+                  />
+                </SettingsRow>
               {/each}
-            </ThemedSelect>
-          </SettingsRow>
-          <SettingsRow label={$tr("settings.gameLanguageRow")} dataSetting="game-language">
-            <ThemedSelect bind:value={gameLanguageChoice}>
-              <option value="auto">{$tr("settings.gameLanguageAuto")}</option>
-              {#each GAME_LANGUAGE_OPTIONS as option}
-                <option value={option.code}>{option.label}</option>
-              {/each}
-            </ThemedSelect>
-          </SettingsRow>
+            </div>
+          </SettingsSection>
+
+          {#if isLinux}
+            <SettingsSection>
+              <ProtonLaunchOption />
+            </SettingsSection>
+
+            <SettingsSection>
+              <LinuxDisplayBackend />
+            </SettingsSection>
+          {/if}
+
+          <AboutCard />
         </div>
-      </SettingsSection>
 
-      <SettingsSection
-        title={$tr("settings.notificationsTitle")}
-        description={$tr("settings.notificationsDesc")}
-      >
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow label={$tr("settings.windowsNotifSound")}>
-            <input
-              type="checkbox"
-              bind:checked={form.notificationSoundEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
+        <SupportersCard />
+      </div>
 
-          <SettingsRow label={$tr("settings.wfmDmNotifications")}>
-            <input
-              type="checkbox"
-              bind:checked={form.wfmNotificationsEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow label={$tr("settings.inGameMessageNotifications")}>
-            <input
-              type="checkbox"
-              bind:checked={form.messageNotificationsEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow
-            label={$tr("settings.notifyWhileFocused")}
-            dimmed={!form.messageNotificationsEnabled}
+      <div class="settings-wide-actions pb-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button class="btn-secondary btn-sm" on:click={resetDefaults}
+            >{$tr("settings.resetDefaults")}</button
           >
-            <input
-              type="checkbox"
-              bind:checked={form.messageNotificationsWhileFocused}
-              disabled={!form.messageNotificationsEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow label={$tr("settings.unlistOnTrade")}>
-            <input
-              type="checkbox"
-              bind:checked={form.autoCloseWfmOrders}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow label={$tr("settings.tradeRepKeybindEnable")}>
-            <input
-              type="checkbox"
-              bind:checked={form.tradeRepHotkeyEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow label={$tr("settings.tradeRepKeybind")} inputRow>
-            <input
-              type="text"
-              bind:value={form.tradeRepHotkey}
-              disabled={!form.tradeRepHotkeyEnabled}
-              placeholder={$tr("settings.pressKeyCombination")}
-              on:keydown={(e) => recordHotkey("tradeRepHotkey", e)}
-              on:change={autoSave}
-              class="settings-input"
-            />
-          </SettingsRow>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection
-        title={$tr("common.arbitrations")}
-        description={$tr("settings.arbitrationsDesc")}
-      >
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow label={$tr("settings.trackArbiRuns")}>
-            <input
-              type="checkbox"
-              bind:checked={form.arbiTrackingEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection title={$tr("common.inventory")} description={$tr("settings.inventoryDesc")}>
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow
-            as="div"
-            label={$tr("common.source")}
-            hint={`${sourceLabel}${sourceDescription.detail ? ` - ${sourceDescription.detail}` : ""}`}
-            hintTitle={sourceTitle}
+          <button class="btn-secondary btn-sm" data-tour-restart on:click={() => startTour()}
+            >{$tr("settings.showFeatureTour")}</button
           >
-            <SegmentedControl
-              value={inventorySource}
-              options={inventorySourceOptions}
-              onChange={(next) => void selectInventorySource(next)}
-              disabled={switchingSource}
-            />
-          </SettingsRow>
-          <SettingsRow
-            label={$tr("settings.autoInventorySync")}
-            hint={autoSyncApplies ? undefined : $tr("settings.helperSourceOnly")}
+          <button class="btn-secondary btn-sm" on:click={openScanDebugFolder}
+            >{$tr("settings.openScanDebug")}</button
           >
-            <input
-              type="checkbox"
-              bind:checked={form.autoInventorySyncEnabled}
-              on:change={autoSave}
-              disabled={!autoSyncApplies}
-              class="accent-accent disabled:opacity-50"
-            />
-          </SettingsRow>
-          <SettingsRow label={$tr("settings.hideFoundryPending")}>
-            <input type="checkbox" bind:checked={$hideFoundryClaims} class="accent-accent" />
-          </SettingsRow>
-          <SettingsRow label={$tr("settings.autoFocusSearch")}>
-            <input
-              type="checkbox"
-              bind:checked={$autoFocusSearch}
-              data-setting-auto-focus-search
-              class="accent-accent"
-            />
-          </SettingsRow>
+          <button class="btn-secondary btn-sm" on:click={openLogFolder}
+            >{$tr("settings.openLogFolder")}</button
+          >
+          <button class="btn-secondary btn-sm" on:click={() => currentView.set("setup")}
+            >{$tr("settings.redoSetup")}</button
+          >
+          <span class="text-xs text-text-muted">{$tr("settings.changesAutoApply")}</span>
         </div>
-      </SettingsSection>
 
-      <SettingsSection title={$tr("common.mastery")} description={$tr("settings.masteryDesc")}>
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow label={$tr("settings.hideFounderItems")}>
-            <input type="checkbox" bind:checked={$hideFounderMasteryItems} class="accent-accent" />
-          </SettingsRow>
-        </div>
-      </SettingsSection>
-
-      {#if isWindows}
+        {#if statusMsg}
+          <p class="m-0 min-h-4 text-sm text-text-secondary" class:text-danger={statusError}>
+            {statusMsg}
+          </p>
+        {/if}
+      </div>
+    {:else if settingsTab === "appearance"}
+      <div class="settings-tab-grid settings-masonry py-3">
+        <AppearanceCard />
+      </div>
+    {:else if settingsTab === "overlay"}
+      <div class="settings-tab-grid settings-masonry py-3">
         <SettingsSection
-          title={$tr("settings.compatibilityTitle")}
-          description={$tr("settings.compatibilityDesc")}
+          title={$tr("settings.overlayAvailabilityTitle")}
+          description={$tr("settings.overlayAvailabilityDesc")}
         >
           <div class="mt-2.5 grid gap-1">
             <SettingsRow
-              label={$tr("settings.blockInjection")}
-              hint={$tr("settings.blockInjectionHint")}
+              label={$tr("settings.relicRewardsOverlay")}
+              dataSetting="relicRewardsOverlay"
             >
               <input
                 type="checkbox"
-                bind:checked={form.blockThirdPartyInjection}
+                bind:checked={form.relicRewardsOverlayEnabled}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              label={$tr("settings.relicRecommendationOverlay")}
+              dataSetting="relicRecommendationOverlay"
+            >
+              <input
+                type="checkbox"
+                bind:checked={form.relicRecommendationOverlayEnabled}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              label={$tr("settings.tradeDetectedOverlay")}
+              dataSetting="tradeNotificationOverlay"
+            >
+              <input
+                type="checkbox"
+                bind:checked={form.tradeNotificationOverlayEnabled}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
+
+            <SettingsRow label={$tr("settings.rivenOverlay")} dataSetting="rivenOverlay">
+              <input
+                type="checkbox"
+                bind:checked={form.rivenOverlayEnabled}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              label={$tr("settings.arbiSummaryOverlay")}
+              dataSetting="arbiSummaryOverlay"
+            >
+              <input
+                type="checkbox"
+                bind:checked={form.arbiSummaryOverlayEnabled}
                 on:change={autoSave}
                 class="accent-accent"
               />
             </SettingsRow>
           </div>
         </SettingsSection>
-      {/if}
 
-      <SettingsSection
-        title={$tr("settings.sidebarTabsTitle")}
-        description={$tr("settings.sidebarTabsDesc")}
-      >
-        <div class="mt-2.5 grid gap-1">
-          {#each TOGGLEABLE_TABS as tab (tab.view)}
-            <SettingsRow label={$tr(tab.labelKey)}>
+        <SettingsSection
+          title={$tr("settings.scanDiagnosticsTitle")}
+          description={$tr("settings.scanDiagnosticsDesc")}
+        >
+          <div class="mt-2.5 grid gap-1">
+            <SettingsRow label={$tr("settings.ocrDebugImages")}>
               <input
                 type="checkbox"
-                bind:checked={tabChecked[tab.view]}
-                on:change={() => setTabVisible(tab.view)}
+                bind:checked={form.ocrDebugImagesEnabled}
+                on:change={autoSave}
                 class="accent-accent"
               />
             </SettingsRow>
-          {/each}
-        </div>
-      </SettingsSection>
-
-      {#if isLinux}
-        <SettingsSection>
-          <ProtonLaunchOption />
+          </div>
         </SettingsSection>
 
-        <SettingsSection>
-          <LinuxDisplayBackend />
-        </SettingsSection>
-      {/if}
+        <SettingsSection title={$tr("settings.overlayTitle")}>
+          <p class="mt-1 text-xs leading-tight text-text-muted">
+            {$tr("settings.overlayRequirements")}
+          </p>
 
-      <SupportersCard />
-
-      <AboutCard />
-    </div>
-
-    <div class="settings-wide-actions pb-3">
-      <div class="flex flex-wrap items-center gap-2.5">
-        <button class="btn-secondary btn-sm" on:click={resetDefaults}
-          >{$tr("settings.resetDefaults")}</button
-        >
-        <button class="btn-secondary btn-sm" data-tour-restart on:click={() => startTour()}
-          >{$tr("settings.showFeatureTour")}</button
-        >
-        <button class="btn-secondary btn-sm" on:click={openScanDebugFolder}
-          >{$tr("settings.openScanDebug")}</button
-        >
-        <button class="btn-secondary btn-sm" on:click={openLogFolder}
-          >{$tr("settings.openLogFolder")}</button
-        >
-        <button class="btn-secondary btn-sm" on:click={() => currentView.set("setup")}
-          >{$tr("settings.redoSetup")}</button
-        >
-        <span class="text-xs text-text-muted">{$tr("settings.changesAutoApply")}</span>
-      </div>
-
-      {#if statusMsg}
-        <p class="m-0 min-h-4 text-sm text-text-secondary" class:text-danger={statusError}>
-          {statusMsg}
-        </p>
-      {/if}
-    </div>
-  {:else if settingsTab === "appearance"}
-    <div class="settings-tab-grid settings-masonry py-3">
-      <AppearanceCard />
-    </div>
-  {:else if settingsTab === "overlay"}
-    <div class="settings-tab-grid settings-masonry py-3">
-      <SettingsSection
-        title={$tr("settings.overlayAvailabilityTitle")}
-        description={$tr("settings.overlayAvailabilityDesc")}
-      >
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow
-            label={$tr("settings.relicRewardsOverlay")}
-            dataSetting="relicRewardsOverlay"
-          >
-            <input
-              type="checkbox"
-              bind:checked={form.relicRewardsOverlayEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow
-            label={$tr("settings.relicRecommendationOverlay")}
-            dataSetting="relicRecommendationOverlay"
-          >
-            <input
-              type="checkbox"
-              bind:checked={form.relicRecommendationOverlayEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow
-            label={$tr("settings.tradeDetectedOverlay")}
-            dataSetting="tradeNotificationOverlay"
-          >
-            <input
-              type="checkbox"
-              bind:checked={form.tradeNotificationOverlayEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow label={$tr("settings.rivenOverlay")} dataSetting="rivenOverlay">
-            <input
-              type="checkbox"
-              bind:checked={form.rivenOverlayEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow label={$tr("settings.arbiSummaryOverlay")} dataSetting="arbiSummaryOverlay">
-            <input
-              type="checkbox"
-              bind:checked={form.arbiSummaryOverlayEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection
-        title={$tr("settings.scanDiagnosticsTitle")}
-        description={$tr("settings.scanDiagnosticsDesc")}
-      >
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow label={$tr("settings.ocrDebugImages")}>
-            <input
-              type="checkbox"
-              bind:checked={form.ocrDebugImagesEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection title={$tr("settings.overlayTitle")}>
-        <p class="mt-1 text-xs leading-tight text-text-muted">
-          {$tr("settings.overlayRequirements")}
-        </p>
-
-        <div class="mt-2.5 grid gap-1">
-          <SettingsRow label={$tr("settings.autoTrigger")}>
-            <input
-              type="checkbox"
-              bind:checked={form.autoTriggerEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow
-            label={$tr("settings.warframeUiScaleAutoToggle")}
-            dataSetting="warframe-ui-scale-auto"
-          >
-            <input
-              type="checkbox"
-              bind:checked={form.warframeUiScaleAuto}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
-
-          <SettingsRow
-            label={$tr("settings.warframeUiScale")}
-            hint={uiScaleDetected != null ? $tr("settings.warframeUiScaleAuto") : undefined}
-            inputRow
-            dataSetting="warframe-ui-scale"
-          >
-            <div class="settings-range-control">
+          <div class="mt-2.5 grid gap-1">
+            <SettingsRow label={$tr("settings.autoTrigger")}>
               <input
-                type="range"
-                min="0.5"
-                max="1"
-                step="0.01"
-                value={uiScaleDetected ?? form.warframeUiScale}
-                disabled={uiScaleDetected != null}
-                on:change={(e) => {
-                  form.warframeUiScale = Number(e.currentTarget.value);
-                  autoSave();
-                }}
-                class="settings-range"
+                type="checkbox"
+                bind:checked={form.autoTriggerEnabled}
+                on:change={autoSave}
+                class="accent-accent"
               />
-              <span class="settings-range-value"
-                >{Math.round((uiScaleDetected ?? form.warframeUiScale) * 100)}%</span
-              >
-            </div>
-          </SettingsRow>
+            </SettingsRow>
 
-          {#each OVERLAY_SCALE_ROWS as row (row.key)}
-            <SettingsRow label={$tr(row.labelKey)} inputRow>
+            <SettingsRow
+              label={$tr("settings.warframeUiScaleAutoToggle")}
+              dataSetting="warframe-ui-scale-auto"
+            >
+              <input
+                type="checkbox"
+                bind:checked={form.warframeUiScaleAuto}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              label={$tr("settings.warframeUiScale")}
+              hint={uiScaleDetected != null ? $tr("settings.warframeUiScaleAuto") : undefined}
+              inputRow
+              dataSetting="warframe-ui-scale"
+            >
               <div class="settings-range-control">
                 <input
                   type="range"
-                  min="0.75"
-                  max="1.5"
-                  step="0.05"
-                  value={windowScales[row.key] ?? overlayScale}
-                  on:change={(e) => saveWindowScale(row.key, Number(e.currentTarget.value))}
+                  min="0.5"
+                  max="1"
+                  step="0.01"
+                  value={uiScaleDetected ?? form.warframeUiScale}
+                  disabled={uiScaleDetected != null}
+                  on:change={(e) => {
+                    form.warframeUiScale = Number(e.currentTarget.value);
+                    autoSave();
+                  }}
                   class="settings-range"
                 />
                 <span class="settings-range-value"
-                  >{Math.round((windowScales[row.key] ?? overlayScale) * 100)}%</span
+                  >{Math.round((uiScaleDetected ?? form.warframeUiScale) * 100)}%</span
                 >
               </div>
             </SettingsRow>
-          {/each}
 
-          <SettingsRow label={$tr("settings.hotkeyFallback")}>
-            <input
-              type="checkbox"
-              bind:checked={form.hotkeyEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
+            {#each OVERLAY_SCALE_ROWS as row (row.key)}
+              <SettingsRow label={$tr(row.labelKey)} inputRow>
+                <div class="settings-range-control">
+                  <input
+                    type="range"
+                    min="0.75"
+                    max="1.5"
+                    step="0.05"
+                    value={windowScales[row.key] ?? overlayScale}
+                    on:change={(e) => saveWindowScale(row.key, Number(e.currentTarget.value))}
+                    class="settings-range"
+                  />
+                  <span class="settings-range-value"
+                    >{Math.round((windowScales[row.key] ?? overlayScale) * 100)}%</span
+                  >
+                </div>
+              </SettingsRow>
+            {/each}
 
-          <SettingsRow label={$tr("settings.hotkey")} inputRow>
-            <input
-              type="text"
-              bind:value={form.hotkey}
-              disabled={!form.hotkeyEnabled}
-              placeholder={$tr("settings.hotkeyPlaceholder")}
-              on:keydown={(e) => recordHotkey("hotkey", e)}
-              on:change={autoSave}
-              class="settings-input"
-            />
-          </SettingsRow>
+            <SettingsRow label={$tr("settings.hotkeyFallback")}>
+              <input
+                type="checkbox"
+                bind:checked={form.hotkeyEnabled}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
 
-          <SettingsRow label={$tr("settings.interactionHotkeyEnabled")}>
-            <input
-              type="checkbox"
-              bind:checked={form.interactionHotkeyEnabled}
-              on:change={autoSave}
-              class="accent-accent"
-            />
-          </SettingsRow>
+            <SettingsRow label={$tr("settings.hotkey")} inputRow>
+              <input
+                type="text"
+                bind:value={form.hotkey}
+                disabled={!form.hotkeyEnabled}
+                placeholder={$tr("settings.hotkeyPlaceholder")}
+                on:keydown={(e) => recordHotkey("hotkey", e)}
+                on:change={autoSave}
+                class="settings-input"
+              />
+            </SettingsRow>
 
-          <SettingsRow label={$tr("settings.interactionHotkey")} inputRow>
-            <input
-              type="text"
-              bind:value={form.interactionHotkey}
-              disabled={!form.interactionHotkeyEnabled}
-              placeholder={$tr("settings.interactionHotkeyPlaceholder")}
-              on:keydown={(e) => recordHotkey("interactionHotkey", e)}
-              on:change={autoSave}
-              class="settings-input"
-            />
-          </SettingsRow>
-        </div>
-      </SettingsSection>
-    </div>
+            <SettingsRow label={$tr("settings.interactionHotkeyEnabled")}>
+              <input
+                type="checkbox"
+                bind:checked={form.interactionHotkeyEnabled}
+                on:change={autoSave}
+                class="accent-accent"
+              />
+            </SettingsRow>
 
-    <div class="settings-wide-actions pb-3">
-      <div class="flex flex-wrap items-center gap-2.5">
-        <button class="btn-secondary btn-sm" on:click={resetDefaults}
-          >{$tr("settings.resetDefaults")}</button
-        >
-        <button class="btn-secondary btn-sm" on:click={testTrigger}
-          >{$tr("settings.testTrigger")}</button
-        >
-        <span class="text-xs text-text-muted">{$tr("settings.changesAutoApply")}</span>
+            <SettingsRow label={$tr("settings.interactionHotkey")} inputRow>
+              <input
+                type="text"
+                bind:value={form.interactionHotkey}
+                disabled={!form.interactionHotkeyEnabled}
+                placeholder={$tr("settings.interactionHotkeyPlaceholder")}
+                on:keydown={(e) => recordHotkey("interactionHotkey", e)}
+                on:change={autoSave}
+                class="settings-input"
+              />
+            </SettingsRow>
+          </div>
+        </SettingsSection>
       </div>
 
-      {#if statusMsg}
-        <p class="m-0 min-h-4 text-sm text-text-secondary" class:text-danger={statusError}>
-          {statusMsg}
-        </p>
-      {/if}
-    </div>
-  {/if}
+      <div class="settings-wide-actions pb-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button class="btn-secondary btn-sm" on:click={resetDefaults}
+            >{$tr("settings.resetDefaults")}</button
+          >
+          <button class="btn-secondary btn-sm" on:click={testTrigger}
+            >{$tr("settings.testTrigger")}</button
+          >
+          <span class="text-xs text-text-muted">{$tr("settings.changesAutoApply")}</span>
+        </div>
+
+        {#if statusMsg}
+          <p class="m-0 min-h-4 text-sm text-text-secondary" class:text-danger={statusError}>
+            {statusMsg}
+          </p>
+        {/if}
+      </div>
+    {/if}
+  </div>
 </section>
 
 <style>
+  /* Size container so the supporters panel can query the real content width
+     (the viewport lies once the sidebar expands). */
+  .settings-shell {
+    container-type: inline-size;
+  }
+
   .settings-tab-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
     gap: 0.85rem;
     align-items: start;
+  }
+
+  /* Positioning context for the supporters panel, which floats in the dead
+     space right of the 1120px view cap on wide windows. */
+  .settings-general-layout {
+    position: relative;
   }
 
   .settings-input {
