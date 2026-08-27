@@ -49,11 +49,9 @@ test.describe("Mastery subsumed filter", () => {
   test("summary strip stays compact at full width", async () => {
     // At the 1280 default the full-size strip fills the row, so w-fit and
     // w-full look identical; widen until fit-content leaves a visible gap.
-    await harness.app.evaluate(({ BrowserWindow }) => {
-      BrowserWindow.getAllWindows()[0]?.setBounds({ width: 1800, height: 900 });
-    });
-    // setBounds lands in the renderer asynchronously; measuring before the
-    // resize arrives sees the 1280 layout and flakes the CI flake gate.
+    // Viewport emulation, not setBounds: CI runner displays are smaller than
+    // 1800px and Windows clamps the window, which left innerWidth at 1280.
+    await page.setViewportSize({ width: 1800, height: 900 });
     await page.waitForFunction(() => window.innerWidth >= 1700);
     await page.locator("#content .view.active select[data-subsumed]").selectOption("all");
     const row = page.locator("#content .view.active [data-mastery-summary]");
