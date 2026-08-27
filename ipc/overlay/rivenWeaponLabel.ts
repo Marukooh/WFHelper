@@ -14,8 +14,7 @@ const log = withScope("rivenScan");
 
 const FITS_IN_DUMP_KEEP = 6;
 
-// A failed read leaves no evidence in the log rows alone; the crop is what
-// turns a "wrong weapon at scale X" report into a reproducible fixture.
+// Failed reads keep their crop; log rows alone are not reproducible.
 function dumpFitsInCrop(label: string, crop: NativeImage): void {
   if (!areOcrDebugDumpsEnabled()) return;
   try {
@@ -71,8 +70,7 @@ export async function readWeaponLabelFromPanelPng(
   options: { invert?: boolean; upscale?: boolean; uiScale?: number; clahe?: boolean } = {},
 ): Promise<WeaponLabelMatch | null> {
   let normalized = png;
-  // A sub-100% interface scale shrinks the label text independently of the
-  // resolution, so its correction applies even where upscaling is off.
+  // Interface scale shrinks text independently of resolution.
   const uiCorrection = 1 / Math.min(1, Math.max(0.5, options.uiScale ?? 1));
   const scale = (REFERENCE_CONTENT_HEIGHT / Math.max(1, contentHeight)) * uiCorrection;
   const resize = scale < 0.98 || uiCorrection > 1.02 || (options.upscale !== false && scale > 1.02);
@@ -84,8 +82,7 @@ export async function readWeaponLabelFromPanelPng(
     if (resize) {
       pipeline = pipeline.resize({ height, kernel: "lanczos3" });
     }
-    // Colored theme captions (dark red on the dark plate) carry almost no
-    // luminance contrast; local equalization is what makes Otsu keep them.
+    // Equalization keeps low-luminance theme captions above the threshold.
     if (options.clahe) pipeline = pipeline.grayscale().clahe({ width: 64, height: 64 });
     if (options.invert) pipeline = pipeline.negate({ alpha: false });
     normalized = await pipeline.png().toBuffer();
@@ -112,8 +109,7 @@ interface StripRowLike {
   box?: { x: number; y: number; width: number; height: number };
 }
 
-// The rows of the most recent panel read, so the caption-band pass can anchor
-// on the FITS IN heading without paying for another detection run.
+// Rows of the last panel read; the caption band anchors on its heading.
 let _lastReadRows: StripRowLike[] = [];
 
 function findFitsInHeadingRow(rows: StripRowLike[]): StripRowLike | null {
@@ -125,23 +121,20 @@ function findFitsInHeadingRow(rows: StripRowLike[]): StripRowLike | null {
   return null;
 }
 
-// Caption geometry below the heading, in 1080p screen pixels per unit of
-// interface scale; measured on real 50%-scale captures with margins.
+// Caption band below the heading, 1080p px per unit scale; measured on real captures.
 const CAPTION_TOP_OFFSET = 110;
 const CAPTION_HEIGHT = 60;
 const CAPTION_HALF_WIDTH = 150;
 const CAPTION_UPSCALE = 4;
 
-// The plate is a fixed reroll-screen element; its caption center sits at this
-// offset from screen center, in 1080p pixels per unit of interface scale.
+// Caption center offset from screen center, 1080p px per unit scale.
 const CAPTION_FIXED_OFFSET_X = 738;
 const CAPTION_FIXED_OFFSET_Y = 366;
 const CAPTION_FIXED_HALF_WIDTH = 85;
 const CAPTION_FIXED_HALF_HEIGHT = 18;
 
-/** Reads one raw-RGB band through the recognizer, skipping row detection: a
- *  bright diorama shard behind the plate flips the caption's polarity and
- *  global thresholding loses it, but the recognizer reads raw pixels fine. */
+/** OCR one raw band directly; thresholding loses the caption when a bright
+ *  shard sits behind the plate. */
 async function recognizeCaptionBand(
   wideCrop: NativeImage,
   rect: { x: number; y: number; width: number; height: number },
@@ -199,8 +192,7 @@ async function readCaptionUnderHeading(
   );
 }
 
-/** Fallback with no heading anchor (a shard can hide the heading too): the
- *  plate is fixed on the reroll screen, so the band comes from screen center. */
+/** No heading anchor: the plate is fixed on screen, band from center offset. */
 async function readCaptionAtFixedPosition(
   wideCrop: NativeImage,
   uiScale: number,
@@ -245,8 +237,7 @@ export async function readFitsInWeapon(
   return panel;
 }
 
-/** Reads the linked weapon at sub-100% interface scales, where the plate sits
- *  closer to screen center and its text needs the 1/scale enlargement. */
+/** Sub-100% scales: the plate sits nearer screen center at 1/scale size. */
 export async function readFitsInWeaponSmallUi(
   image: NativeImage,
   uiScale: number,

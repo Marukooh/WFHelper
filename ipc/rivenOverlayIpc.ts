@@ -538,9 +538,7 @@ async function detectFitsInWeapon(capture: CaptureResult): Promise<void> {
   const uiScale =
     (ctx.overlaySettings.warframeUiScaleAuto !== false ? resolveWarframeUiScale() : null) ??
     (Number(ctx.overlaySettings.warframeUiScale) || REFERENCE_WARFRAME_UI_SCALE);
-  // Sub-100% interface scales move the plate out of the calibrated crop and
-  // into regions our own right panel occupies, so the small-UI path always
-  // recaptures with that panel hidden and searches wide.
+  // Sub-100% scales move the plate; recapture with our panel hidden and search wide.
   const smallUi = uiScale < 0.98;
   try {
     let match: WeaponLabelMatch | null = null;
@@ -548,8 +546,7 @@ async function detectFitsInWeapon(capture: CaptureResult): Promise<void> {
       const overlayWasVisible = rivenRightWindowsController.isOverlayWindowVisible();
       if (overlayWasVisible) rivenRightWindowsController.hideOverlayWindow();
       try {
-        // Diorama shards drift across the plate and can blank a single frame;
-        // a blocked read usually clears by the next capture.
+        // Drifting shards blank single frames; retry on fresh captures.
         for (let attempt = 0; attempt < 3 && !match; attempt += 1) {
           await sleep(attempt === 0 ? 50 : 600);
           if (token !== _rivenSessionToken) return;

@@ -141,9 +141,8 @@ export async function recognizeRivenCardStats(
     }
 
     try {
-      // Retrying the identical crop always re-reads the same pixels; a
-      // text-bounds trim plus upscale is what rescues the half-size text of
-      // low interface scales, so retries switch to it.
+      // Rereading identical pixels cannot improve; retries switch to the
+      // upscaled text-bounds crop.
       let scanImage = statCrop;
       let upscaleFactor = 1;
       if (attempt > 0) {
@@ -255,8 +254,7 @@ export async function recognizeRivenCardStats(
     totalMs: Date.now() - totalStart,
   });
 
-  // Rivens always carry at least two stats: publishing a lone survivor of a
-  // degraded read shows a wrong card, so it settles as an error instead.
+  // Rivens have at least two stats; a lone survivor is a misread.
   if (bestStats.length > 0 && bestStats.length < MIN_ACCEPTABLE_RIVEN_STATS) {
     if (options.label) {
       log.warn(

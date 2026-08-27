@@ -94,9 +94,8 @@ const FALLBACK_TARGET_HEIGHT = 400;
 const FALLBACK_MAX_UPSCALE = 3;
 const FALLBACK_PAD_FRACTION = 0.06;
 
-/** Low interface scales shrink the card inside the rough crop: the fixed stat
- *  band clips the first stat row and the text is too small to recognize.
- *  Re-trim around the detected text bounds; the caller upscales for OCR. */
+/** Small-card fallback: the fixed stat band clips half-size cards, so re-trim
+ *  around the detected text bounds. The caller upscales for OCR. */
 export function cropRivenStatAreaFallback(cardCrop: NativeImage): RivenFallbackCrop | null {
   const { width: w, height: h } = cardCrop.getSize();
   if (w < 50 || h < 50) return null;

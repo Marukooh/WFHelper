@@ -745,10 +745,8 @@ export async function recognizeStatArea(
   };
 }
 
-// Titles, footers, and continuations do not affect parsed stats.
-// Only value-prefixed lines can fail the confidence gate; a bare leading x
-// must be followed by a digit or the garbled MR badge ("X(m R9") gates a
-// perfect four-stat read.
+// Only value-prefixed lines gate confidence; x needs a digit so the garbled
+// MR badge cannot veto a good read.
 export function hasLowConfidenceLine(result: RivenOcrResult): boolean {
   const statLineRe = /^[+-]|^[x×]\s*\d/i;
   const statLines = result.lines.filter((l) => statLineRe.test(l.text.trim()));
