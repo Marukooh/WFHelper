@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { recognizePaddleCrops, type RgbCrop } from "../../services/rivenOcrOnnx";
+import {
+  hasLowConfidenceLine,
+  recognizePaddleCrops,
+  type RgbCrop,
+} from "../../services/rivenOcrOnnx";
 
 async function wordCrop(word: string, width: number, height: number): Promise<RgbCrop> {
   const sharp = (await import("sharp")).default;
@@ -65,4 +69,34 @@ describe("recognizePaddleCrops", () => {
     expect(results[1]).toEqual({ text: "", confidence: 0 });
     expect(results[0].text.length).toBeGreaterThan(0);
   }, 120_000);
+});
+
+describe("hasLowConfidenceLine", () => {
+  const line = (text: string, confidence: number) => ({ text, confidence });
+  const result = (lines: Array<{ text: string; confidence: number }>) => ({
+    lines,
+    text: lines.map((l) => l.text).join("\n"),
+    minConfidence: Math.min(...lines.map((l) => l.confidence)),
+    yoloBoxCount: lines.length,
+  });
+
+  it("ignores a garbled MR badge that happens to start with X", () => {
+    // "X(m R9" once gated a perfect four-stat read at 0.92+.
+    expect(
+      hasLowConfidenceLine(
+        result([
+          line("+72.7% Fire Rate (X2 for", 0.93),
+          line("-66.2% Weapon Recoil", 0.92),
+          line("+85.7% Multishot", 0.94),
+          line("-65,1% Status Duration", 0.92),
+          line("X(m R9", 0.57),
+        ]),
+      ),
+    ).toBe(false);
+  });
+
+  it("still gates low-confidence stat and multiplier lines", () => {
+    expect(hasLowConfidenceLine(result([line("-66.2% Weapon Recoil", 0.7)]))).toBe(true);
+    expect(hasLowConfidenceLine(result([line("x2 Combo Duration", 0.7)]))).toBe(true);
+  });
 });

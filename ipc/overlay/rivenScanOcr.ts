@@ -255,6 +255,18 @@ export async function recognizeRivenCardStats(
     totalMs: Date.now() - totalStart,
   });
 
+  // Rivens always carry at least two stats: publishing a lone survivor of a
+  // degraded read shows a wrong card, so it settles as an error instead.
+  if (bestStats.length > 0 && bestStats.length < MIN_ACCEPTABLE_RIVEN_STATS) {
+    if (options.label) {
+      log.warn(
+        `[RivenScan] YOLO+PaddleOCR ${options.label}: only ${bestStats.length} stat(s) read, ` +
+          `below the ${MIN_ACCEPTABLE_RIVEN_STATS} minimum - returning error`,
+      );
+    }
+    return { text: bestText, titleText: "", footerText: "", stats: [], lowConfidence: true };
+  }
+
   // Every scan, not only empty ones: a confident read of a badly cropped card
   // looks perfect in the log, so the image is the only evidence that settles it.
   dumpScanCrops(label, bestStats.length === 0 ? "empty" : "ok", cardCrop, statCrop);
