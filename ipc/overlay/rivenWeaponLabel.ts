@@ -1,13 +1,42 @@
 import type { NativeImage } from "electron";
 
 import { withScope } from "../../services/logger";
+import { areOcrDebugDumpsEnabled } from "../../services/rewardScanDebug";
 import { cropRectContent } from "../../services/rewardScannerImage";
 import { recognizeRewardStripOnnx } from "../../services/rewardOcrOnnx";
 import { findWeaponByLabelLine, type WeaponLabelMatch } from "../../services/rivenData";
 import type { CaptureResult } from "../../services/screenCapture";
+import { userDataPath } from "../../services/userDataPath";
 import { rivenContentRect } from "./rivenScanImage";
 
 const log = withScope("rivenScan");
+
+const FITS_IN_DUMP_KEEP = 6;
+
+// A failed read leaves no evidence in the log rows alone; the crop is what
+// turns a "wrong weapon at scale X" report into a reproducible fixture.
+function dumpFitsInCrop(label: string, crop: NativeImage): void {
+  if (!areOcrDebugDumpsEnabled()) return;
+  try {
+    const fs = require("node:fs") as typeof import("node:fs");
+    const path = require("node:path") as typeof import("node:path");
+    const dir = userDataPath("riven-scan-debug");
+    fs.mkdirSync(dir, { recursive: true });
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    fs.writeFileSync(path.join(dir, `${stamp}-fits-in-${label}.png`), crop.toPNG());
+
+    const files = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith(".png") && f.includes("Z-fits-in-"))
+      .sort();
+    for (const f of files.slice(0, Math.max(0, files.length - FITS_IN_DUMP_KEEP))) {
+      fs.unlinkSync(path.join(dir, f));
+    }
+  } catch (err) {
+    log.warn("[RivenScan] fits-in crop dump failed:", String(err));
+  }
+}
 
 // The item plate can use either text polarity across Warframe UI themes.
 const RIVEN_FITS_IN_NAME_CROP = { x: 0.78, y: 0.72, width: 0.21, height: 0.22 };
@@ -92,7 +121,9 @@ export async function readFitsInWeapon(
   if (inverted) return inverted;
 
   const panelCrop = cropRectContent(image, RIVEN_FITS_IN_PANEL_CROP, content);
-  return readWeaponLabelFromPanelPng(panelCrop.toPNG(), content.height);
+  const panel = await readWeaponLabelFromPanelPng(panelCrop.toPNG(), content.height);
+  if (!panel) dumpFitsInCrop("panel", panelCrop);
+  return panel;
 }
 
 /** Reads the linked weapon at sub-100% interface scales, where the plate sits
@@ -110,5 +141,10 @@ export async function readFitsInWeaponSmallUi(
   const widePng = wideCrop.toPNG();
   const normal = await readWeaponLabelFromPanelPng(widePng, content.height, { uiScale });
   if (normal) return normal;
-  return readWeaponLabelFromPanelPng(widePng, content.height, { invert: true, uiScale });
+  const inverted = await readWeaponLabelFromPanelPng(widePng, content.height, {
+    invert: true,
+    uiScale,
+  });
+  if (!inverted) dumpFitsInCrop("wide", wideCrop);
+  return inverted;
 }
