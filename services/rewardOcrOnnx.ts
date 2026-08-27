@@ -106,6 +106,8 @@ export function cleanOnnxRowText(text: string): string {
 interface RewardStripRow {
   text: string;
   confidence: number;
+  /** Row bounds as fractions of the input image; resize-invariant. */
+  box?: { x: number; y: number; width: number; height: number };
 }
 
 interface RewardStripRead {
@@ -146,19 +148,29 @@ export async function recognizeRewardStripOnnx(stripPng: Buffer): Promise<Reward
       .toBuffer();
 
     const crops: RgbCrop[] = [];
+    const cropBoxes: Array<{ x: number; y: number; width: number; height: number }> = [];
     for (const seg of segments) {
       const crop = segmentToRgbCrop(mono, rgb, info.width, info.height, seg);
-      if (crop) crops.push(crop);
+      if (crop) {
+        crops.push(crop.crop);
+        cropBoxes.push({
+          x: crop.x1 / info.width,
+          y: crop.y1 / info.height,
+          width: (crop.x2 - crop.x1 + 1) / info.width,
+          height: (crop.y2 - crop.y1 + 1) / info.height,
+        });
+      }
     }
     if (crops.length === 0) return null;
 
     const results = await recognizePaddleCrops(crops);
     const rows: RewardStripRow[] = [];
-    for (const result of results) {
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
       if (result.confidence < MIN_ROW_CONFIDENCE) continue;
       const text = cleanOnnxRowText(result.text);
       if (!text) continue;
-      rows.push({ text, confidence: result.confidence });
+      rows.push({ text, confidence: result.confidence, box: cropBoxes[i] });
     }
     if (rows.length === 0) return null;
 
@@ -183,7 +195,7 @@ function segmentToRgbCrop(
   width: number,
   height: number,
   seg: RowSegment,
-): RgbCrop | null {
+): { crop: RgbCrop; x1: number; y1: number; x2: number; y2: number } | null {
   const y1 = Math.max(0, seg.y1 - 4);
   const y2 = Math.min(height - 1, seg.y2 + 4);
   let minX = width;
@@ -212,5 +224,5 @@ function segmentToRgbCrop(
       data[dst + 2] = rgb[src + 2];
     }
   }
-  return { data, width: cropW, height: cropH };
+  return { crop: { data, width: cropW, height: cropH }, x1, y1, x2, y2 };
 }

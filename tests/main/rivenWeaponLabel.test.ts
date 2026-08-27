@@ -5,6 +5,12 @@ vi.mock("../../services/rewardOcrOnnx", () => ({
   recognizeRewardStripOnnx: (png: Buffer) => recognizeMock(png),
 }));
 
+const paddleMock = vi.fn();
+vi.mock("../../services/rivenOcrOnnx", () => ({
+  paddleRecognizerAvailable: () => true,
+  recognizePaddleCrops: (crops: unknown) => paddleMock(crops),
+}));
+
 import { findWeaponByLabelLine } from "../../services/rivenData";
 import {
   readFitsInWeapon,
@@ -202,5 +208,43 @@ describe("readFitsInWeaponSmallUi", () => {
     const match = await readFitsInWeaponSmallUi(image as never, 0.5, "window");
     expect(match).toEqual({ name: "Kuva Sobek", exact: false });
     expect(recognizeMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("readFitsInWeaponSmallUi caption band", () => {
+  beforeEach(() => {
+    recognizeMock.mockReset();
+    paddleMock.mockReset();
+  });
+
+  it("reads the caption under the FITS IN heading when rows miss it", async () => {
+    const png = await makePng(806, 508);
+    const bandPng = await makePng(150, 30);
+    const wideCrop = {
+      getSize: () => ({ width: 806, height: 508 }),
+      toPNG: () => png,
+      crop: vi.fn(() => ({ toPNG: () => bandPng })),
+    };
+    const image = {
+      getSize: () => ({ width: 1920, height: 1080 }),
+      crop: vi.fn(() => wideCrop),
+    };
+    // Plain pass sees nothing; equalization finds only the heading, whose box
+    // anchors the caption band; the raw band read still carries a misread.
+    recognizeMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      text: "FITSIN",
+      rows: [
+        {
+          text: "FITSIN",
+          confidence: 0.87,
+          box: { x: 0.25, y: 0.21, width: 0.06, height: 0.03 },
+        },
+      ],
+    });
+    paddleMock.mockResolvedValueOnce([{ text: "kiva sobek", confidence: 0.62 }]);
+
+    const match = await readFitsInWeaponSmallUi(image as never, 0.5, "window");
+    expect(match).toEqual({ name: "Kuva Sobek", exact: false });
+    expect(paddleMock).toHaveBeenCalledTimes(1);
   });
 });

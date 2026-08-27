@@ -5,6 +5,7 @@ import { areOcrDebugDumpsEnabled } from "../../services/rewardScanDebug";
 import { cropRectContent } from "../../services/rewardScannerImage";
 import { recognizeRewardStripOnnx } from "../../services/rewardOcrOnnx";
 import { findWeaponByLabelLine, type WeaponLabelMatch } from "../../services/rivenData";
+import { paddleRecognizerAvailable, recognizePaddleCrops } from "../../services/rivenOcrOnnx";
 import type { CaptureResult } from "../../services/screenCapture";
 import { userDataPath } from "../../services/userDataPath";
 import { rivenContentRect } from "./rivenScanImage";
@@ -101,6 +102,75 @@ export async function readWeaponLabelFromPanelPng(
     `[RivenScan] fits-in label rows: ${rowsLog} -> ` +
       (match ? `${match.name}${match.exact ? "" : " (fuzzy)"}` : "no weapon"),
   );
+  _lastReadRows = read.rows;
+  return match;
+}
+
+interface StripRowLike {
+  text: string;
+  confidence: number;
+  box?: { x: number; y: number; width: number; height: number };
+}
+
+// The rows of the most recent panel read, so the caption-band pass can anchor
+// on the FITS IN heading without paying for another detection run.
+let _lastReadRows: StripRowLike[] = [];
+
+function findFitsInHeadingRow(rows: StripRowLike[]): StripRowLike | null {
+  for (const row of rows) {
+    if (!row.box) continue;
+    const compact = row.text.toLowerCase().replace(/[^a-z]/g, "");
+    if (compact.includes("tsin") || compact.includes("fitsi")) return row;
+  }
+  return null;
+}
+
+// Caption geometry below the heading, in 1080p screen pixels per unit of
+// interface scale; measured on real 50%-scale captures with margins.
+const CAPTION_TOP_OFFSET = 110;
+const CAPTION_HEIGHT = 60;
+const CAPTION_HALF_WIDTH = 150;
+const CAPTION_UPSCALE = 4;
+
+/** Reads the plate caption as one raw-RGB recognition crop, anchored under the
+ *  FITS IN heading. Skips row detection entirely: a bright diorama shard
+ *  behind the plate flips the caption's polarity and global thresholding
+ *  loses it, but the recognizer itself reads the raw pixels fine. */
+async function readCaptionUnderHeading(
+  wideCrop: NativeImage,
+  heading: StripRowLike,
+  uiScale: number,
+  contentHeight: number,
+): Promise<WeaponLabelMatch | null> {
+  if (!heading.box || !paddleRecognizerAvailable()) return null;
+  const { width: w, height: h } = wideCrop.getSize();
+  const unit = (contentHeight / 1080) * Math.min(1, Math.max(0.5, uiScale));
+
+  const centerX = (heading.box.x + heading.box.width / 2) * w;
+  const headingBottom = (heading.box.y + heading.box.height) * h;
+  const x = Math.max(0, Math.round(centerX - CAPTION_HALF_WIDTH * unit));
+  const y = Math.max(0, Math.round(headingBottom + CAPTION_TOP_OFFSET * unit));
+  const width = Math.min(w - x, Math.round(CAPTION_HALF_WIDTH * 2 * unit));
+  const height = Math.min(h - y, Math.round(CAPTION_HEIGHT * unit));
+  if (width < 24 || height < 10) return null;
+
+  const sharp = require("sharp") as (typeof import("sharp"))["default"];
+  const band = wideCrop.crop({ x, y, width, height });
+  const { data, info } = await sharp(band.toPNG())
+    .resize(width * CAPTION_UPSCALE, height * CAPTION_UPSCALE, { kernel: "lanczos3" })
+    .normalise()
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const results = await recognizePaddleCrops([
+    { data: data as Buffer, width: info.width as number, height: info.height as number },
+  ]);
+  const text = results[0]?.text?.trim() ?? "";
+  const match = text ? findWeaponByLabelLine([text]) : null;
+  log.info(
+    `[RivenScan] fits-in caption band (${width}x${height} at ${x},${y}): "${text}" -> ` +
+      (match ? `${match.name}${match.exact ? "" : " (fuzzy)"}` : "no weapon"),
+  );
   return match;
 }
 
@@ -142,13 +212,23 @@ export async function readFitsInWeaponSmallUi(
   if (width < 48 || height < 48) return null;
 
   const widePng = wideCrop.toPNG();
+  _lastReadRows = [];
   const normal = await readWeaponLabelFromPanelPng(widePng, content.height, { uiScale });
   if (normal) return normal;
+  const plainRows = _lastReadRows;
+  _lastReadRows = [];
   const equalized = await readWeaponLabelFromPanelPng(widePng, content.height, {
     clahe: true,
     uiScale,
   });
   if (equalized) return equalized;
+
+  const heading = findFitsInHeadingRow(_lastReadRows) ?? findFitsInHeadingRow(plainRows);
+  if (heading) {
+    const fromCaption = await readCaptionUnderHeading(wideCrop, heading, uiScale, content.height);
+    if (fromCaption) return fromCaption;
+  }
+
   const inverted = await readWeaponLabelFromPanelPng(widePng, content.height, {
     invert: true,
     uiScale,
