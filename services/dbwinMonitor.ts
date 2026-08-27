@@ -21,6 +21,13 @@ export function isDbwinActive(): boolean {
   return _dbwinActive;
 }
 
+let _stoppedPromise: Promise<void> = Promise.resolve();
+
+/** Resolves once the stopped worker thread has exited (bounded at 2s). */
+export function dbwinWorkerStopped(): Promise<void> {
+  return _stoppedPromise;
+}
+
 export function startDbwinWorker(onLine: (line: string) => void): void {
   if (dbwinWorker) return;
 
@@ -75,6 +82,12 @@ export function stopDbwinWorker(): void {
   // Generous enough for a clean exit, short enough to not block app shutdown.
   const w = dbwinWorker;
   dbwinWorker = null;
+
+  _stoppedPromise = new Promise((resolve) => {
+    w.once("exit", () => resolve());
+    // Covers a worker that never fires exit, so quit cannot hang on it.
+    setTimeout(resolve, 2000);
+  });
 
   dbwinStopTimer = setTimeout(() => {
     dbwinStopTimer = null;

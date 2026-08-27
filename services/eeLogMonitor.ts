@@ -3,6 +3,8 @@ import chokidar from "chokidar";
 import { withScope } from "./logger";
 import { EeUptimeTracker } from "./eeUptime";
 import { startDbwinWorker, stopDbwinWorker, isDbwinActive } from "./dbwinMonitor";
+
+export { dbwinWorkerStopped } from "./dbwinMonitor";
 import {
   startProtonDebugstrMonitor,
   stopProtonDebugstrMonitor,

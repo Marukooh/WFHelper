@@ -672,7 +672,8 @@ function stopOverlayHotkeyGate(): void {
   _hotkeyGateTimer = null;
 }
 
-app.on("before-quit", () => {
+let _dbwinQuitDone = false;
+app.on("before-quit", (event) => {
   inventoryIpc.stopInventoryWatcher();
   apiHelperRunner.stopPolling();
   eeLogMonitor.stopWatching();
@@ -681,6 +682,15 @@ app.on("before-quit", () => {
   overlayIpc.disposeOverlayHotkeys();
   arbiScheduleIpc.shutdown();
   disposeLinuxStreamCapture();
+  // Exiting while the DBWIN worker sits in a koffi wait is a fatal napi error;
+  // hold quit until the thread has exited (bounded).
+  if (!_dbwinQuitDone) {
+    event.preventDefault();
+    void eeLogMonitor.dbwinWorkerStopped().finally(() => {
+      _dbwinQuitDone = true;
+      app.quit();
+    });
+  }
 });
 
 app.on("will-quit", () => {
