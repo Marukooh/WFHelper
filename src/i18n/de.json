@@ -981,6 +981,7 @@
   "overlay.riven.matchPercent": "{percent}% Übereinstimmung",
   "overlay.riven.newRoll": "Neuer Wurf",
   "overlay.riven.readFailed": "Das Riven konnte nicht gelesen werden. Lass die Karte sichtbar und stelle Warframes UI-Sprache auf Englisch.",
+  "overlay.riven.textTooSmall": "Der Riven-Text ist zu klein für eine zuverlässige Erkennung. Erhöhe Warframes Interface-Skalierung oder die Fenstergröße.",
   "overlay.riven.rescan": "Karte und verknüpfte Waffe neu scannen",
   "overlay.riven.rescanning": "Scanne erneut...",
   "overlay.riven.roll": "Wurf {count}",

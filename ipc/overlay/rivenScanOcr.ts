@@ -50,6 +50,8 @@ export interface RivenCardRecognitionResult {
   titleText: string;
   footerText: string;
   stats: RivenStat[];
+  /** Stats were read but stayed under the confidence gate: text too small. */
+  lowConfidence: boolean;
 }
 
 interface RivenCardRecognitionOptions {
@@ -121,7 +123,7 @@ export async function recognizeRivenCardStats(
 
   if (!rivenOcrOnnxAvailable()) {
     log.warn("[RivenScan] ONNX models not found - riven OCR unavailable.");
-    return { text: "", titleText: "", footerText: "", stats: [] };
+    return { text: "", titleText: "", footerText: "", stats: [], lowConfidence: false };
   }
 
   const sharp = require("sharp") as (typeof import("sharp"))["default"];
@@ -135,7 +137,7 @@ export async function recognizeRivenCardStats(
 
   for (let attempt = 0; attempt <= MAX_LOW_CONFIDENCE_RETRIES; attempt += 1) {
     if (options.isStale(options.generation)) {
-      return { text: "", titleText: "", footerText: "", stats: [] };
+      return { text: "", titleText: "", footerText: "", stats: [], lowConfidence: false };
     }
 
     try {
@@ -240,7 +242,7 @@ export async function recognizeRivenCardStats(
           `(min=${bestResult.minConfidence.toFixed(3)}), returning error instead of wrong stats`,
       );
     }
-    return { text: "", titleText: "", footerText: "", stats: [] };
+    return { text: "", titleText: "", footerText: "", stats: [], lowConfidence: true };
   }
 
   logScanTiming(label, {
@@ -257,5 +259,5 @@ export async function recognizeRivenCardStats(
   // looks perfect in the log, so the image is the only evidence that settles it.
   dumpScanCrops(label, bestStats.length === 0 ? "empty" : "ok", cardCrop, statCrop);
 
-  return { text: bestText, titleText: "", footerText: "", stats: bestStats };
+  return { text: bestText, titleText: "", footerText: "", stats: bestStats, lowConfidence: false };
 }

@@ -46,8 +46,10 @@ contextBridge.exposeInMainWorld("rivenOverlay", {
     onRivenIpc(RIVEN_SESSION_START, (_event: unknown, weapon: unknown, kuvaPerRoll: unknown) =>
       cb(weapon as string, kuvaPerRoll as number),
     ),
-  onInitialStats: (cb: (stats: unknown) => void) =>
-    onRivenIpc(RIVEN_INITIAL_STATS, (_event: unknown, stats: unknown) => cb(stats)),
+  onInitialStats: (cb: (stats: unknown, lowConfidence?: unknown) => void) =>
+    onRivenIpc(RIVEN_INITIAL_STATS, (_event: unknown, stats: unknown, lowConfidence?: unknown) =>
+      cb(stats, lowConfidence),
+    ),
   onScanning: (cb: () => void) => onRivenIpc(RIVEN_ROLL_SCANNING, () => cb()),
   onRollResult: (cb: (payload: unknown) => void) =>
     onRivenIpc(RIVEN_ROLL_RESULT, (_event: unknown, payload: unknown) => cb(payload)),

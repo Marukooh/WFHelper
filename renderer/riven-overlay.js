@@ -505,14 +505,16 @@ function onSessionStart(weapon) {
   }
 }
 
-function onInitialStats(stats) {
+function onInitialStats(stats, lowConfidence) {
   hideScanning();
   // Only the left (current) panel uses initial stats
   if (!_isLeft) return;
   if (Array.isArray(stats) && stats.length > 0) {
     renderStats(stats);
   } else {
-    showScanError("overlay.riven.readFailed");
+    showScanError(
+      lowConfidence === true ? "overlay.riven.textTooSmall" : "overlay.riven.readFailed",
+    );
   }
 }
 
@@ -656,7 +658,9 @@ document.addEventListener("DOMContentLoaded", () => {
   window.rivenOverlay.onThemeVars((vars) => window.overlayTheme.applyThemeVars(vars));
   window.rivenOverlay.onMessages((messages) => finishBootstrap(window.overlayI18n.apply(messages)));
   window.rivenOverlay.onSessionStart((weapon) => onSessionStart(weapon));
-  window.rivenOverlay.onInitialStats((stats) => onInitialStats(stats));
+  window.rivenOverlay.onInitialStats((stats, lowConfidence) =>
+    onInitialStats(stats, lowConfidence),
+  );
   window.rivenOverlay.onScanning(() => onScanning());
   window.rivenOverlay.onRollResult((payload) => onRollResult(payload));
   window.rivenOverlay.onChoiceMade((side) => onChoiceMade(side));

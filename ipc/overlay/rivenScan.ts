@@ -38,6 +38,8 @@ interface InitialScanResult {
   footerText: string;
   /** Frame the accepted OCR pass ran on; reused for the fits-in weapon read. */
   capture: CaptureResult | null;
+  /** Stats were seen but stayed under the confidence gate: text too small. */
+  lowConfidence: boolean;
 }
 
 interface RivenScanProfile {
@@ -97,7 +99,7 @@ function isRivenScanStale(generation: number): boolean {
 }
 
 function emptyRecognitionResult(): RivenCardRecognitionResult {
-  return { text: "", titleText: "", footerText: "", stats: [] };
+  return { text: "", titleText: "", footerText: "", stats: [], lowConfidence: false };
 }
 
 function pinCaptureDisplay(capture: CaptureResult): void {
@@ -284,10 +286,18 @@ export async function scanInitialCard(
       titleText: result.titleText,
       footerText: result.footerText,
       capture: result.capture,
+      lowConfidence: result.lowConfidence,
     };
   } catch (err) {
     log.warn(`[RivenScan] ${profile.label} OCR failed:`, String(err));
-    return { stats: [], rawText: "", titleText: "", footerText: "", capture: null };
+    return {
+      stats: [],
+      rawText: "",
+      titleText: "",
+      footerText: "",
+      capture: null,
+      lowConfidence: false,
+    };
   }
 }
 

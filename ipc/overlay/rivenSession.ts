@@ -67,8 +67,8 @@ export function startSession(wins: WindowRef[], weapon: string, kuvaPerRoll: num
   sendToWindows(wins, RIVEN_SESSION_START, weapon, kuvaPerRoll);
 }
 
-export function onInitialStats(wins: WindowRef[], stats: RivenStat[]): void {
-  sendToWindows(wins, RIVEN_INITIAL_STATS, stats);
+export function onInitialStats(wins: WindowRef[], stats: RivenStat[], lowConfidence = false): void {
+  sendToWindows(wins, RIVEN_INITIAL_STATS, stats, lowConfidence);
 }
 
 export function onRollConfirmed(wins: WindowRef[]): void {

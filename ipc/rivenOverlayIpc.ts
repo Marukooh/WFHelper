@@ -590,14 +590,15 @@ function triggerInitialScan(layout: rivenScan.InitialCardLayout = "reroll"): voi
     // here so the abort flag cannot gate the fresh scan.
     rivenScan.resetRivenScanAbort();
     try {
-      const { stats, rawText, titleText, capture } = await rivenScan.scanInitialCard(layout);
+      const { stats, rawText, titleText, capture, lowConfidence } =
+        await rivenScan.scanInitialCard(layout);
       _rivenInitialStats = stats;
 
       // Try to extract weapon name from OCR text if not already known
       maybeDetectWeaponFromText(titleText || rawText);
 
       // Always settle the spinner; empty stats leave the waiting placeholder.
-      rivenSession.onInitialStats(getRivenWindows(), stats);
+      rivenSession.onInitialStats(getRivenWindows(), stats, lowConfidence);
       if (stats.length > 0) {
         // If weapon name is already known, send grading immediately
         sendGradedInitialStats();

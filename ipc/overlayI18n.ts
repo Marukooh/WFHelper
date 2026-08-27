@@ -70,6 +70,7 @@ const OVERLAY_MESSAGE_KEYS = [
   "overlay.riven.scanning",
   "overlay.riven.scanningCurrent",
   "overlay.riven.scanningRoll",
+  "overlay.riven.textTooSmall",
   "overlay.riven.waitingForRoll",
   "overlay.riven.waitingForScan",
   "overlay.riven.weaponMissing",

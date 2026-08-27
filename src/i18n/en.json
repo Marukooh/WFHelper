@@ -785,6 +785,7 @@
   "overlay.riven.matchPercent": "{percent}% match",
   "overlay.riven.newRoll": "New roll",
   "overlay.riven.readFailed": "Couldn't read the riven. Keep the card visible and set Warframe's UI language to English.",
+  "overlay.riven.textTooSmall": "The riven text is too small to read reliably. Increase Warframe's interface scale or window size.",
   "overlay.riven.rescan": "Rescan card and linked weapon",
   "overlay.riven.rescanning": "Rescanning...",
   "overlay.riven.roll": "Roll {count}",
