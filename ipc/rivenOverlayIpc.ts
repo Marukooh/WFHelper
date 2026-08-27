@@ -15,6 +15,7 @@ import * as rivenSession from "./overlay/rivenSession";
 import * as rivenScan from "./overlay/rivenScan";
 import {
   readFitsInWeapon,
+  readFitsInWeaponSmallUi,
   shouldApplyLabelWeapon,
   type RivenWeaponSource,
 } from "./overlay/rivenWeaponLabel";
@@ -29,7 +30,11 @@ import * as wfmRivenSearch from "../services/wfmRivenSearch";
 import * as warframeStatus from "../services/warframeStatus";
 import { withScope } from "../services/logger";
 import { hardenBrowserWindowNavigation } from "../services/windowSecurity";
-import { isRivenOverlayEnabled as isRivenOverlaySettingEnabled } from "../config/runtime/overlaySettings";
+import {
+  isRivenOverlayEnabled as isRivenOverlaySettingEnabled,
+  REFERENCE_WARFRAME_UI_SCALE,
+} from "../config/runtime/overlaySettings";
+import { resolveWarframeUiScale } from "../services/eeLogPath";
 
 import { forceEndRivenSession } from "../services/eeLogMonitor";
 import { isAllowedExternalHost } from "../config/runtime/security";
@@ -530,8 +535,15 @@ function onFitsInWeapon(match: WeaponLabelMatch): void {
 // stats came from, so it adds nothing to the scan's critical path.
 async function detectFitsInWeapon(capture: CaptureResult): Promise<void> {
   const token = _rivenSessionToken;
+  const uiScale =
+    (ctx.overlaySettings.warframeUiScaleAuto !== false ? resolveWarframeUiScale() : null) ??
+    (Number(ctx.overlaySettings.warframeUiScale) || REFERENCE_WARFRAME_UI_SCALE);
+  // Sub-100% interface scales move the plate out of the calibrated crop and
+  // into regions our own right panel occupies, so the small-UI path always
+  // recaptures with that panel hidden and searches wide.
+  const smallUi = uiScale < 0.98;
   try {
-    let match = await readFitsInWeapon(capture.image, capture.sourceType);
+    let match = smallUi ? null : await readFitsInWeapon(capture.image, capture.sourceType);
     if (token !== _rivenSessionToken) return;
     if (!match && rivenRightWindowsController.isOverlayWindowVisible()) {
       let retryCapture: CaptureResult | null = null;
@@ -546,8 +558,12 @@ async function detectFitsInWeapon(capture: CaptureResult): Promise<void> {
         }
       }
       if (retryCapture) {
-        match = await readFitsInWeapon(retryCapture.image, retryCapture.sourceType);
+        match = smallUi
+          ? await readFitsInWeaponSmallUi(retryCapture.image, uiScale, retryCapture.sourceType)
+          : await readFitsInWeapon(retryCapture.image, retryCapture.sourceType);
       }
+    } else if (!match && smallUi) {
+      match = await readFitsInWeaponSmallUi(capture.image, uiScale, capture.sourceType);
     }
     if (token !== _rivenSessionToken) return;
     if (match) {

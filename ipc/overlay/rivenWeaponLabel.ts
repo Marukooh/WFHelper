@@ -12,6 +12,9 @@ const log = withScope("rivenScan");
 // The item plate can use either text polarity across Warframe UI themes.
 const RIVEN_FITS_IN_NAME_CROP = { x: 0.78, y: 0.72, width: 0.21, height: 0.22 };
 const RIVEN_FITS_IN_PANEL_CROP = { x: 0.7, y: 0.55, width: 0.3, height: 0.45 };
+// Interface scales below 100% pull the plate toward screen center; this covers
+// its position across the whole 50-100% slider range.
+const RIVEN_FITS_IN_WIDE_CROP = { x: 0.58, y: 0.48, width: 0.42, height: 0.47 };
 
 // Label text is ~20px at 1080p; the strip reader's row-height windows assume
 // that scale, so the crop is normalized to it before recognition.
@@ -35,11 +38,14 @@ export function shouldApplyLabelWeapon(
 export async function readWeaponLabelFromPanelPng(
   png: Buffer,
   contentHeight: number,
-  options: { invert?: boolean; upscale?: boolean } = {},
+  options: { invert?: boolean; upscale?: boolean; uiScale?: number } = {},
 ): Promise<WeaponLabelMatch | null> {
   let normalized = png;
-  const scale = REFERENCE_CONTENT_HEIGHT / Math.max(1, contentHeight);
-  const resize = scale < 0.98 || (options.upscale !== false && scale > 1.02);
+  // A sub-100% interface scale shrinks the label text independently of the
+  // resolution, so its correction applies even where upscaling is off.
+  const uiCorrection = 1 / Math.min(1, Math.max(0.5, options.uiScale ?? 1));
+  const scale = (REFERENCE_CONTENT_HEIGHT / Math.max(1, contentHeight)) * uiCorrection;
+  const resize = scale < 0.98 || uiCorrection > 1.02 || (options.upscale !== false && scale > 1.02);
   if (resize || options.invert) {
     const sharp = require("sharp") as (typeof import("sharp"))["default"];
     const meta = await sharp(png).metadata();
@@ -87,4 +93,22 @@ export async function readFitsInWeapon(
 
   const panelCrop = cropRectContent(image, RIVEN_FITS_IN_PANEL_CROP, content);
   return readWeaponLabelFromPanelPng(panelCrop.toPNG(), content.height);
+}
+
+/** Reads the linked weapon at sub-100% interface scales, where the plate sits
+ *  closer to screen center and its text needs the 1/scale enlargement. */
+export async function readFitsInWeaponSmallUi(
+  image: NativeImage,
+  uiScale: number,
+  sourceType?: CaptureResult["sourceType"],
+): Promise<WeaponLabelMatch | null> {
+  const content = rivenContentRect(image, sourceType);
+  const wideCrop = cropRectContent(image, RIVEN_FITS_IN_WIDE_CROP, content);
+  const { width, height } = wideCrop.getSize();
+  if (width < 48 || height < 48) return null;
+
+  const widePng = wideCrop.toPNG();
+  const normal = await readWeaponLabelFromPanelPng(widePng, content.height, { uiScale });
+  if (normal) return normal;
+  return readWeaponLabelFromPanelPng(widePng, content.height, { invert: true, uiScale });
 }
