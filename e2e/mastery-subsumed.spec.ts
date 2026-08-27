@@ -52,6 +52,9 @@ test.describe("Mastery subsumed filter", () => {
     await harness.app.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0]?.setBounds({ width: 1800, height: 900 });
     });
+    // setBounds lands in the renderer asynchronously; measuring before the
+    // resize arrives sees the 1280 layout and flakes the CI flake gate.
+    await page.waitForFunction(() => window.innerWidth >= 1700);
     await page.locator("#content .view.active select[data-subsumed]").selectOption("all");
     const row = page.locator("#content .view.active [data-mastery-summary]");
     await expect(row).toBeVisible();
@@ -59,17 +62,20 @@ test.describe("Mastery subsumed filter", () => {
     await expect(ring).toBeVisible();
 
     // The ring drives the row height, so an oversized ring shows up as a taller row.
-    const box = await row.boundingBox();
-    expect(box?.height ?? 0).toBeLessThan(130);
-    expect(box?.width ?? 0).toBeGreaterThan(600);
+    await expect.poll(async () => (await row.boundingBox())?.height ?? 0).toBeLessThan(130);
+    await expect.poll(async () => (await row.boundingBox())?.width ?? 0).toBeGreaterThan(600);
 
     // Panel starts right of the ring and stops short of the grid edge: fit-content.
     const ringBox = await ring.boundingBox();
     const panelBox = await row.locator(":scope > div").nth(1).boundingBox();
-    const gridBox = await page.locator("#content .view.active .item-grid").boundingBox();
     expect(panelBox?.x ?? 0).toBeGreaterThanOrEqual((ringBox?.x ?? 0) + (ringBox?.width ?? 0));
-    const panelRight = (panelBox?.x ?? 0) + (panelBox?.width ?? 0);
-    const gridRight = (gridBox?.x ?? 0) + (gridBox?.width ?? 0);
-    expect(gridRight - panelRight).toBeGreaterThanOrEqual(40);
+    await expect
+      .poll(async () => {
+        const panel = await row.locator(":scope > div").nth(1).boundingBox();
+        const grid = await page.locator("#content .view.active .item-grid").boundingBox();
+        if (!panel || !grid) return 0;
+        return grid.x + grid.width - (panel.x + panel.width);
+      })
+      .toBeGreaterThanOrEqual(40);
   });
 });
