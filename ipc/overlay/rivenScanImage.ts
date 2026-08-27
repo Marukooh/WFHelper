@@ -84,6 +84,45 @@ interface RivenStatImageCrop {
   statCrop: NativeImage;
 }
 
+export interface RivenFallbackCrop {
+  image: NativeImage;
+  upscaleFactor: number;
+}
+
+// Fallback trim targets the stat-crop height the recognizer is calibrated for.
+const FALLBACK_TARGET_HEIGHT = 400;
+const FALLBACK_MAX_UPSCALE = 3;
+const FALLBACK_PAD_FRACTION = 0.06;
+
+/** Low interface scales shrink the card inside the rough crop: the fixed stat
+ *  band clips the first stat row and the text is too small to recognize.
+ *  Re-trim around the detected text bounds; the caller upscales for OCR. */
+export function cropRivenStatAreaFallback(cardCrop: NativeImage): RivenFallbackCrop | null {
+  const { width: w, height: h } = cardCrop.getSize();
+  if (w < 50 || h < 50) return null;
+  const bounds = analyzeRivenTextMetrics(cardCrop, null, 0.08).bounds;
+  if (!bounds) return null;
+
+  const padX = Math.round(bounds.width * FALLBACK_PAD_FRACTION);
+  const padY = Math.round(bounds.height * FALLBACK_PAD_FRACTION);
+  const x = Math.max(0, bounds.left - padX);
+  const y = Math.max(0, bounds.top - padY);
+  const width = Math.min(w - x, bounds.width + padX * 2);
+  const height = Math.min(h - y, bounds.height + padY * 2);
+  if (
+    width < RIVEN_CARD_CROP_TUNING.minCropWidth ||
+    height < RIVEN_CARD_CROP_TUNING.minCropHeight
+  ) {
+    return null;
+  }
+
+  const upscaleFactor = Math.min(
+    FALLBACK_MAX_UPSCALE,
+    Math.max(1, Math.round(FALLBACK_TARGET_HEIGHT / height)),
+  );
+  return { image: cardCrop.crop({ x, y, width, height }), upscaleFactor };
+}
+
 export function rivenContentRect(
   image: NativeImage,
   sourceType?: CaptureResult["sourceType"],
@@ -224,6 +263,8 @@ function getRivenBitmap(
 function analyzeRivenTextMetrics(
   nativeImage: NativeImage,
   shared?: { bitmap: Buffer; width: number; height: number } | null,
+  // Half-size cards at low interface scales sit under the default width floor.
+  minBoundsWidthFraction = 0.2,
 ): RivenTextMetrics {
   const data = shared || getRivenBitmap(nativeImage);
   if (!data) {
@@ -294,7 +335,7 @@ function analyzeRivenTextMetrics(
     const boundWidth = right - left + 1;
     const boundHeight = bottom - top + 1;
     if (
-      boundWidth >= Math.max(24, Math.floor(width * 0.2)) &&
+      boundWidth >= Math.max(24, Math.floor(width * minBoundsWidthFraction)) &&
       boundHeight >= Math.max(24, Math.floor(height * 0.12))
     ) {
       bounds = {

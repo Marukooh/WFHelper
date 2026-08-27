@@ -12,7 +12,12 @@ import {
   type RivenOcrResult,
 } from "../../services/rivenOcrOnnx";
 import { userDataPath } from "../../services/userDataPath";
-import { cropRivenStatImage, type RivenScanCropRect } from "./rivenScanImage";
+import {
+  cropRivenStatAreaFallback,
+  cropRivenStatImage,
+  type RivenFallbackCrop,
+  type RivenScanCropRect,
+} from "./rivenScanImage";
 import { parseRivenStats, type RivenParseDiagnostics, type RivenStat } from "./rivenScanText";
 
 const log = withScope("rivenScan");
@@ -120,6 +125,7 @@ export async function recognizeRivenCardStats(
   }
 
   const sharp = require("sharp") as (typeof import("sharp"))["default"];
+  let fallbackCrop: RivenFallbackCrop | null | undefined;
   let bestResult: RivenOcrResult | null = null;
   let bestStats: RivenStat[] = [];
   let bestText = "";
@@ -133,9 +139,29 @@ export async function recognizeRivenCardStats(
     }
 
     try {
-      const statAreaSize = statCrop.getSize();
-      const statAreaPng = statCrop.toPNG();
-      const { data: rgbaBuf, info: rgbaInfo } = await sharp(statAreaPng)
+      // Retrying the identical crop always re-reads the same pixels; a
+      // text-bounds trim plus upscale is what rescues the half-size text of
+      // low interface scales, so retries switch to it.
+      let scanImage = statCrop;
+      let upscaleFactor = 1;
+      if (attempt > 0) {
+        if (fallbackCrop === undefined) fallbackCrop = cropRivenStatAreaFallback(cardCrop);
+        if (fallbackCrop) {
+          scanImage = fallbackCrop.image;
+          upscaleFactor = fallbackCrop.upscaleFactor;
+        }
+      }
+      const statAreaSize = scanImage.getSize();
+      const statAreaPng = scanImage.toPNG();
+      let pipeline = sharp(statAreaPng);
+      if (upscaleFactor > 1) {
+        pipeline = pipeline.resize(
+          statAreaSize.width * upscaleFactor,
+          statAreaSize.height * upscaleFactor,
+          { kernel: "lanczos3" },
+        );
+      }
+      const { data: rgbaBuf, info: rgbaInfo } = await pipeline
         .ensureAlpha()
         .raw()
         .toBuffer({ resolveWithObject: true });
@@ -164,7 +190,8 @@ export async function recognizeRivenCardStats(
         log.info(
           `[RivenScan] YOLO+PaddleOCR ${options.label} attempt=${attempt}: ${stats.length} stats, ` +
             `${ocrResult.yoloBoxCount} YOLO boxes, minConf=${ocrResult.minConfidence.toFixed(3)} ` +
-            `(source ${statAreaSize.width}×${statAreaSize.height}) - ` +
+            `(source ${statAreaSize.width}×${statAreaSize.height}` +
+            `${upscaleFactor > 1 ? ` upscaled x${upscaleFactor}` : ""}) - ` +
             stats.map(formatStatForLog).join(", "),
         );
         for (const line of ocrResult.lines) {

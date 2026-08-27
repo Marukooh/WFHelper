@@ -2,6 +2,7 @@ import type { NativeImage } from "electron";
 import { describe, expect, it } from "vitest";
 
 import {
+  cropRivenStatAreaFallback,
   cropRivenStatImage,
   RIVEN_SCAN_CROPS,
   rivenContentRect,
@@ -209,5 +210,47 @@ describe("cropRivenStatImage", () => {
     expect(whiteSpan(windowCrop.statCrop)).toBeGreaterThanOrEqual(textWidth - 4);
     expect(whiteRowGroups(windowCrop.statCrop)).toBeGreaterThanOrEqual(4);
     expect(whiteSpan(redetectedCrop.statCrop)).toBeLessThan(textWidth - 4);
+  });
+});
+
+describe("cropRivenStatAreaFallback", () => {
+  it("re-trims a half-size card around its text and asks for an upscale", () => {
+    // 50% interface scale: text half as wide, in a short band whose first
+    // rows sit above the fixed stat band (as on real captures).
+    const smallTextW = Math.floor(TEXT_W / 2);
+    const screen = makeRivenScreen(
+      SCREEN_W / 2 - smallTextW / 2,
+      780,
+      920,
+      SCREEN_W,
+      SCREEN_H,
+      smallTextW,
+    );
+    const { cardCrop, statCrop } = cropRivenStatImage(screen, RIVEN_SCAN_CROPS.singleCard);
+    // The fixed stat band clips part of the shrunken text column.
+    expect(whiteRowGroups(statCrop)).toBeLessThan(5);
+
+    const fallback = cropRivenStatAreaFallback(cardCrop);
+    expect(fallback).not.toBeNull();
+    expect(fallback!.upscaleFactor).toBeGreaterThanOrEqual(2);
+    expect(whiteSpan(fallback!.image)).toBeGreaterThanOrEqual(smallTextW - 8);
+    expect(whiteRowGroups(fallback!.image)).toBe(5);
+  });
+
+  it("returns no upscale request for a full-size card", () => {
+    const screen = makeRivenScreen(SCREEN_W / 2 - TEXT_W / 2);
+    const { cardCrop } = cropRivenStatImage(screen, RIVEN_SCAN_CROPS.singleCard);
+
+    const fallback = cropRivenStatAreaFallback(cardCrop);
+    expect(fallback).not.toBeNull();
+    expect(fallback!.upscaleFactor).toBe(1);
+    expect(whiteSpan(fallback!.image)).toBeGreaterThanOrEqual(TEXT_W - 8);
+  });
+
+  it("returns null when the crop holds no text", () => {
+    const screen = makeRivenScreen(SCREEN_W / 2 - TEXT_W / 2, 0, 0);
+    const { cardCrop } = cropRivenStatImage(screen, RIVEN_SCAN_CROPS.singleCard);
+
+    expect(cropRivenStatAreaFallback(cardCrop)).toBeNull();
   });
 });
