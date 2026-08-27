@@ -67,7 +67,7 @@ export function shouldApplyLabelWeapon(
 export async function readWeaponLabelFromPanelPng(
   png: Buffer,
   contentHeight: number,
-  options: { invert?: boolean; upscale?: boolean; uiScale?: number } = {},
+  options: { invert?: boolean; upscale?: boolean; uiScale?: number; clahe?: boolean } = {},
 ): Promise<WeaponLabelMatch | null> {
   let normalized = png;
   // A sub-100% interface scale shrinks the label text independently of the
@@ -75,7 +75,7 @@ export async function readWeaponLabelFromPanelPng(
   const uiCorrection = 1 / Math.min(1, Math.max(0.5, options.uiScale ?? 1));
   const scale = (REFERENCE_CONTENT_HEIGHT / Math.max(1, contentHeight)) * uiCorrection;
   const resize = scale < 0.98 || uiCorrection > 1.02 || (options.upscale !== false && scale > 1.02);
-  if (resize || options.invert) {
+  if (resize || options.invert || options.clahe) {
     const sharp = require("sharp") as (typeof import("sharp"))["default"];
     const meta = await sharp(png).metadata();
     const height = Math.max(1, Math.round((meta.height ?? 1) * scale));
@@ -83,6 +83,9 @@ export async function readWeaponLabelFromPanelPng(
     if (resize) {
       pipeline = pipeline.resize({ height, kernel: "lanczos3" });
     }
+    // Colored theme captions (dark red on the dark plate) carry almost no
+    // luminance contrast; local equalization is what makes Otsu keep them.
+    if (options.clahe) pipeline = pipeline.grayscale().clahe({ width: 64, height: 64 });
     if (options.invert) pipeline = pipeline.negate({ alpha: false });
     normalized = await pipeline.png().toBuffer();
   }
@@ -141,6 +144,11 @@ export async function readFitsInWeaponSmallUi(
   const widePng = wideCrop.toPNG();
   const normal = await readWeaponLabelFromPanelPng(widePng, content.height, { uiScale });
   if (normal) return normal;
+  const equalized = await readWeaponLabelFromPanelPng(widePng, content.height, {
+    clahe: true,
+    uiScale,
+  });
+  if (equalized) return equalized;
   const inverted = await readWeaponLabelFromPanelPng(widePng, content.height, {
     invert: true,
     uiScale,

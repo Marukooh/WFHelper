@@ -8,6 +8,7 @@ vi.mock("../../services/rewardOcrOnnx", () => ({
 import { findWeaponByLabelLine } from "../../services/rivenData";
 import {
   readFitsInWeapon,
+  readFitsInWeaponSmallUi,
   readWeaponLabelFromPanelPng,
   shouldApplyLabelWeapon,
 } from "../../ipc/overlay/rivenWeaponLabel";
@@ -175,5 +176,31 @@ describe("readFitsInWeapon", () => {
     expect(recognizeMock).toHaveBeenCalledTimes(2);
     expect(crop).toHaveBeenCalledTimes(1);
     expect(crop).toHaveBeenCalledWith({ x: 1497, y: 777, width: 403, height: 237 });
+  });
+});
+
+describe("readFitsInWeaponSmallUi", () => {
+  beforeEach(() => {
+    recognizeMock.mockReset();
+  });
+
+  it("falls back to a contrast-equalized pass for dim theme captions", async () => {
+    const png = await makePng(806, 508);
+    const image = {
+      getSize: () => ({ width: 1920, height: 1080 }),
+      crop: vi.fn(() => ({
+        getSize: () => ({ width: 806, height: 508 }),
+        toPNG: () => png,
+      })),
+    };
+    // Plain pass sees only the heading; equalization surfaces the caption,
+    // whose lost space still fuzzy-matches.
+    recognizeMock
+      .mockResolvedValueOnce(rows("FITSIN"))
+      .mockResolvedValueOnce(rows("FITSIN", "Kuvasobek"));
+
+    const match = await readFitsInWeaponSmallUi(image as never, 0.5, "window");
+    expect(match).toEqual({ name: "Kuva Sobek", exact: false });
+    expect(recognizeMock).toHaveBeenCalledTimes(2);
   });
 });
