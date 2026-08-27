@@ -132,26 +132,27 @@ const CAPTION_HEIGHT = 60;
 const CAPTION_HALF_WIDTH = 150;
 const CAPTION_UPSCALE = 4;
 
-/** Reads the plate caption as one raw-RGB recognition crop, anchored under the
- *  FITS IN heading. Skips row detection entirely: a bright diorama shard
- *  behind the plate flips the caption's polarity and global thresholding
- *  loses it, but the recognizer itself reads the raw pixels fine. */
-async function readCaptionUnderHeading(
-  wideCrop: NativeImage,
-  heading: StripRowLike,
-  uiScale: number,
-  contentHeight: number,
-): Promise<WeaponLabelMatch | null> {
-  if (!heading.box || !paddleRecognizerAvailable()) return null;
-  const { width: w, height: h } = wideCrop.getSize();
-  const unit = (contentHeight / 1080) * Math.min(1, Math.max(0.5, uiScale));
+// The plate is a fixed reroll-screen element; its caption center sits at this
+// offset from screen center, in 1080p pixels per unit of interface scale.
+const CAPTION_FIXED_OFFSET_X = 738;
+const CAPTION_FIXED_OFFSET_Y = 366;
+const CAPTION_FIXED_HALF_WIDTH = 85;
+const CAPTION_FIXED_HALF_HEIGHT = 18;
 
-  const centerX = (heading.box.x + heading.box.width / 2) * w;
-  const headingBottom = (heading.box.y + heading.box.height) * h;
-  const x = Math.max(0, Math.round(centerX - CAPTION_HALF_WIDTH * unit));
-  const y = Math.max(0, Math.round(headingBottom + CAPTION_TOP_OFFSET * unit));
-  const width = Math.min(w - x, Math.round(CAPTION_HALF_WIDTH * 2 * unit));
-  const height = Math.min(h - y, Math.round(CAPTION_HEIGHT * unit));
+/** Reads one raw-RGB band through the recognizer, skipping row detection: a
+ *  bright diorama shard behind the plate flips the caption's polarity and
+ *  global thresholding loses it, but the recognizer reads raw pixels fine. */
+async function recognizeCaptionBand(
+  wideCrop: NativeImage,
+  rect: { x: number; y: number; width: number; height: number },
+  label: string,
+): Promise<WeaponLabelMatch | null> {
+  if (!paddleRecognizerAvailable()) return null;
+  const { width: w, height: h } = wideCrop.getSize();
+  const x = Math.max(0, Math.round(rect.x));
+  const y = Math.max(0, Math.round(rect.y));
+  const width = Math.min(w - x, Math.round(rect.width));
+  const height = Math.min(h - y, Math.round(rect.height));
   if (width < 24 || height < 10) return null;
 
   const sharp = require("sharp") as (typeof import("sharp"))["default"];
@@ -168,10 +169,55 @@ async function readCaptionUnderHeading(
   const text = results[0]?.text?.trim() ?? "";
   const match = text ? findWeaponByLabelLine([text]) : null;
   log.info(
-    `[RivenScan] fits-in caption band (${width}x${height} at ${x},${y}): "${text}" -> ` +
+    `[RivenScan] fits-in caption ${label} (${width}x${height} at ${x},${y}): "${text}" -> ` +
       (match ? `${match.name}${match.exact ? "" : " (fuzzy)"}` : "no weapon"),
   );
   return match;
+}
+
+async function readCaptionUnderHeading(
+  wideCrop: NativeImage,
+  heading: StripRowLike,
+  uiScale: number,
+  contentHeight: number,
+): Promise<WeaponLabelMatch | null> {
+  if (!heading.box) return null;
+  const { width: w, height: h } = wideCrop.getSize();
+  const unit = (contentHeight / 1080) * Math.min(1, Math.max(0.5, uiScale));
+
+  const centerX = (heading.box.x + heading.box.width / 2) * w;
+  const headingBottom = (heading.box.y + heading.box.height) * h;
+  return recognizeCaptionBand(
+    wideCrop,
+    {
+      x: centerX - CAPTION_HALF_WIDTH * unit,
+      y: headingBottom + CAPTION_TOP_OFFSET * unit,
+      width: CAPTION_HALF_WIDTH * 2 * unit,
+      height: CAPTION_HEIGHT * unit,
+    },
+    "band",
+  );
+}
+
+/** Fallback with no heading anchor (a shard can hide the heading too): the
+ *  plate is fixed on the reroll screen, so the band comes from screen center. */
+async function readCaptionAtFixedPosition(
+  wideCrop: NativeImage,
+  uiScale: number,
+  content: { width: number; height: number },
+): Promise<WeaponLabelMatch | null> {
+  const unit = (content.height / 1080) * Math.min(1, Math.max(0.5, uiScale));
+  const cropOriginX = RIVEN_FITS_IN_WIDE_CROP.x * content.width;
+  const cropOriginY = RIVEN_FITS_IN_WIDE_CROP.y * content.height;
+  const centerX = content.width / 2 + CAPTION_FIXED_OFFSET_X * unit - cropOriginX;
+  const centerY = content.height / 2 + CAPTION_FIXED_OFFSET_Y * unit - cropOriginY;
+  const halfW = (CAPTION_FIXED_HALF_WIDTH + 20) * unit;
+  const halfH = (CAPTION_FIXED_HALF_HEIGHT + 8) * unit;
+  return recognizeCaptionBand(
+    wideCrop,
+    { x: centerX - halfW, y: centerY - halfH, width: halfW * 2, height: halfH * 2 },
+    "fixed",
+  );
 }
 
 /** Reads the linked weapon variant off the FITS IN panel of a full capture. */
@@ -228,6 +274,8 @@ export async function readFitsInWeaponSmallUi(
     const fromCaption = await readCaptionUnderHeading(wideCrop, heading, uiScale, content.height);
     if (fromCaption) return fromCaption;
   }
+  const fromFixed = await readCaptionAtFixedPosition(wideCrop, uiScale, content);
+  if (fromFixed) return fromFixed;
 
   const inverted = await readWeaponLabelFromPanelPng(widePng, content.height, {
     invert: true,

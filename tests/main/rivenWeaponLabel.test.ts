@@ -248,3 +248,36 @@ describe("readFitsInWeaponSmallUi caption band", () => {
     expect(paddleMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("readFitsInWeaponSmallUi fixed caption band", () => {
+  beforeEach(() => {
+    recognizeMock.mockReset();
+    paddleMock.mockReset();
+  });
+
+  it("reads the fixed plate position when even the heading is obscured", async () => {
+    const png = await makePng(806, 508);
+    const bandPng = await makePng(105, 26);
+    const wideCrop = {
+      getSize: () => ({ width: 806, height: 508 }),
+      toPNG: () => png,
+      crop: vi.fn(() => ({ toPNG: () => bandPng })),
+    };
+    const image = {
+      getSize: () => ({ width: 1920, height: 1080 }),
+      crop: vi.fn(() => wideCrop),
+    };
+    recognizeMock.mockResolvedValue(null);
+    paddleMock.mockResolvedValueOnce([{ text: "kiva sobek", confidence: 0.62 }]);
+
+    const match = await readFitsInWeaponSmallUi(image as never, 0.5, "window");
+    expect(match).toEqual({ name: "Kuva Sobek", exact: false });
+    expect(paddleMock).toHaveBeenCalledTimes(1);
+    // Band centered on the plate caption: screen (1329, 723) minus crop origin.
+    const band = (wideCrop.crop.mock.calls as unknown as Array<[{ x: number; y: number }]>)[0][0];
+    expect(band.x).toBeGreaterThan(140);
+    expect(band.x).toBeLessThan(190);
+    expect(band.y).toBeGreaterThan(175);
+    expect(band.y).toBeLessThan(200);
+  });
+});

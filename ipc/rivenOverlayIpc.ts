@@ -543,27 +543,44 @@ async function detectFitsInWeapon(capture: CaptureResult): Promise<void> {
   // recaptures with that panel hidden and searches wide.
   const smallUi = uiScale < 0.98;
   try {
-    let match = smallUi ? null : await readFitsInWeapon(capture.image, capture.sourceType);
-    if (token !== _rivenSessionToken) return;
-    if (!match && rivenRightWindowsController.isOverlayWindowVisible()) {
-      let retryCapture: CaptureResult | null = null;
-      rivenRightWindowsController.hideOverlayWindow();
+    let match: WeaponLabelMatch | null = null;
+    if (smallUi) {
+      const overlayWasVisible = rivenRightWindowsController.isOverlayWindowVisible();
+      if (overlayWasVisible) rivenRightWindowsController.hideOverlayWindow();
       try {
-        await sleep(50);
-        if (token !== _rivenSessionToken) return;
-        retryCapture = await captureScreenFast(capture.sourceDisplayId || null, 100);
+        // Diorama shards drift across the plate and can blank a single frame;
+        // a blocked read usually clears by the next capture.
+        for (let attempt = 0; attempt < 3 && !match; attempt += 1) {
+          await sleep(attempt === 0 ? 50 : 600);
+          if (token !== _rivenSessionToken) return;
+          const fresh = await captureScreenFast(capture.sourceDisplayId || null, 100);
+          if (!fresh) continue;
+          match = await readFitsInWeaponSmallUi(fresh.image, uiScale, fresh.sourceType);
+        }
       } finally {
-        if (token === _rivenSessionToken) {
+        if (overlayWasVisible && token === _rivenSessionToken) {
           rivenRightWindowsController.showOverlayWindowInactive();
         }
       }
-      if (retryCapture) {
-        match = smallUi
-          ? await readFitsInWeaponSmallUi(retryCapture.image, uiScale, retryCapture.sourceType)
-          : await readFitsInWeapon(retryCapture.image, retryCapture.sourceType);
+    } else {
+      match = await readFitsInWeapon(capture.image, capture.sourceType);
+      if (token !== _rivenSessionToken) return;
+      if (!match && rivenRightWindowsController.isOverlayWindowVisible()) {
+        let retryCapture: CaptureResult | null = null;
+        rivenRightWindowsController.hideOverlayWindow();
+        try {
+          await sleep(50);
+          if (token !== _rivenSessionToken) return;
+          retryCapture = await captureScreenFast(capture.sourceDisplayId || null, 100);
+        } finally {
+          if (token === _rivenSessionToken) {
+            rivenRightWindowsController.showOverlayWindowInactive();
+          }
+        }
+        if (retryCapture) {
+          match = await readFitsInWeapon(retryCapture.image, retryCapture.sourceType);
+        }
       }
-    } else if (!match && smallUi) {
-      match = await readFitsInWeaponSmallUi(capture.image, uiScale, capture.sourceType);
     }
     if (token !== _rivenSessionToken) return;
     if (match) {
