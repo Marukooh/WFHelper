@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { withoutFoundryPending } from "../../../config/shared/foundryPending.js";
 import { parseFoundry, parseInventory, parseResources } from "../../../src/lib/inventory.js";
+import { chainBuildableBlueprints } from "../../../src/lib/inventory/foundryResources.js";
 import { buildFullSetItems, setRootOf } from "../../../src/lib/inventory/fullSets.js";
 import { shouldHydrateMetrics } from "../../../src/lib/inventoryMarket.js";
 import { gameRefKey } from "../../../src/lib/marketNaming.js";
@@ -1317,5 +1318,162 @@ describe("inventory parsing", () => {
     const incomplete = usable.find((item) => item.inventoryGroup === "incomplete_sets");
     expect(incomplete?.ownedPartTypes).toBe(3);
     expect(incomplete?.totalPartTypes).toBe(4);
+  });
+});
+
+describe("chainBuildableBlueprints", () => {
+  const FRAME = "/wf/Frame";
+  const CHASSIS = "/wf/FrameChassis";
+  const SYSTEMS = "/wf/FrameSystems";
+  const FERRITE = "/misc/Ferrite";
+  const CELL = "/misc/Cell";
+
+  const db: Record<string, ItemDbEntry> = {
+    [FRAME]: {
+      name: "Framey",
+      recipe: {
+        buildPrice: 0,
+        buildTime: 0,
+        num: 1,
+        blueprintUniqueName: "/bp/Frame",
+        ingredients: [
+          { uniqueName: CHASSIS, count: 1 },
+          { uniqueName: SYSTEMS, count: 1 },
+          { uniqueName: CELL, count: 3 },
+        ],
+      },
+    } as ItemDbEntry,
+    [CHASSIS]: {
+      name: "Framey Chassis",
+      componentOf: FRAME,
+      recipe: {
+        buildPrice: 0,
+        buildTime: 0,
+        num: 1,
+        blueprintUniqueName: "/bp/Chassis",
+        ingredients: [{ uniqueName: FERRITE, count: 2 }],
+      },
+    } as ItemDbEntry,
+    [SYSTEMS]: {
+      name: "Framey Systems",
+      componentOf: FRAME,
+      recipe: {
+        buildPrice: 0,
+        buildTime: 0,
+        num: 1,
+        blueprintUniqueName: "/bp/Systems",
+        ingredients: [{ uniqueName: FERRITE, count: 2 }],
+      },
+    } as ItemDbEntry,
+  };
+
+  function recipeRow(
+    uniqueName: string,
+    productUniqueName: string,
+    ingredients: Array<{ uniqueName: string; count: number }>,
+  ) {
+    return {
+      name: uniqueName,
+      imageUrl: null,
+      count: 1,
+      uniqueName,
+      productUniqueName,
+      isIngredient: false,
+      category: "Warframe",
+      ingredients,
+      buildPrice: 0,
+      buildTime: 0,
+    };
+  }
+
+  const frameBp = recipeRow("/bp/Frame", FRAME, db[FRAME].recipe!.ingredients);
+  const chassisBp = recipeRow("/bp/Chassis", CHASSIS, db[CHASSIS].recipe!.ingredients);
+  const systemsBp = recipeRow("/bp/Systems", SYSTEMS, db[SYSTEMS].recipe!.ingredients);
+
+  it("marks a frame whose parts are all craftable from owned blueprints", () => {
+    const owned = new Map([
+      [FERRITE, 4],
+      [CELL, 3],
+    ]);
+    const result = chainBuildableBlueprints([frameBp, chassisBp, systemsBp], owned, db);
+
+    expect(result.has("/bp/Frame")).toBe(true);
+    // Part blueprints stay out: the full-set view hides loose components.
+    expect(result.has("/bp/Chassis")).toBe(false);
+  });
+
+  it("rejects the frame when a part blueprint is missing", () => {
+    const owned = new Map([
+      [FERRITE, 4],
+      [CELL, 3],
+    ]);
+    const result = chainBuildableBlueprints([frameBp, chassisBp], owned, db);
+
+    expect(result.has("/bp/Frame")).toBe(false);
+  });
+
+  it("rejects the frame when parts would double-spend a shared resource", () => {
+    const owned = new Map([
+      [FERRITE, 3],
+      [CELL, 3],
+    ]);
+    const result = chainBuildableBlueprints([frameBp, chassisBp, systemsBp], owned, db);
+
+    expect(result.has("/bp/Frame")).toBe(false);
+  });
+
+  it("accepts already-built parts without their blueprints", () => {
+    const owned = new Map([
+      [CHASSIS, 1],
+      [SYSTEMS, 1],
+      [CELL, 3],
+    ]);
+    const result = chainBuildableBlueprints([frameBp], owned, db);
+
+    expect(result.has("/bp/Frame")).toBe(true);
+  });
+
+  it("scales sub-builds by the recipe yield", () => {
+    const PART = "/misc/Part";
+    const yieldDb: Record<string, ItemDbEntry> = {
+      "/item/Thing": {
+        name: "Thing",
+        recipe: {
+          buildPrice: 0,
+          buildTime: 0,
+          num: 1,
+          blueprintUniqueName: "/bp/Thing",
+          ingredients: [{ uniqueName: PART, count: 15 }],
+        },
+      } as ItemDbEntry,
+      [PART]: {
+        name: "Part",
+        recipe: {
+          buildPrice: 0,
+          buildTime: 0,
+          num: 10,
+          blueprintUniqueName: "/bp/Part",
+          ingredients: [{ uniqueName: FERRITE, count: 2 }],
+        },
+      } as ItemDbEntry,
+    };
+    const thingBp = recipeRow(
+      "/bp/Thing",
+      "/item/Thing",
+      yieldDb["/item/Thing"].recipe!.ingredients,
+    );
+    const partBp = recipeRow("/bp/Part", PART, yieldDb[PART].recipe!.ingredients);
+
+    // 15 parts = 2 builds of 10, consuming 4 ferrite.
+    expect(
+      chainBuildableBlueprints([thingBp, partBp], new Map([[FERRITE, 4]]), yieldDb).has(
+        "/bp/Thing",
+      ),
+    ).toBe(true);
+    expect(
+      chainBuildableBlueprints([thingBp, partBp], new Map([[FERRITE, 3]]), yieldDb).has(
+        "/bp/Thing",
+      ),
+    ).toBe(false);
   });
 });

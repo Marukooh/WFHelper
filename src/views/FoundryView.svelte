@@ -35,7 +35,10 @@
   import { CREDITS_ICON_URL } from "../lib/assetUrls.js";
   import { clockStore } from "../lib/timers.js";
   import { persistedString, readStorage, writeStorage } from "../lib/persistence.js";
-  import { EQUIPMENT_CATEGORY_ORDER } from "../lib/inventory/foundryResources.js";
+  import {
+    chainBuildableBlueprints,
+    EQUIPMENT_CATEGORY_ORDER,
+  } from "../lib/inventory/foundryResources.js";
   import { sharedFilters, updateSharedFilters } from "../stores/filters.js";
   import { tr } from "../lib/i18n.js";
   import type { MessageKey } from "../lib/i18n.js";
@@ -168,6 +171,7 @@
 
   /** Lookup: ingredient uniqueName -> owned count (tracks componentOwnership store). */
   $: ownedMap = $componentOwnership;
+  $: chainBuildable = chainBuildableBlueprints(foundry.recipes, ownedMap, $itemDb);
   function buildProductOwnedLookup(items: typeof $parsedItems): SvelteMap<string, number> {
     const byUniqueName = new SvelteMap<string, number>();
 
@@ -282,6 +286,7 @@
     vaulted: boolean;
     foundryState: FoundryState;
     looseComponent: boolean;
+    setBuildable: boolean;
     subsumed: boolean | undefined;
   } {
     const db = row.e.productUniqueName ? $itemDb[row.e.productUniqueName] : null;
@@ -301,6 +306,10 @@
       foundryState: FOUNDRY_STATE_BY_STATUS[row.status],
       // A part blueprint belongs to a parent, so the full-set view hides it.
       looseComponent: Boolean(db?.componentOf),
+      setBuildable:
+        row.e.source === "blueprint" &&
+        row.e.uniqueName != null &&
+        chainBuildable.has(row.e.uniqueName),
       subsumed:
         row.e.category === "Warframe" && isSubsumableFrame(row.e.name)
           ? isFrameSubsumed(row.e.name, subsumedFamilies)

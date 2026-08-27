@@ -1,5 +1,6 @@
 import type {
   FoundryData,
+  FoundryRecipeItem,
   ItemDbEntry,
   RawInventoryData,
   RecipeIngredient,
@@ -273,4 +274,63 @@ export function parseResources(
     .filter((item): item is Resource => item != null);
 
   return resources.sort((a, b) => b.count - a.count);
+}
+
+// Depth covers frame -> aggregate -> part chains (Equinox is the deepest at 3).
+const CHAIN_MAX_DEPTH = 4;
+
+/** Blueprint rows whose whole crafting chain is craftable right now: every
+ *  missing ingredient is either owned or has an owned blueprint plus enough
+ *  resources, all drawn from one shared pool so parts cannot double-spend. */
+export function chainBuildableBlueprints(
+  recipes: FoundryRecipeItem[],
+  owned: ReadonlyMap<string, number>,
+  itemDb: Record<string, ItemDbEntry>,
+): Set<string> {
+  const recipeByProduct = new Map<string, FoundryRecipeItem>();
+  for (const recipe of recipes) {
+    if (recipe.count <= 0 || !recipe.productUniqueName) continue;
+    if (!recipeByProduct.has(recipe.productUniqueName)) {
+      recipeByProduct.set(recipe.productUniqueName, recipe);
+    }
+  }
+
+  function satisfy(
+    ingredients: RecipeIngredient[],
+    multiplier: number,
+    pool: Map<string, number>,
+    stack: Set<string>,
+  ): boolean {
+    for (const ing of ingredients) {
+      const needed = ing.count * multiplier;
+      const avail = pool.get(ing.uniqueName) ?? 0;
+      const used = Math.min(avail, needed);
+      if (used > 0) pool.set(ing.uniqueName, avail - used);
+      const deficit = needed - used;
+      if (deficit <= 0) continue;
+
+      const sub = recipeByProduct.get(ing.uniqueName);
+      if (!sub || sub.ingredients.length === 0) return false;
+      if (stack.has(ing.uniqueName) || stack.size >= CHAIN_MAX_DEPTH) return false;
+      const perBuild = itemDb[ing.uniqueName]?.recipe?.num || 1;
+      const builds = Math.ceil(deficit / perBuild);
+      stack.add(ing.uniqueName);
+      const ok = satisfy(sub.ingredients, builds, pool, stack);
+      stack.delete(ing.uniqueName);
+      if (!ok) return false;
+    }
+    return true;
+  }
+
+  const result = new Set<string>();
+  for (const recipe of recipes) {
+    if (!recipe.uniqueName || recipe.count <= 0 || recipe.ingredients.length === 0) continue;
+    const productUn = recipe.productUniqueName;
+    // Loose parts stay hidden from the full-set view, so skip them here too.
+    if (!productUn || itemDb[productUn]?.componentOf) continue;
+    if (satisfy(recipe.ingredients, 1, new Map(owned), new Set())) {
+      result.add(recipe.uniqueName);
+    }
+  }
+  return result;
 }

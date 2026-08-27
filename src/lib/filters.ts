@@ -67,6 +67,8 @@ interface FilterableItem {
   foundryState?: FoundryState | undefined;
   /** A blueprint for a part of something bigger, rather than the thing itself. */
   looseComponent?: boolean;
+  /** Whole crafting chain craftable now, counting parts still to be built. */
+  setBuildable?: boolean;
 }
 
 const GRADE_ORDER: Record<string, number> = {
@@ -205,10 +207,13 @@ export function matchesSharedFilters(item: FilterableItem, filters: SharedFilter
   // claim and a blueprint whose parts are all owned - and leaves the rest.
   if (filters.foundryState === "claimable" && item.foundryState !== "claimable") return false;
   if (filters.foundryState === "buildable" && item.foundryState !== "buildable") return false;
-  // A whole set you can start now: the parent blueprint, not its parts.
+  // A whole set: the parent blueprint, not its parts. Counts a parent whose
+  // missing parts are all still craftable from owned blueprints and resources,
+  // or warframes could never appear (their parts must be built first).
   if (
     filters.foundryState === "buildable_sets" &&
-    (item.foundryState !== "buildable" || item.looseComponent === true)
+    ((item.foundryState !== "buildable" && item.setBuildable !== true) ||
+      item.looseComponent === true)
   ) {
     return false;
   }
