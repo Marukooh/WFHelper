@@ -236,6 +236,72 @@ test.describe("Shared view layout", () => {
     expect(Math.abs(headerLayout[0]!.y - headerLayout[1]!.y)).toBeLessThanOrEqual(12);
   });
 
+  // The About rows are a label beside a link, and the narrowest masonry column
+  // lands around 1040px. They used to squeeze into two ragged columns instead of
+  // stacking, which is only visible once the font scale is up.
+  test("Settings About and Supporters cards stay readable when the window narrows", async () => {
+    await page.evaluate(() => {
+      localStorage.setItem(
+        "wf_theme_settings",
+        JSON.stringify({ version: 1, fontSizes: { globalScale: 1.25 } }),
+      );
+    });
+    await page.reload();
+    await expect(page.locator("#sidebar")).toBeVisible({ timeout: 90_000 });
+
+    for (const width of [700, 900, 1040, 1200]) {
+      await page.setViewportSize({ width, height: 900 });
+      await openView(page, "settings");
+      await expect(page.locator(".settings-credit-row").first()).toBeVisible();
+
+      const layout = await page.evaluate(() => {
+        const rows = Array.from(document.querySelectorAll<HTMLElement>(".settings-credit-row"));
+        const label = (row: HTMLElement) => (row.firstElementChild as HTMLElement) ?? row;
+        const value = (row: HTMLElement) => (row.lastElementChild as HTMLElement) ?? row;
+        const name = (row: HTMLElement) => (label(row).textContent ?? "").trim();
+        const linkHeights = Array.from(
+          document.querySelectorAll<HTMLElement>(".settings-link"),
+          (link) => link.getBoundingClientRect().height,
+        );
+        const supporters = document.querySelector<HTMLElement>("[data-supporters]");
+        const supportersRect = supporters?.getBoundingClientRect() ?? null;
+        const actions = document.querySelector<HTMLElement>("[data-settings-actions]");
+        const content = document.querySelector<HTMLElement>("#content")!;
+        return {
+          // Either the value sits beside the label or it wrapped underneath it.
+          collisions: rows
+            .filter((row) => {
+              const l = label(row).getBoundingClientRect();
+              const v = value(row).getBoundingClientRect();
+              return v.left < l.right - 1 && v.top < l.bottom - 1;
+            })
+            .map(name),
+          overflowing: rows.filter((row) => row.scrollWidth > row.clientWidth + 1).map(name),
+          // A link broken across two lines is twice as tall as its siblings.
+          linkHeightRatio: Math.max(...linkHeights) / Math.min(...linkHeights),
+          chipsOutside: supporters
+            ? Array.from(supporters.querySelectorAll<HTMLElement>("span[class*='rounded-full']"))
+                .filter((chip) => chip.getBoundingClientRect().right > supportersRect!.right)
+                .map((chip) => chip.textContent ?? "")
+            : [],
+          actionsFit: actions ? actions.scrollWidth <= actions.clientWidth + 1 : false,
+          contentFits: content.scrollWidth <= content.clientWidth,
+        };
+      });
+
+      expect(layout.collisions, `credit rows collide at ${width}px`).toEqual([]);
+      expect(layout.overflowing, `credit rows overflow at ${width}px`).toEqual([]);
+      expect(layout.linkHeightRatio, `a credit link wraps at ${width}px`).toBeLessThan(1.6);
+      expect(layout.chipsOutside, `supporter chips escape the card at ${width}px`).toEqual([]);
+      expect(layout.actionsFit, `settings actions overflow at ${width}px`).toBe(true);
+      expect(layout.contentFits, `settings scrolls sideways at ${width}px`).toBe(true);
+    }
+
+    await page.evaluate(() => localStorage.removeItem("wf_theme_settings"));
+    await page.reload();
+    await expect(page.locator("#sidebar")).toBeVisible({ timeout: 90_000 });
+  });
+
   test("resource names fit at 125% font size", async () => {
     await page.setViewportSize({ width: 1920, height: 1200 });
     await page.evaluate(() => {

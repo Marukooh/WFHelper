@@ -64,10 +64,10 @@
             {#each group.names as name, i (i)}
               <span
                 class={group.tier === "biggest"
-                  ? "rounded-full border border-accent-dim bg-accent-glow px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-accent"
+                  ? "max-w-full break-words rounded-full border border-accent-dim bg-accent-glow px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-accent"
                   : group.tier === "big"
-                    ? "rounded-full border border-accent-dim px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-text-primary"
-                    : "rounded-full border border-border px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-text-secondary"}
+                    ? "max-w-full break-words rounded-full border border-accent-dim px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-text-primary"
+                    : "max-w-full break-words rounded-full border border-border px-2.5 py-0.5 text-[var(--font-small-size,0.82rem)] text-text-secondary"}
                 >{name}</span
               >
             {/each}

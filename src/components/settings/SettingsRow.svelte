@@ -58,15 +58,33 @@
 {/if}
 
 <style>
+  /* Same degradation as .settings-credit-row: a narrow card drops the control
+     under the label instead of squeezing both into ragged columns. */
   .settings-control-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.7rem;
+    gap: 0.1rem 0.7rem;
     border-radius: var(--radius-md);
     padding: 0.34rem 0.45rem;
     margin: 0 -0.45rem;
     cursor: pointer;
+  }
+
+  /* Basis is the longest word, so the label wraps its own text first and the
+     control only drops to a second line once that no longer fits beside it. */
+  .settings-control-row > :first-child {
+    flex: 1 1 min-content;
+    min-width: 0;
+  }
+
+  /* Never squeeze a control below its size, and keep it at the right edge once
+     it is alone on the wrapped line. :global because the control is authored in
+     the caller and so carries the caller's scope hash, never this one. */
+  .settings-control-row > :global(:last-child) {
+    flex-shrink: 0;
+    margin-left: auto;
   }
 
   .settings-control-row:hover {

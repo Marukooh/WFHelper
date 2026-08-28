@@ -605,7 +605,9 @@
       </div>
 
       <div class="settings-wide-actions pb-3">
-        <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Five buttons wrap on a narrow window, and the note glued to the last
+             one read as a sixth; ml-auto parks it at the end of its own line. -->
+        <div class="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-settings-actions>
           <button class="btn-secondary btn-sm" on:click={resetDefaults}
             >{$tr("settings.resetDefaults")}</button
           >
@@ -621,7 +623,7 @@
           <button class="btn-secondary btn-sm" on:click={() => currentView.set("setup")}
             >{$tr("settings.redoSetup")}</button
           >
-          <span class="text-xs text-text-muted">{$tr("settings.changesAutoApply")}</span>
+          <span class="ml-auto text-xs text-text-muted">{$tr("settings.changesAutoApply")}</span>
         </div>
 
         {#if statusMsg}

@@ -71,7 +71,7 @@
     {/each}
     <div class="settings-credit-row">
       <span>{$tr("settings.creditSupport")}</span>
-      <span class="flex items-center gap-2.5">
+      <span class="flex flex-wrap items-center justify-end gap-x-2.5 gap-y-1">
         <button
           class="settings-link"
           onclick={() => openLink("https://github.com/sponsors/MrZockerator")}
@@ -98,18 +98,28 @@
     cursor: pointer;
     font-size: 0.875rem;
     font-family: inherit;
+    /* Breaking a link mid-phrase reads as two links; let the row wrap instead. */
+    white-space: nowrap;
   }
   .settings-link:hover {
     text-decoration: underline;
   }
+  /* Wrapping makes a flex line break on the children's max-content widths, so a
+     narrow card drops the link under the label instead of squeezing both into
+     ragged two-line columns. */
   .settings-credit-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.7rem;
+    gap: 0.1rem 0.7rem;
     border-radius: var(--radius-md);
     padding: 0.34rem 0.45rem;
     margin: 0 -0.45rem;
+  }
+  /* Keeps the value at the right edge once it is alone on the wrapped line. */
+  .settings-credit-row > :last-child {
+    margin-left: auto;
   }
   .settings-credit-row:hover {
     background: var(--bg-hover);
