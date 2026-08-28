@@ -601,9 +601,11 @@ export function findWeaponByLabelLine(lines: string[]): WeaponLabelMatch | null 
   return best ? { name: best.name, exact: best.exact } : null;
 }
 
-/** Variant suffixes to strip when deriving the riven weapon family name. */
-const VARIANT_SUFFIXES = [" Prime", " Wraith", " Vandal", " Prisma", " Dex"];
-const VARIANT_PREFIXES = ["MK1-", "Mk1-", "Kuva ", "Tenet "];
+/** Variant affixes to strip when deriving the riven weapon family name.
+ *  Prisma and Dex are prefixes in Warframe, never suffixes. "Dex " is absent on
+ *  purpose: WFM lists dex_nikana and dex_dakra as families of their own. */
+const VARIANT_SUFFIXES = [" Prime", " Wraith", " Vandal"];
+const VARIANT_PREFIXES = ["MK1-", "Mk1-", "Kuva ", "Tenet ", "Prisma "];
 
 /** Derives the WFM riven family slug, such as "Boar Prime" -> "boar". */
 export function getRivenFamilySlug(weaponName: string): string {

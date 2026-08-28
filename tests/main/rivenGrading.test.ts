@@ -326,6 +326,18 @@ describe("rivenData", () => {
       expect(rivenData.getRivenFamilySlug("MK1-Braton")).toBe("braton");
     });
 
+    it("treats Prisma as the prefix it is", () => {
+      // warframe.market 400s on prisma_obex: rivens live under the base weapon.
+      expect(rivenData.getRivenFamilySlug("Prisma Obex")).toBe("obex");
+      expect(rivenData.getRivenFamilySlug("Prisma Grakata")).toBe("grakata");
+      expect(rivenData.getRivenFamilySlug("Prisma Gorgon")).toBe("gorgon");
+    });
+
+    it("leaves Dex weapons alone", () => {
+      // WFM carries dex_nikana as its own riven family, so stripping would 400.
+      expect(rivenData.getRivenFamilySlug("Dex Nikana")).toBe("dex_nikana");
+    });
+
     it("keeps the affix when the weapon has no base form", () => {
       // WFM has no "gotva" or "kuva_bramma" family - asking for one 404s the search.
       expect(rivenData.getRivenFamilySlug("Gotva Prime")).toBe("gotva_prime");
