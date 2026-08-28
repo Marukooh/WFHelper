@@ -21,7 +21,7 @@
 >
   {#each $toasts as toast (toast.id)}
     <article
-      class="pointer-events-auto rounded-lg border p-3 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-sm {LEVEL_CLASSES[
+      class="pointer-events-auto rounded-lg border p-3 backdrop-blur-sm {LEVEL_CLASSES[
         toast.level
       ] || ''}"
     >
