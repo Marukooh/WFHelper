@@ -581,6 +581,65 @@ describe("correctScannedStats", () => {
     expect(corrections).toBe(0);
     expect(stats.map((s) => s.name)).toEqual(["Damage to Grineer", "Damage"]);
   });
+
+  // 2026-08-29 field report: the card reads +2.3 Range, +104.6% Critical Damage,
+  // +141.8% Finisher Damage, -104% Impact. One of four scans dropped the curse
+  // line, and its absence pushed every buff out of range.
+  const obexBuffs = [
+    { name: "Range", positive: true, value: 2.3 },
+    { name: "Critical Damage", positive: true, value: 104.6 },
+    { name: "Finisher Damage", positive: true, value: 141.8 },
+  ];
+  const obexCurse = { name: "Impact", positive: false, value: 104 };
+
+  it("keeps a scanned stat name when a dropped curse line explains the misfit", () => {
+    const { stats, corrections } = correctScannedStats("Prisma Obex", obexBuffs);
+    expect(corrections).toBe(0);
+    expect(stats.map((s) => s.name)).toEqual(["Range", "Critical Damage", "Finisher Damage"]);
+  });
+
+  it("leaves the same card untouched once the curse line is scanned", () => {
+    const { stats, corrections } = correctScannedStats("Prisma Obex", [...obexBuffs, obexCurse]);
+    expect(corrections).toBe(0);
+    expect(stats.map((s) => s.name)).toEqual([
+      "Range",
+      "Critical Damage",
+      "Finisher Damage",
+      "Impact",
+    ]);
+  });
+
+  // A genuine 3-buff Paracesis roll (disposition 0.65) read while the overlay
+  // had detected Pride (0.50). Critical Damage alone would fit Melee Damage,
+  // but Finisher Damage misfits too, so the weapon is what is wrong.
+  const paracesisRoll = [
+    { name: "Critical Damage", positive: true, value: 47.4 },
+    { name: "Heat", positive: true, value: 44.8 },
+    { name: "Finisher Damage", positive: true, value: 63 },
+  ];
+
+  it("does not rename when more than one stat misfits the detected weapon", () => {
+    const { stats, corrections } = correctScannedStats("Pride", paracesisRoll);
+    expect(corrections).toBe(0);
+    expect(stats.map((s) => s.name)).toEqual(["Critical Damage", "Heat", "Finisher Damage"]);
+  });
+
+  it("accepts that card on the weapon it was actually rolled for", () => {
+    const { corrections } = correctScannedStats("Paracesis", paracesisRoll);
+    expect(corrections).toBe(0);
+  });
+
+  // The bailout concludes the weapon is wrong, so the melee rename it made on
+  // the way there belongs to the hypothesis it just rejected.
+  it("returns the scanned names when the whole card is rejected", () => {
+    const { stats, corrections } = correctScannedStats("Nami Solo", [
+      { name: "Damage", positive: true, value: 4000 },
+      { name: "Critical Damage", positive: true, value: 4000 },
+      { name: "Heat", positive: true, value: 4000 },
+    ]);
+    expect(corrections).toBe(0);
+    expect(stats.map((s) => s.name)).toEqual(["Damage", "Critical Damage", "Heat"]);
+  });
 });
 
 describe("rivenBestAttributes", () => {
@@ -721,6 +780,20 @@ describe("unranked cards", () => {
     ]);
 
     expect(result!.stats[0].rollFloat).toBe(0);
+  });
+
+  // Both counts scale every displayed value, so a card read without the curse
+  // line reads 25% high and every buff clamps to the top of its range.
+  it("grades a card whose curse the scan dropped on the rolls it shows", () => {
+    const maxRank = UNRANKED_WOLF_SLEDGE.map((stat) => ({ ...stat, value: stat.value * 9 }));
+    const buffsOnly = maxRank.filter((stat) => stat.positive);
+
+    const whole = gradeRiven("Wolf Sledge", maxRank)!;
+    const dropped = gradeRiven("Wolf Sledge", buffsOnly)!;
+
+    expect(dropped.stats.map((s) => s.grade)).toEqual(
+      whole.stats.filter((s) => s.positive).map((s) => s.grade),
+    );
   });
 
   it("leaves a card that cannot fit any rank at the bottom", () => {

@@ -202,6 +202,23 @@ const FIT_TOLERANCE = 0.02;
 // Only rename when the parsed stat is clearly impossible, not merely marginal.
 const CORRECTION_MISFIT_THRESHOLD = 0.1;
 
+// A riven card carries at most three buffs and one curse.
+const MAX_RIVEN_BUFFS = 3;
+const MAX_RIVEN_CURSES = 1;
+
+// Both counts scale every displayed value, so an OCR line the scan dropped
+// pushes the whole card out of range. Treat the scanned counts as a lower
+// bound and accept any name that fits a card this scan could be a subset of.
+function plausibleStatCounts(numBuffs: number, numCurses: number): [number, number][] {
+  const counts: [number, number][] = [];
+  for (let buffs = numBuffs; buffs <= Math.max(numBuffs, MAX_RIVEN_BUFFS); buffs++) {
+    for (let curses = numCurses; curses <= Math.max(numCurses, MAX_RIVEN_CURSES); curses++) {
+      counts.push([buffs, curses]);
+    }
+  }
+  return counts;
+}
+
 // Rename an impossible OCR stat only when exactly one confusion sibling fits.
 // Keep and log uncorrectable misfits.
 export function correctScannedStats(
@@ -215,8 +232,10 @@ export function correctScannedStats(
   }
 
   const isMelee = rivenData.isMeleeWeapon(weaponName);
-  const numBuffs = stats.filter((s) => s.positive).length;
-  const numCurses = stats.filter((s) => !s.positive).length;
+  const statCounts = plausibleStatCounts(
+    stats.filter((s) => s.positive).length,
+    stats.filter((s) => !s.positive).length,
+  );
   const dispositions = [
     baseDisposition,
     ...rivenData.getFamilyVariants(weaponName).map((v) => v.disposition),
@@ -230,40 +249,83 @@ export function correctScannedStats(
     if (stat.positive ? !entry.canBeBuff : !entry.canBeCurse) return null;
     let best = Infinity;
     for (const disp of dispositions) {
-      // Every rank, not just max: a chat-linked card shows its values at the
-      // mod's own rank, and a partly ranked stat is not a misread label.
-      for (let lvl = 0; lvl <= DEFAULT_LVL; lvl++) {
-        const f = stat.positive
-          ? unparseBuffRaw(displayedValue, entry.baseValue, disp, numBuffs, numCurses, tag, lvl)
-          : unparseCurseRaw(displayedValue, entry.baseValue, disp, numBuffs, numCurses, tag, lvl);
-        best = Math.min(best, Math.max(0, f - 1) + Math.max(0, -f));
+      for (const [numBuffs, numCurses] of statCounts) {
+        // Every rank, not just max: a chat-linked card shows its values at the
+        // mod's own rank, and a partly ranked stat is not a misread label.
+        for (let lvl = 0; lvl <= DEFAULT_LVL; lvl++) {
+          const f = stat.positive
+            ? unparseBuffRaw(displayedValue, entry.baseValue, disp, numBuffs, numCurses, tag, lvl)
+            : unparseCurseRaw(displayedValue, entry.baseValue, disp, numBuffs, numCurses, tag, lvl);
+          best = Math.min(best, Math.max(0, f - 1) + Math.max(0, -f));
+        }
       }
     }
     return best;
   };
 
   let corrections = 0;
-  const corrected = stats.map((original) => {
-    let stat = original;
-    let tag = rivenData.statNameToTag(stat.name);
-    if (!tag) return stat;
 
-    // Categorical rename: melee cards never say "Damage", ranged never
-    // "Melee Damage" - a scanned cross-form is always a misread label.
-    const normalizedTag = weaponDamageTag(tag, isMelee);
-    if (normalizedTag !== tag) {
-      const newName = rivenData.getStatDisplayName(normalizedTag, isMelee);
-      log.info(`[RivenGrade] "${stat.name}" cannot roll on "${weaponName}" - renamed "${newName}"`);
-      corrections++;
-      stat = { ...stat, name: newName };
-      tag = normalizedTag;
+  // Categorical renames run first: they are label rules, not value checks, and
+  // the normalized tag is what the range check measures. They stay provisional
+  // until the card is accepted, because they encode the detected weapon's class.
+  const measured = stats.map((original) => {
+    const scannedTag = rivenData.statNameToTag(original.name);
+    let stat = original;
+    let tag = scannedTag;
+    let renamedFrom: string | null = null;
+    if (tag) {
+      const normalizedTag = weaponDamageTag(tag, isMelee);
+      if (normalizedTag !== tag) {
+        renamedFrom = stat.name;
+        stat = { ...stat, name: rivenData.getStatDisplayName(normalizedTag, isMelee) };
+        tag = normalizedTag;
+      }
     }
 
-    if (stat.value == null || !Number.isFinite(stat.value) || stat.multiplier) return stat;
     const value = stat.value;
+    if (tag == null || value == null || !Number.isFinite(value) || stat.multiplier) {
+      return { original, stat, renamedFrom, tag, value: null, violation: null, misfits: false };
+    }
+    const violation = violationFor(tag, stat, value);
+    return {
+      original,
+      stat,
+      renamedFrom,
+      tag,
+      value,
+      violation,
+      misfits: violation == null || violation > CORRECTION_MISFIT_THRESHOLD,
+    };
+  });
 
-    const origViolation = violationFor(tag, stat, value);
-    if (origViolation != null && origViolation <= CORRECTION_MISFIT_THRESHOLD) return stat;
+  // A misread name is one outlier on a card that otherwise fits. Several stats
+  // out of range at once means the weapon or its disposition is wrong, and
+  // renaming one of them would only bake that in.
+  const misfitting = measured.filter((m) => m.misfits);
+  if (misfitting.length > 1) {
+    const detail = misfitting
+      .map(
+        (m) =>
+          `"${m.original.name}" ${m.violation == null ? "cannot roll" : m.violation.toFixed(3)}`,
+      )
+      .join(", ");
+    log.warn(
+      `[RivenGrade] ${misfitting.length} of ${measured.length} stats are out of range for ` +
+        `"${weaponName}" (${detail}) - weapon or disposition is wrong, keeping the scanned names`,
+    );
+    return { stats: measured.map((m) => m.original), corrections };
+  }
+
+  for (const m of measured) {
+    if (!m.renamedFrom) continue;
+    log.info(
+      `[RivenGrade] "${m.renamedFrom}" cannot roll on "${weaponName}" - renamed "${m.stat.name}"`,
+    );
+    corrections++;
+  }
+
+  const corrected = measured.map(({ stat, tag, value, violation, misfits }) => {
+    if (!misfits || tag == null || value == null) return stat;
 
     const siblings = STAT_CONFUSION_SIBLINGS[tag] ?? [];
     const fitTags = [
@@ -277,17 +339,17 @@ export function correctScannedStats(
     if (fitTags.length === 1) {
       const newName = rivenData.getStatDisplayName(fitTags[0], isMelee);
       log.info(
-        `[RivenGrade] "${stat.name}" ${stat.positive ? "+" : "-"}${stat.value} misfits ` +
+        `[RivenGrade] "${stat.name}" ${stat.positive ? "+" : "-"}${value} misfits ` +
           `"${weaponName}" - corrected to "${newName}"`,
       );
       corrections++;
       return { ...stat, name: newName };
     }
 
-    if (origViolation != null) {
+    if (violation != null) {
       log.warn(
-        `[RivenGrade] "${stat.name}" ${stat.positive ? "+" : "-"}${stat.value} is out of ` +
-          `range for "${weaponName}" (violation ${origViolation.toFixed(3)}) - kept as scanned`,
+        `[RivenGrade] "${stat.name}" ${stat.positive ? "+" : "-"}${value} is out of ` +
+          `range for "${weaponName}" (violation ${violation.toFixed(3)}) - kept as scanned`,
       );
     }
     return stat;
@@ -410,6 +472,10 @@ export function gradeRiven(
   const numBuffs = stats.filter((s) => s.positive).length;
   const numCurses = stats.filter((s) => !s.positive).length;
   let assumedLevel = DEFAULT_LVL;
+  // Both counts scale every displayed value, so a line the scan lost reads the
+  // survivors high. The scanned counts are a lower bound, as in correctScannedStats.
+  let assumedBuffs = numBuffs;
+  let assumedCurses = numCurses;
 
   // Reject impossible shapes before invalid values are clamped into valid grades.
   if (numBuffs > 3 || numCurses > 1) {
@@ -450,19 +516,27 @@ export function gradeRiven(
     p: Prepared,
     disp: number,
     lvl: number,
+    buffs: number,
+    curses: number,
     value: number = p.displayedValue!,
   ): number =>
     p.stat.positive
-      ? unparseBuffRaw(value, p.entry!.baseValue, disp, numBuffs, numCurses, p.tag!, lvl)
-      : unparseCurseRaw(value, p.entry!.baseValue, disp, numBuffs, numCurses, p.tag!, lvl);
+      ? unparseBuffRaw(value, p.entry!.baseValue, disp, buffs, curses, p.tag!, lvl)
+      : unparseCurseRaw(value, p.entry!.baseValue, disp, buffs, curses, p.tag!, lvl);
 
   // On a wide stat the card's rounding is noise, but Wolf Sledge Range spans
   // 0.2 to 0.3 metres at rank 0, so half a step is half the roll. Ask whether
   // the rounding interval can reach [0,1] rather than whether one nominal value
   // lands inside it.
-  const fitsAt = (p: Prepared, disp: number, lvl: number): boolean => {
-    const a = rawFloatAt(p, disp, lvl, p.displayedValue! - p.halfStep);
-    const b = rawFloatAt(p, disp, lvl, p.displayedValue! + p.halfStep);
+  const fitsAt = (
+    p: Prepared,
+    disp: number,
+    lvl: number,
+    buffs: number,
+    curses: number,
+  ): boolean => {
+    const a = rawFloatAt(p, disp, lvl, buffs, curses, p.displayedValue! - p.halfStep);
+    const b = rawFloatAt(p, disp, lvl, buffs, curses, p.displayedValue! + p.halfStep);
     return Math.min(a, b) <= 1 + FIT_TOLERANCE && Math.max(a, b) >= -FIT_TOLERANCE;
   };
 
@@ -475,15 +549,15 @@ export function gradeRiven(
   if (gradeable.length > 0) {
     // Sum of how far out of [0,1] the card sits, for ranking near-misses when
     // nothing fits outright.
-    const violationAt = (disp: number, lvl: number): number =>
+    const violationAt = (disp: number, lvl: number, buffs: number, curses: number): number =>
       gradeable.reduce((sum, p) => {
-        const f = rawFloatAt(p, disp, lvl);
+        const f = rawFloatAt(p, disp, lvl, buffs, curses);
         return sum + Math.max(0, f - 1) + Math.max(0, -f);
       }, 0);
-    const allFitAt = (disp: number, lvl: number): boolean =>
-      gradeable.every((p) => fitsAt(p, disp, lvl));
+    const allFitAt = (disp: number, lvl: number, buffs: number, curses: number): boolean =>
+      gradeable.every((p) => fitsAt(p, disp, lvl, buffs, curses));
 
-    if (!allFitAt(disposition, assumedLevel)) {
+    if (!allFitAt(disposition, assumedLevel, assumedBuffs, assumedCurses)) {
       const candidates = [
         { name: weaponName, disposition: baseDisposition },
         ...rivenData.getFamilyVariants(weaponName),
@@ -493,16 +567,35 @@ export function gradeRiven(
       // just because a lower rank happens to fit as well. Needs two stats to
       // pin a rank - a lone value fits several, and picking one is a guess.
       const maxRefitLvl = gradeable.length >= 2 ? DEFAULT_LVL : -1;
-      let refit: { name: string; disposition: number; lvl: number } | null = null;
-      for (let lvl = maxRefitLvl; lvl >= 0 && !refit; lvl--) {
-        for (const candidate of candidates) {
-          if (!allFitAt(candidate.disposition, lvl)) continue;
-          const closer =
-            !refit ||
-            Math.abs(candidate.disposition - baseDisposition) <
-              Math.abs(refit.disposition - baseDisposition);
-          if (closer) refit = { ...candidate, lvl };
+      type Refit = {
+        name: string;
+        disposition: number;
+        lvl: number;
+        buffs: number;
+        curses: number;
+      };
+      const refitAt = (buffs: number, curses: number): Refit | null => {
+        for (let lvl = maxRefitLvl; lvl >= 0; lvl--) {
+          let best: Refit | null = null;
+          for (const candidate of candidates) {
+            if (!allFitAt(candidate.disposition, lvl, buffs, curses)) continue;
+            const closer =
+              !best ||
+              Math.abs(candidate.disposition - baseDisposition) <
+                Math.abs(best.disposition - baseDisposition);
+            if (closer) best = { ...candidate, lvl, buffs, curses };
+          }
+          if (best) return best;
         }
+        return null;
+      };
+
+      // The scanned counts come first, so a card that fits as read is never
+      // re-read as one the scan took a line off.
+      let refit: Refit | null = null;
+      for (const [buffs, curses] of plausibleStatCounts(numBuffs, numCurses)) {
+        refit = refitAt(buffs, curses);
+        if (refit) break;
       }
 
       if (refit) {
@@ -518,20 +611,43 @@ export function gradeRiven(
           );
           assumedLevel = refit.lvl;
         }
+        if (refit.buffs !== assumedBuffs || refit.curses !== assumedCurses) {
+          log.info(
+            `[RivenGrade] "${weaponName}" values match ${refit.buffs} buffs / ${refit.curses} ` +
+              `curses - grading as a card the scan read short`,
+          );
+          assumedBuffs = refit.buffs;
+          assumedCurses = refit.curses;
+        }
       } else {
-        // Nothing fits exactly - keep max rank and settle for the closest dispo.
+        // Nothing fits exactly - keep max rank and settle for the least violating
+        // dispo and stat counts. Scanned counts come first, so widening has to
+        // strictly improve the fit before it is taken.
         let best = {
           name: weaponName,
           disposition,
-          violation: violationAt(disposition, assumedLevel),
+          buffs: assumedBuffs,
+          curses: assumedCurses,
+          violation: violationAt(disposition, assumedLevel, assumedBuffs, assumedCurses),
         };
-        for (const variant of rivenData.getFamilyVariants(weaponName)) {
-          const violation = violationAt(variant.disposition, assumedLevel);
-          const closer =
-            Math.abs(variant.disposition - baseDisposition) <
-            Math.abs(best.disposition - baseDisposition);
-          if (violation < best.violation - 1e-9 || (violation < best.violation + 1e-9 && closer)) {
-            best = { name: variant.name, disposition: variant.disposition, violation };
+        for (const [buffs, curses] of plausibleStatCounts(numBuffs, numCurses)) {
+          for (const variant of candidates) {
+            const violation = violationAt(variant.disposition, assumedLevel, buffs, curses);
+            const closer =
+              Math.abs(variant.disposition - baseDisposition) <
+              Math.abs(best.disposition - baseDisposition);
+            if (
+              violation < best.violation - 1e-9 ||
+              (violation < best.violation + 1e-9 && closer)
+            ) {
+              best = {
+                name: variant.name,
+                disposition: variant.disposition,
+                buffs,
+                curses,
+                violation,
+              };
+            }
           }
         }
         if (best.disposition !== disposition) {
@@ -539,6 +655,14 @@ export function gradeRiven(
             `[RivenGrade] "${weaponName}" dispo misfits the rolled values - grading as "${best.name}"`,
           );
           disposition = best.disposition;
+        }
+        if (best.buffs !== assumedBuffs || best.curses !== assumedCurses) {
+          log.info(
+            `[RivenGrade] "${weaponName}" sits closest to ${best.buffs} buffs / ${best.curses} ` +
+              `curses - grading as a card the scan read short`,
+          );
+          assumedBuffs = best.buffs;
+          assumedCurses = best.curses;
         }
       }
     }
@@ -565,7 +689,9 @@ export function gradeRiven(
     }
 
     if (p.displayedValue != null) {
-      const rollFloat = clamp01(rawFloatAt(p, disposition, assumedLevel));
+      const rollFloat = clamp01(
+        rawFloatAt(p, disposition, assumedLevel, assumedBuffs, assumedCurses),
+      );
       const grade = floatToGrade(rollFloat, !stat.positive);
       const score = lerp(-10, 10, !stat.positive ? 1 - rollFloat : rollFloat);
 
