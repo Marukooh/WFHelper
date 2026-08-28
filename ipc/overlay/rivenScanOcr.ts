@@ -73,7 +73,7 @@ function logScanTiming(label: string, t: RivenScanTiming): void {
 // OCR text cannot reveal crop alignment, so the crop is kept alongside it.
 // Rotated per outcome: a rolling session's successful scans used to push the
 // empty ones - the only crops worth having - out of a shared window of 10.
-const DEBUG_DUMP_KEEP = Object.freeze({ empty: 10, ok: 4 });
+const DEBUG_DUMP_KEEP = Object.freeze({ empty: 10, failed: 10, dropped: 10, ok: 4 });
 type ScanDumpOutcome = keyof typeof DEBUG_DUMP_KEEP;
 
 function dumpScanCrops(
@@ -134,6 +134,7 @@ export async function recognizeRivenCardStats(
   let ocrMs = 0;
   let parseMs = 0;
   let ocrCalls = 0;
+  let droppedAnyLine = false;
 
   for (let attempt = 0; attempt <= MAX_LOW_CONFIDENCE_RETRIES; attempt += 1) {
     if (options.isStale(options.generation)) {
@@ -180,6 +181,7 @@ export async function recognizeRivenCardStats(
       const diagnostics: RivenParseDiagnostics = { droppedLines: [] };
       const stats = parseRivenStats(ocrResult.text, diagnostics);
       parseMs += Date.now() - parseStart;
+      if (diagnostics.droppedLines.length > 0) droppedAnyLine = true;
 
       // Loud drops: a signed line that parsed to nothing is the signal that
       // turns a user's "misread" report into an actionable log.
@@ -230,15 +232,30 @@ export async function recognizeRivenCardStats(
     }
   }
 
-  if (
-    bestResult &&
-    bestStats.length >= MIN_ACCEPTABLE_RIVEN_STATS &&
-    hasLowConfidenceLine(bestResult)
-  ) {
+  const lowConfidenceResult =
+    bestResult && bestStats.length >= MIN_ACCEPTABLE_RIVEN_STATS && hasLowConfidenceLine(bestResult)
+      ? bestResult
+      : null;
+  // Rivens have at least two stats; a lone survivor is a misread.
+  const belowStatMinimum = bestStats.length > 0 && bestStats.length < MIN_ACCEPTABLE_RIVEN_STATS;
+
+  // Every scan, not only empty ones: a confident read of a badly cropped card
+  // looks perfect in the log, so the image is the only evidence that settles it.
+  // Dumped before the failure returns, because a scan the overlay rejected is
+  // the one whose crop is worth keeping.
+  let outcome: ScanDumpOutcome = "ok";
+  if (bestStats.length === 0) outcome = "empty";
+  else if (lowConfidenceResult || belowStatMinimum) outcome = "failed";
+  // A dropped line means a stat was lost (a missed curse reads as "ok"), so it
+  // gets the deeper bucket instead of rotating out after four good scans.
+  else if (droppedAnyLine) outcome = "dropped";
+  dumpScanCrops(label, outcome, cardCrop, statCrop);
+
+  if (lowConfidenceResult) {
     if (options.label) {
       log.warn(
         `[RivenScan] YOLO+PaddleOCR ${options.label}: low confidence after all retries ` +
-          `(min=${bestResult.minConfidence.toFixed(3)}), returning error instead of wrong stats`,
+          `(min=${lowConfidenceResult.minConfidence.toFixed(3)}), returning error instead of wrong stats`,
       );
     }
     return { text: "", titleText: "", footerText: "", stats: [], lowConfidence: true };
@@ -254,8 +271,7 @@ export async function recognizeRivenCardStats(
     totalMs: Date.now() - totalStart,
   });
 
-  // Rivens have at least two stats; a lone survivor is a misread.
-  if (bestStats.length > 0 && bestStats.length < MIN_ACCEPTABLE_RIVEN_STATS) {
+  if (belowStatMinimum) {
     if (options.label) {
       log.warn(
         `[RivenScan] YOLO+PaddleOCR ${options.label}: only ${bestStats.length} stat(s) read, ` +
@@ -264,10 +280,6 @@ export async function recognizeRivenCardStats(
     }
     return { text: bestText, titleText: "", footerText: "", stats: [], lowConfidence: true };
   }
-
-  // Every scan, not only empty ones: a confident read of a badly cropped card
-  // looks perfect in the log, so the image is the only evidence that settles it.
-  dumpScanCrops(label, bestStats.length === 0 ? "empty" : "ok", cardCrop, statCrop);
 
   return { text: bestText, titleText: "", footerText: "", stats: bestStats, lowConfidence: false };
 }
