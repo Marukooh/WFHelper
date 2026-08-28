@@ -90,7 +90,10 @@ describe("createOverlayWindowsController", () => {
   });
 });
 
-function createWindowTypeProbe(platform: typeof process.platform) {
+function createWindowTypeProbe(
+  platform: typeof process.platform,
+  windowOptions: { transparent?: boolean; backgroundColor?: string } = {},
+) {
   const captured: Array<Record<string, unknown>> = [];
   const display = {
     id: 1,
@@ -147,6 +150,7 @@ function createWindowTypeProbe(platform: typeof process.platform) {
     hardenBrowserWindowNavigation: () => {},
     overlayWindowFile: "D:\\app\\renderer\\overlay.html",
     platform,
+    ...windowOptions,
   });
 
   return { controller, captured };
@@ -170,6 +174,38 @@ describe("overlay window type", () => {
 
     expect(captured).toHaveLength(1);
     expect(captured[0]).not.toHaveProperty("type");
+  });
+});
+
+describe("overlay window transparency", () => {
+  const opaqueRequest = { transparent: false, backgroundColor: "#060a12" };
+
+  it("makes an opaque-requested overlay transparent on linux", () => {
+    const { controller, captured } = createWindowTypeProbe("linux", opaqueRequest);
+
+    controller.createOverlayWindow({ show: false });
+
+    // Only a transparent window can blank instead of unmap on native Wayland.
+    expect(captured[0].transparent).toBe(true);
+    expect(captured[0].backgroundColor).toBeUndefined();
+  });
+
+  it("keeps the requested opaque window off linux", () => {
+    const { controller, captured } = createWindowTypeProbe("win32", opaqueRequest);
+
+    controller.createOverlayWindow({ show: false });
+
+    expect(captured[0].transparent).toBe(false);
+    expect(captured[0].backgroundColor).toBe("#060a12");
+  });
+
+  it("leaves an already transparent overlay alone off linux", () => {
+    const { controller, captured } = createWindowTypeProbe("win32");
+
+    controller.createOverlayWindow({ show: false });
+
+    expect(captured[0].transparent).toBe(true);
+    expect(captured[0].backgroundColor).toBeUndefined();
   });
 });
 
@@ -347,11 +383,13 @@ describe("keep-mapped presentation mode (native Wayland)", () => {
     vi.useRealTimers();
   });
 
-  it("activates only on linux native wayland with a transparent window", () => {
+  it("activates on native wayland, including the panels that ask to be opaque", () => {
     const cases = [
       { platform: "win32" as const, nativeWayland: false, keepMapped: false },
+      { platform: "win32" as const, nativeWayland: false, transparent: false, keepMapped: false },
       { platform: "linux" as const, nativeWayland: false, keepMapped: false },
-      { platform: "linux" as const, nativeWayland: true, transparent: false, keepMapped: false },
+      // Planner, riven and arbi request an opaque window; linux overrides that.
+      { platform: "linux" as const, nativeWayland: true, transparent: false, keepMapped: true },
       { platform: "linux" as const, nativeWayland: true, keepMapped: true },
     ];
     for (const testCase of cases) {
@@ -778,6 +816,28 @@ describe("keep-mapped presentation mode (native Wayland)", () => {
     expect(windows[0].destroy).not.toHaveBeenCalled();
   });
 
+  it("stops a blanked never-click-through window from eating clicks", () => {
+    const { controller, windows } = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      transparent: false,
+      neverClickThrough: true,
+    });
+
+    controller.createOverlayWindow();
+    controller.markRendererReady(1);
+    const win = windows[0];
+    win.setIgnoreMouseEvents.mockClear();
+
+    // The arbi summary stays mapped while blank, so it would swallow every
+    // click over the game unless the shape is dropped with the content.
+    controller.hideOverlayWindow();
+    expect(win.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
+
+    controller.showOverlayWindowInactive();
+    expect(win.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
+  });
+
   it("never makes a never-click-through window ignore the mouse", () => {
     const { controller, windows } = createPresentationProbe({
       platform: "linux",
@@ -793,29 +853,47 @@ describe("keep-mapped presentation mode (native Wayland)", () => {
     expect(windows[0].setIgnoreMouseEvents).not.toHaveBeenCalledWith(true);
   });
 
-  it("keeps the destroy-recreate re-show workaround off the wayland mode", () => {
-    for (const probeCase of [
-      { platform: "win32" as const, nativeWayland: false },
-      { platform: "linux" as const, nativeWayland: false },
-    ]) {
-      const { controller, windows, contentEvents } = createPresentationProbe(probeCase);
+  it("keeps the destroy-recreate re-show workaround on Windows only", () => {
+    const { controller, windows, contentEvents } = createPresentationProbe({
+      platform: "win32",
+      nativeWayland: false,
+    });
 
-      controller.createOverlayWindow();
-      controller.markRendererReady(1);
-      const first = windows[0];
+    controller.createOverlayWindow();
+    controller.markRendererReady(1);
+    const first = windows[0];
 
-      controller.hideOverlayWindow();
-      expect(first.hide).toHaveBeenCalledTimes(1);
+    controller.hideOverlayWindow();
+    expect(first.hide).toHaveBeenCalledTimes(1);
 
-      controller.createOverlayWindow();
-      expect(first.destroy).toHaveBeenCalledTimes(1);
-      expect(windows).toHaveLength(2);
-      expect(contentEvents(first)).toHaveLength(0);
-      expect(contentEvents(windows[1])).toHaveLength(0);
+    controller.createOverlayWindow();
+    expect(first.destroy).toHaveBeenCalledTimes(1);
+    expect(windows).toHaveLength(2);
+    expect(contentEvents(first)).toHaveLength(0);
+    expect(contentEvents(windows[1])).toHaveLength(0);
 
-      controller.showOverlayWindowInactive();
-      expect(windows[1].showInactive.mock.calls.length).toBeGreaterThan(0);
-    }
+    controller.showOverlayWindowInactive();
+    expect(windows[1].showInactive.mock.calls.length).toBeGreaterThan(0);
+  });
+
+  // Rebuilding on X11 would map a fresh window per popup, which is the focus
+  // steal keep-mapped mode exists to avoid; the black box is a Windows artefact.
+  it("re-shows a transparent linux window instead of rebuilding it", () => {
+    const { controller, windows } = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: false,
+    });
+
+    controller.createOverlayWindow();
+    controller.markRendererReady(1);
+    const win = windows[0];
+
+    controller.hideOverlayWindow();
+    controller.createOverlayWindow();
+
+    expect(win.destroy).not.toHaveBeenCalled();
+    expect(windows).toHaveLength(1);
+    expect(win.showInactive.mock.calls.length).toBeGreaterThan(1);
   });
 
   it("passive interactive-mode exit still re-shows off the wayland mode", () => {

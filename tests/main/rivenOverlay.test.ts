@@ -32,6 +32,15 @@ describe("riven overlay startup", () => {
     expect(sessionOpen).not.toContain("show: false");
   });
 
+  it("reuses keep-mapped panels instead of rebuilding them on reopen", () => {
+    // A rebuild re-maps the window, and every native-Wayland map steals focus
+    // from the game, which is the whole reason keep-mapped mode exists.
+    const createFn =
+      rivenOverlayIpcSource.match(/function createRivenOverlayWindows\([\s\S]*?\n\}\n/)?.[0] ?? "";
+    expect(createFn).toContain("isKeepMappedActive()");
+    expect(createFn).toMatch(/!keepMapped &&[\s\S]*?existLeft\.destroy\(\)/);
+  });
+
   it("routes renderer-ready through the controller so first-load zoom applies", () => {
     // Riven replays its own events, so without this call the controller's
     // markRendererReady never runs and the zoom the navigation commit reset

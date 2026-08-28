@@ -21,9 +21,12 @@
   box-sizing: border-box;
 }
 
+/* #panel paints the surface, never the page: an html or body background
+   propagates to the canvas, where visibility:hidden cannot blank it and a
+   keep-mapped Wayland hide would leave a dark box over the game. */
 html,
 body {
-  background: var(--bg);
+  background: transparent;
   font-family: var(--font-body, "Barlow", "Segoe UI", system-ui, sans-serif);
   font-size: var(--font-body-size, 0.92rem);
   color: var(--text);

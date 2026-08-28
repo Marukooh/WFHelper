@@ -301,8 +301,14 @@ function createRivenOverlayWindows(options: { show?: boolean } = {}): void {
   // If both already exist, just bring them to front
   const existLeft = ctx.rivenOverlayLeftWindow;
   const existRight = ctx.rivenOverlayRightWindow;
+  // Keep-mapped panels never unmapped, so rebuilding them would pay the
+  // focus-stealing map that the mode exists to avoid.
+  const keepMapped =
+    rivenLeftWindowsController.isKeepMappedActive() &&
+    rivenRightWindowsController.isKeepMappedActive();
   if (existLeft && !existLeft.isDestroyed() && existRight && !existRight.isDestroyed()) {
     if (
+      !keepMapped &&
       options.show !== false &&
       (!rivenLeftWindowsController.isOverlayWindowVisible() ||
         !rivenRightWindowsController.isOverlayWindowVisible())
@@ -310,6 +316,9 @@ function createRivenOverlayWindows(options: { show?: boolean } = {}): void {
       existLeft.destroy();
       existRight.destroy();
     } else {
+      // Reusing panels an alt-tab hid would otherwise leave the restore armed
+      // against windows this session is already showing.
+      clearUnfocusHide(null);
       for (const { win, controller } of rivenWindowEntries()) {
         if (!win || win.isDestroyed()) continue;
         applyOverlayZOrder(win, true);

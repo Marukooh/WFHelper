@@ -76,9 +76,9 @@ type OverlayWindowsControllerOptions = {
   minWindowWidth?: number;
   minWindowHeight?: number;
   hasShadow?: boolean;
-  /** When false the window gets a solid background (default: true = transparent). */
+  /** When false the window gets a solid background off linux (default: true = transparent). */
   transparent?: boolean;
-  /** Background colour used when transparent=false (default: '#060a12'). */
+  /** Background colour used when the window is opaque (default: '#060a12'). */
   backgroundColor?: string;
   windowStateKey?: OverlayWindowKey;
   onWindowBoundsChanged?: (
@@ -170,6 +170,11 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     isNativeWayland = linuxIsNativeWayland,
   } = options;
 
+  // Every linux overlay is transparent whatever the caller asked for: only a
+  // transparent window can be blanked instead of unmapped on native Wayland,
+  // where each map steals game focus. The solid panel lives in the overlay CSS.
+  const transparentWindow = transparent || platform === "linux";
+
   let lastOverlayAnchorMeta: OverlayAnchorMeta | null = null;
   let overlayAutoHideTimer: ReturnType<typeof setTimeout> | null = null;
   let overlayAutoHideAt = 0;
@@ -189,7 +194,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   let raiseReassertTimers: Array<ReturnType<typeof setTimeout>> = [];
   const keepMapped = createKeepMappedMode({
     label: `OverlayWindow ${windowLabel}`,
-    transparent,
+    transparent: transparentWindow,
     platform,
     isNativeWayland,
     log,
@@ -484,8 +489,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     return keepMapped.isActive();
   }
 
-  function applyClickThrough(overlayWindow: import("electron").BrowserWindow): void {
-    if (neverClickThrough) return;
+  function applyClickThrough(overlayWindow: import("electron").BrowserWindow, force = false): void {
+    if (neverClickThrough && !force) return;
     clickThroughApplied = true;
     // Re-setting an identical X11 input shape tells the compositor nothing, so the
     // region is dropped first - that is the transition F7 makes by hand.
@@ -565,6 +570,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   function showKeepMapped(overlayWindow: import("electron").BrowserWindow): void {
     keepMapped.present(overlayWindow, setKeepMappedContentVisible);
     keepOverlayAboveGame(overlayWindow);
+    // Blanking forces click-through even on a never-click-through window, so
+    // restoring the content has to hand its input back.
+    if (neverClickThrough) overlayWindow.setIgnoreMouseEvents(false);
   }
 
   function isWebContentsCrashed(webContents: import("electron").WebContents): boolean {
@@ -609,11 +617,11 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     if (destroyIfRendererCrashed(existingWindow)) {
       existingWindow = null;
     }
-    // transparent windows re-show as a black box on Windows, so rebuild those; opaque ones are reused
-    // (keep-mapped never unmaps, so the black-box path cannot occur there)
+    // The black box is a Windows-only re-show artifact, so only Windows rebuilds.
+    // Elsewhere a rebuild would cost a fresh map, which is a focus steal on linux.
     if (
-      !isKeepMappedActive() &&
-      transparent &&
+      platform === "win32" &&
+      transparentWindow &&
       shouldShow &&
       existingWindow &&
       !existingWindow.isDestroyed() &&
@@ -662,8 +670,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       x: initialBounds.x,
       y: initialBounds.y,
       show: false,
-      transparent,
-      backgroundColor: transparent ? undefined : backgroundColor,
+      transparent: transparentWindow,
+      backgroundColor: transparentWindow ? undefined : backgroundColor,
       frame: false,
       alwaysOnTop: true,
       skipTaskbar: true,
@@ -790,7 +798,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     const overlayWindow = readOverlayWindow();
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
     if (keepMapped.hide(overlayWindow, setKeepMappedContentVisible)) {
-      applyClickThrough(overlayWindow);
+      // A blanked window is still mapped, so it would swallow clicks meant for
+      // the game. Wayland can undo this shape; only X11 could not.
+      applyClickThrough(overlayWindow, true);
       // Still mapped, so an interactive window would hold focus away from the game.
       overlayWindow.blur();
       overlayWindow.setFocusable(false);
@@ -918,6 +928,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     setAnchorMeta,
     getAnchorMeta,
     setOverlayInteractiveMode,
+    isKeepMappedActive,
     isOverlayWindowVisible,
     hideOverlayWindow,
     showOverlayWindowInactive,
