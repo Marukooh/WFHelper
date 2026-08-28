@@ -17,20 +17,49 @@ let interval: ReturnType<typeof setInterval> | null = null;
 let polling = false;
 let lastFocused: boolean | null = null;
 
+// On X11 isAlwaysOnTop() reports _NET_WM_STATE, so a compositor that ignores
+// _NET_WM_STATE_ABOVE never reports it back and the raise gate below never
+// closes. Remembering what was applied is what stops the poll from restacking
+// over the fullscreen game every tick. Off linux the live style is authority.
+const linuxRaiseApplied = new WeakMap<OverlayWindow, boolean>();
+let loggedLinuxRaise = false;
+
+/** Raised as far as this platform can tell: WM state, or what we last applied. */
+function isRaised(win: OverlayWindow, platform: NodeJS.Platform): boolean {
+  if (platform !== "linux") return win.isAlwaysOnTop();
+  return win.isAlwaysOnTop() || linuxRaiseApplied.get(win) === true;
+}
+
 // isAlwaysOnTop() is a cache; Windows strips WS_EX_TOPMOST from a clicked
 // overlay. Gate on the live style; a raised window gates out next tick.
-export function applyOverlayZOrder(win: OverlayWindow, warframeFocused: boolean): void {
+export function applyOverlayZOrder(
+  win: OverlayWindow,
+  warframeFocused: boolean,
+  platform: NodeJS.Platform = process.platform,
+): void {
+  const linux = platform === "linux";
   if (warframeFocused) {
-    if (warframeStatus.isWindowTopmost(win.getNativeWindowHandle()) ?? win.isAlwaysOnTop()) return;
+    if (linux) {
+      if (isRaised(win, platform)) return;
+    } else if (warframeStatus.isWindowTopmost(win.getNativeWindowHandle()) ?? win.isAlwaysOnTop()) {
+      return;
+    }
     // Taskbar state is set when the window is shown and survives a focus flip.
     // Every window call on this path is another chance for an injected hook to
     // be on the stack, so it re-asserts stacking only and nothing else.
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     win.setAlwaysOnTop(true, "screen-saver");
     win.moveTop();
-  } else if (win.isAlwaysOnTop()) {
+    if (!linux) return;
+    linuxRaiseApplied.set(win, true);
+    // Named once so a support log shows the raise ran and then went quiet.
+    if (loggedLinuxRaise) return;
+    loggedLinuxRaise = true;
+    log.info("[ZOrder] linux raise applied; re-asserted on show and drift only");
+  } else if (isRaised(win, platform)) {
     win.setAlwaysOnTop(false);
     win.setVisibleOnAllWorkspaces(false);
+    if (linux) linuxRaiseApplied.set(win, false);
   }
 }
 
@@ -44,13 +73,20 @@ export function syncOverlayWindowZOrder(
   controller: ZOrderWindowsController,
   win: OverlayWindow | null,
   warframeFocused: boolean,
+  platform: NodeJS.Platform = process.platform,
 ): void {
-  if (!win || win.isDestroyed() || !controller.isOverlayWindowVisible()) return;
+  if (!win || win.isDestroyed()) return;
+  if (!controller.isOverlayWindowVisible()) {
+    // A hide costs the window its stacking, so the remembered raise must not
+    // outlive it or the next show would never be re-asserted on linux.
+    linuxRaiseApplied.delete(win);
+    return;
+  }
   // A released hold-open schedules its hide 2.5s out, and re-stacking a window
   // already being torn down is what crashed under an injected hook.
   const hideDueIn = controller.overlayHideDueIn();
   if (hideDueIn !== null && hideDueIn <= HIDE_IMMINENT_MS) return;
-  applyOverlayZOrder(win, warframeFocused);
+  applyOverlayZOrder(win, warframeFocused, platform);
 }
 
 async function poll(): Promise<void> {
@@ -92,4 +128,5 @@ app.once("before-quit", () => {
   interval = null;
   subscribers.clear();
   lastFocused = null;
+  loggedLinuxRaise = false;
 });
