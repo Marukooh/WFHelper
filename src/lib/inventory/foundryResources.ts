@@ -281,7 +281,8 @@ const CHAIN_MAX_DEPTH = 4;
 
 /** Blueprint rows whose whole crafting chain is craftable right now: every
  *  missing ingredient is either owned or has an owned blueprint plus enough
- *  resources, all drawn from one shared pool so parts cannot double-spend. */
+ *  resources, all drawn from one shared pool so neither resources nor blueprint
+ *  copies can double-spend. */
 export function chainBuildableBlueprints(
   recipes: FoundryRecipeItem[],
   owned: ReadonlyMap<string, number>,
@@ -299,6 +300,7 @@ export function chainBuildableBlueprints(
     ingredients: RecipeIngredient[],
     multiplier: number,
     pool: Map<string, number>,
+    blueprints: Map<string, number>,
     stack: Set<string>,
   ): boolean {
     for (const ing of ingredients) {
@@ -314,8 +316,19 @@ export function chainBuildableBlueprints(
       if (stack.has(ing.uniqueName) || stack.size >= CHAIN_MAX_DEPTH) return false;
       const perBuild = itemDb[ing.uniqueName]?.recipe?.num || 1;
       const builds = Math.ceil(deficit / perBuild);
+      // A run burns its blueprint unless DE marks it consumeOnUse=false, so N runs
+      // of one part need N owned copies. The row count is the copies in hand.
+      const bpUn = sub.uniqueName;
+      const reusable =
+        itemDb[ing.uniqueName]?.recipe?.reusableBlueprint === true ||
+        (bpUn != null && itemDb[bpUn]?.reusableBlueprint === true);
+      if (!reusable) {
+        const copies = blueprints.get(ing.uniqueName) ?? sub.count;
+        if (copies < builds) return false;
+        blueprints.set(ing.uniqueName, copies - builds);
+      }
       stack.add(ing.uniqueName);
-      const ok = satisfy(sub.ingredients, builds, pool, stack);
+      const ok = satisfy(sub.ingredients, builds, pool, blueprints, stack);
       stack.delete(ing.uniqueName);
       if (!ok) return false;
     }
@@ -328,9 +341,24 @@ export function chainBuildableBlueprints(
     const productUn = recipe.productUniqueName;
     // Loose parts stay hidden from the full-set view, so skip them here too.
     if (!productUn || itemDb[productUn]?.componentOf) continue;
-    if (satisfy(recipe.ingredients, 1, new Map(owned), new Set())) {
+    if (satisfy(recipe.ingredients, 1, new Map(owned), new Map(), new Set())) {
       result.add(recipe.uniqueName);
     }
   }
   return result;
+}
+
+/** Whether a foundry row can be started now: every ingredient in hand, or the
+ *  whole chain craftable from owned blueprints. DE names an ingredient
+ *  ...Component while the inventory holds the ...Blueprint it is built from, so
+ *  the card status and the full-set filter must share this one predicate. */
+export function isFoundryRecipeReady(
+  recipe: Pick<FoundryRecipeItem, "uniqueName" | "ingredients">,
+  owned: ReadonlyMap<string, number>,
+  chainBuildable: ReadonlySet<string>,
+): boolean {
+  if (recipe.ingredients.length === 0) return false;
+  const allOwned = recipe.ingredients.every((ing) => (owned.get(ing.uniqueName) ?? 0) >= ing.count);
+  if (allOwned) return true;
+  return recipe.uniqueName != null && chainBuildable.has(recipe.uniqueName);
 }

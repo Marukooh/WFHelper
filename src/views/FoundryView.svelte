@@ -38,6 +38,7 @@
   import {
     chainBuildableBlueprints,
     EQUIPMENT_CATEGORY_ORDER,
+    isFoundryRecipeReady,
   } from "../lib/inventory/foundryResources.js";
   import { sharedFilters, updateSharedFilters } from "../stores/filters.js";
   import { tr } from "../lib/i18n.js";
@@ -215,16 +216,14 @@
   $: productOwnedLookup = buildProductOwnedLookup($parsedItems);
   $: masteryLookup = buildMasteryLookup($masteryData);
 
-  function statusOf(entry: FoundryEntry, now: number): ItemStatus {
+  // chainBuildable is passed in: a $: statement tracks only what it names
+  // textually, so reading it here would leave every status stale.
+  function statusOf(entry: FoundryEntry, now: number, chainSets: ReadonlySet<string>): ItemStatus {
     if (entry.source === "building") {
       if (entry.endDate && entry.endDate.getTime() <= now) return "claimable";
       return "in-progress";
     }
-    if (!entry.ingredients.length) return "not-ready";
-    const allOwned = entry.ingredients.every(
-      (ing) => (ownedMap.get(ing.uniqueName) ?? 0) >= ing.count,
-    );
-    return allOwned ? "ready-to-build" : "not-ready";
+    return isFoundryRecipeReady(entry, ownedMap, chainSets) ? "ready-to-build" : "not-ready";
   }
 
   function normalizeLookupKey(value: string | null | undefined): string {
@@ -260,7 +259,7 @@
     }
   }
 
-  $: decorated = allEntries.map((e) => ({ e, status: statusOf(e, nowMs) }));
+  $: decorated = allEntries.map((e) => ({ e, status: statusOf(e, nowMs, chainBuildable) }));
 
   // Search matches materials anywhere in the crafting tree: "rubedo" finds every
   // entry whose recipe - or a sub-part's recipe - consumes rubedo.
@@ -286,7 +285,6 @@
     vaulted: boolean;
     foundryState: FoundryState;
     looseComponent: boolean;
-    setBuildable: boolean;
     subsumed: boolean | undefined;
   } {
     const db = row.e.productUniqueName ? $itemDb[row.e.productUniqueName] : null;
@@ -306,10 +304,6 @@
       foundryState: FOUNDRY_STATE_BY_STATUS[row.status],
       // A part blueprint belongs to a parent, so the full-set view hides it.
       looseComponent: Boolean(db?.componentOf),
-      setBuildable:
-        row.e.source === "blueprint" &&
-        row.e.uniqueName != null &&
-        chainBuildable.has(row.e.uniqueName),
       subsumed:
         row.e.category === "Warframe" && isSubsumableFrame(row.e.name)
           ? isFrameSubsumed(row.e.name, subsumedFamilies)

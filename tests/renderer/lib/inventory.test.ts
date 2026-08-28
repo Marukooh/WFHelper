@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { aggregateComponentOwnership } from "../../../config/shared/componentOwnership.js";
 import { withoutFoundryPending } from "../../../config/shared/foundryPending.js";
 import { parseFoundry, parseInventory, parseResources } from "../../../src/lib/inventory.js";
-import { chainBuildableBlueprints } from "../../../src/lib/inventory/foundryResources.js";
+import {
+  chainBuildableBlueprints,
+  isFoundryRecipeReady,
+} from "../../../src/lib/inventory/foundryResources.js";
 import { buildFullSetItems, setRootOf } from "../../../src/lib/inventory/fullSets.js";
 import { shouldHydrateMetrics } from "../../../src/lib/inventoryMarket.js";
 import { gameRefKey } from "../../../src/lib/marketNaming.js";
@@ -1462,7 +1466,8 @@ describe("chainBuildableBlueprints", () => {
       "/item/Thing",
       yieldDb["/item/Thing"].recipe!.ingredients,
     );
-    const partBp = recipeRow("/bp/Part", PART, yieldDb[PART].recipe!.ingredients);
+    // Two builds burn two blueprint copies, so hold the yield math to that.
+    const partBp = { ...recipeRow("/bp/Part", PART, yieldDb[PART].recipe!.ingredients), count: 2 };
 
     // 15 parts = 2 builds of 10, consuming 4 ferrite.
     expect(
@@ -1475,5 +1480,214 @@ describe("chainBuildableBlueprints", () => {
         "/bp/Thing",
       ),
     ).toBe(false);
+    // One copy cannot cover both builds.
+    expect(
+      chainBuildableBlueprints(
+        [thingBp, { ...partBp, count: 1 }],
+        new Map([[FERRITE, 4]]),
+        yieldDb,
+      ).has("/bp/Thing"),
+    ).toBe(false);
+  });
+});
+
+// K.'s report: "Can build (full set)" listed three primes that every card in the
+// list labelled "Missing parts" with 0/1 on each part. DE names a recipe
+// ingredient ...Component but the inventory only ever holds the ...Blueprint it
+// is built from, so the row status and the filter must read the same predicate.
+describe("foundry set readiness", () => {
+  const FRAME = "/Lotus/Powersuits/Test/TestPrime";
+  const FRAME_BP = "/Lotus/Types/Recipes/WarframeRecipes/TestPrimeBlueprint";
+  const CELL = "/Lotus/Types/Items/MiscItems/OrokinCell";
+  const RUBEDO = "/Lotus/Types/Items/MiscItems/Rubedo";
+  const PARTS = ["Helmet", "Chassis", "Systems"] as const;
+  const partComponent = (part: string) =>
+    `/Lotus/Types/Recipes/WarframeRecipes/TestPrime${part}Component`;
+  const partBlueprint = (part: string) =>
+    `/Lotus/Types/Recipes/WarframeRecipes/TestPrime${part}Blueprint`;
+
+  const db: Record<string, ItemDbEntry> = {
+    [FRAME]: {
+      name: "Test Prime",
+      recipe: {
+        buildPrice: 25000,
+        buildTime: 259200,
+        num: 1,
+        blueprintUniqueName: FRAME_BP,
+        ingredients: [
+          ...PARTS.map((part) => ({ uniqueName: partComponent(part), count: 1 })),
+          { uniqueName: CELL, count: 3 },
+        ],
+      },
+    } as ItemDbEntry,
+  };
+  for (const part of PARTS) {
+    db[partComponent(part)] = {
+      name: `Test Prime ${part}`,
+      componentOf: FRAME,
+      recipe: {
+        buildPrice: 0,
+        buildTime: 0,
+        num: 1,
+        blueprintUniqueName: partBlueprint(part),
+        ingredients: [{ uniqueName: RUBEDO, count: 100 }],
+      },
+    } as ItemDbEntry;
+  }
+
+  function readiness(inventory: RawInventoryData) {
+    const foundry = parseFoundry(inventory, db);
+    const owned = aggregateComponentOwnership(inventory.MiscItems, inventory.Recipes);
+    const chain = chainBuildableBlueprints(foundry.recipes, owned, db);
+    const frame = foundry.recipes.find((r) => r.uniqueName === FRAME_BP);
+    expect(frame).toBeDefined();
+    return {
+      chainBuildable: chain.has(FRAME_BP),
+      ready: isFoundryRecipeReady(frame!, owned, chain),
+    };
+  }
+
+  it("reports a frame ready when its parts are still craftable from owned blueprints", () => {
+    const { chainBuildable, ready } = readiness({
+      Recipes: [
+        { ItemType: FRAME_BP, ItemCount: 13 },
+        ...PARTS.map((part) => ({ ItemType: partBlueprint(part), ItemCount: 1 })),
+      ],
+      MiscItems: [
+        { ItemType: CELL, ItemCount: 1200 },
+        { ItemType: RUBEDO, ItemCount: 300 },
+      ],
+    } as RawInventoryData);
+
+    // The filter admits it, so the card must not read "Missing parts".
+    expect(chainBuildable).toBe(true);
+    expect(ready).toBe(true);
+  });
+
+  it("reports a frame ready when the built parts are already in hand", () => {
+    const { ready } = readiness({
+      Recipes: [{ ItemType: FRAME_BP, ItemCount: 1 }],
+      MiscItems: [
+        { ItemType: CELL, ItemCount: 1200 },
+        ...PARTS.map((part) => ({ ItemType: partComponent(part), ItemCount: 1 })),
+      ],
+    } as RawInventoryData);
+
+    expect(ready).toBe(true);
+  });
+
+  it("keeps a frame unready when only the bulk resource is owned", () => {
+    const { chainBuildable, ready } = readiness({
+      Recipes: [{ ItemType: FRAME_BP, ItemCount: 13 }],
+      MiscItems: [{ ItemType: CELL, ItemCount: 1200 }],
+    } as RawInventoryData);
+
+    expect(chainBuildable).toBe(false);
+    expect(ready).toBe(false);
+  });
+
+  it("keeps a frame unready when a part blueprint cannot be built", () => {
+    const { chainBuildable, ready } = readiness({
+      Recipes: [
+        { ItemType: FRAME_BP, ItemCount: 13 },
+        ...PARTS.map((part) => ({ ItemType: partBlueprint(part), ItemCount: 1 })),
+      ],
+      MiscItems: [
+        { ItemType: CELL, ItemCount: 1200 },
+        { ItemType: RUBEDO, ItemCount: 250 },
+      ],
+    } as RawInventoryData);
+
+    expect(chainBuildable).toBe(false);
+    expect(ready).toBe(false);
+  });
+
+  // A build burns its blueprint, so a part wanted twice wants two copies unless
+  // DE marks the recipe consumeOnUse=false.
+  describe("part blueprint copies", () => {
+    const GUN = "/Lotus/Weapons/Test/AktestPrime";
+    const GUN_BP = "/Lotus/Types/Recipes/Weapons/AktestPrimeBlueprint";
+    const LINK = "/Lotus/Types/Recipes/Weapons/AktestPrimeLinkComponent";
+    const LINK_BP = "/Lotus/Types/Recipes/Weapons/AktestPrimeLinkBlueprint";
+
+    type ReusableFlag = "none" | "recipe" | "blueprint";
+
+    function gunDb(reusable: ReusableFlag): Record<string, ItemDbEntry> {
+      return {
+        [GUN]: {
+          name: "Aktest Prime",
+          recipe: {
+            buildPrice: 0,
+            buildTime: 0,
+            num: 1,
+            blueprintUniqueName: GUN_BP,
+            ingredients: [
+              { uniqueName: LINK, count: 2 },
+              { uniqueName: CELL, count: 2 },
+            ],
+          },
+        } as ItemDbEntry,
+        [LINK]: {
+          name: "Aktest Prime Link",
+          componentOf: GUN,
+          recipe: {
+            buildPrice: 0,
+            buildTime: 0,
+            num: 1,
+            blueprintUniqueName: LINK_BP,
+            ...(reusable === "recipe" ? { reusableBlueprint: true } : {}),
+            ingredients: [{ uniqueName: RUBEDO, count: 100 }],
+          },
+        } as ItemDbEntry,
+        [LINK_BP]: {
+          name: "Aktest Prime Link Blueprint",
+          ...(reusable === "blueprint" ? { reusableBlueprint: true } : {}),
+        } as ItemDbEntry,
+      };
+    }
+
+    function gunReadiness(linkCopies: number, builtLinks: number, reusable: ReusableFlag = "none") {
+      const db = gunDb(reusable);
+      const inventory: RawInventoryData = {
+        Recipes: [
+          { ItemType: GUN_BP, ItemCount: 1 },
+          { ItemType: LINK_BP, ItemCount: linkCopies },
+        ],
+        MiscItems: [
+          { ItemType: CELL, ItemCount: 10 },
+          { ItemType: RUBEDO, ItemCount: 500 },
+          ...(builtLinks > 0 ? [{ ItemType: LINK, ItemCount: builtLinks }] : []),
+        ],
+      };
+      const foundry = parseFoundry(inventory, db);
+      const owned = aggregateComponentOwnership(inventory.MiscItems, inventory.Recipes);
+      const chain = chainBuildableBlueprints(foundry.recipes, owned, db);
+      const gun = foundry.recipes.find((r) => r.uniqueName === GUN_BP);
+      expect(gun).toBeDefined();
+      return {
+        chainBuildable: chain.has(GUN_BP),
+        ready: isFoundryRecipeReady(gun!, owned, chain),
+      };
+    }
+
+    it("keeps a weapon unready when one consumed blueprint must cover two parts", () => {
+      const { chainBuildable, ready } = gunReadiness(1, 0);
+
+      expect(chainBuildable).toBe(false);
+      expect(ready).toBe(false);
+    });
+
+    it("accepts a second copy of the part blueprint", () => {
+      expect(gunReadiness(2, 0).ready).toBe(true);
+    });
+
+    it("accepts one built part plus one blueprint", () => {
+      expect(gunReadiness(1, 1).ready).toBe(true);
+    });
+
+    it("accepts a single reusable part blueprint", () => {
+      expect(gunReadiness(1, 0, "recipe").ready).toBe(true);
+      expect(gunReadiness(1, 0, "blueprint").ready).toBe(true);
+    });
   });
 });
