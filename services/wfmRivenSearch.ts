@@ -246,17 +246,23 @@ export async function createRivenAuction(
   }
 }
 
+// WFM has no auction delete: its own remove button PUTs this close route, and
+// v1 answers 405 to DELETE on /auctions/entry/{id}. A failure is reported as-is
+// because a 404 means the auction is already gone or is not ours, and probing a
+// second route would fire another account-mutating call for nothing.
 export async function deleteRivenAuction(
   auctionId: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  const path = `/auctions/entry/${encodeURIComponent(auctionId)}/close`;
+  log.info(`[WfmRivenSearch] Closing auction ${auctionId}`);
   try {
-    log.info(`[WfmRivenSearch] Deleting auction ${auctionId}`);
-    await wfmClient.request("DELETE", `/auctions/entry/${encodeURIComponent(auctionId)}`);
+    await wfmClient.request("PUT", path);
+    log.info(`[WfmRivenSearch] Closed auction ${auctionId}`);
     return { ok: true };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log.warn(`[WfmRivenSearch] Delete auction failed for ${auctionId}:`, msg);
-    return { ok: false, error: msg };
+    const error = err instanceof Error ? err.message : String(err);
+    log.warn(`[WfmRivenSearch] PUT ${path} failed:`, error);
+    return { ok: false, error };
   }
 }
 
