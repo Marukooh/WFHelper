@@ -8,8 +8,10 @@ import type {
 
 import {
   CATEGORIES,
+  MODULAR_COLLECTION_KEYS,
   SUPPLEMENTAL_COLLECTIONS,
   resolveItem,
+  resolveModularBuild,
   shouldHide,
   deriveGroup,
   inferCategory,
@@ -74,10 +76,11 @@ export function parseInventory(
     const internalName = entry.ItemType;
     const resolved = resolveItem(internalName, itemDb);
     const dbEntry = itemDb[internalName] || {};
+    const modular = resolveModularBuild(sourceKey, entry, internalName, itemDb);
 
     const marketListed = marketGameRefs.has(gameRefKey(internalName));
-    if (shouldHide(internalName, dbEntry, resolved, marketListed)) return;
-    if (isResourceItem(internalName, dbEntry, resolved)) return;
+    if (!modular && shouldHide(internalName, dbEntry, resolved, marketListed)) return;
+    if (!modular && isResourceItem(internalName, dbEntry, resolved)) return;
 
     let group = deriveGroup(sourceKey, internalName, dbEntry, resolved);
     // With the catalog loaded, an unlisted recipe row is a crafted component nobody
@@ -89,7 +92,11 @@ export function parseInventory(
     let finalCat = inferCategory(internalName, defaultCat, dbEntry);
     let finalLabel = CATEGORIES.find((c) => c.cat === finalCat)?.label || defaultLabel;
 
-    if (group === "arcanes") {
+    if (modular) {
+      group = "equipment";
+      finalCat = modular.category;
+      finalLabel = modular.categoryLabel;
+    } else if (group === "arcanes") {
       finalCat = "arcanes";
       finalLabel = "Arcane";
     } else if (group === "mods") {
@@ -135,15 +142,37 @@ export function parseInventory(
         ? equipped
         : (configEquipped ?? (equippedIn.length > 0 ? true : undefined));
 
-    const englishName = canonicalBuildPartName(internalName, resolved.name);
+    const englishName = modular
+      ? modular.name
+      : canonicalBuildPartName(internalName, resolved.name);
 
     const dbDucats =
       typeof dbEntry.ducats === "number" && Number.isFinite(dbEntry.ducats) ? dbEntry.ducats : null;
 
-    const instanceKey = toRankedInstanceKey(internalName, group, rank, maxRank);
+    // Two kitguns share one ItemType, so a build is keyed by its instance and
+    // only falls back to the fitted parts when the payload carries no ItemId.
+    const instanceKey = modular
+      ? `${internalName}#b${instanceId ?? modular.partNames.join("|")}`
+      : toRankedInstanceKey(internalName, group, rank, maxRank);
+
+    // For recipe paths the catalog is the authority: WFM lists the exact
+    // uniqueName it trades (frame parts only as ...Blueprint, weapon parts
+    // bare), so a crafted ...Component never shows as sellable. The item-DB
+    // flag covers the row until the catalog has loaded.
+    const catalogTradable = recipePath
+      ? marketGameRefs.size > 0
+        ? marketListed
+        : (dbEntry.tradable ?? resolved.isPrime ?? false)
+      : isMarketListedMissionKey(internalName, marketListed) ||
+        (dbEntry.tradable ?? resolved.isPrime ?? false);
 
     const rawXp = Number(entry.XP || 0);
-    if (group === "equipment" && rank === 0 && (!Number.isFinite(rawXp) || rawXp <= 0)) {
+    if (
+      !modular &&
+      group === "equipment" &&
+      rank === 0 &&
+      (!Number.isFinite(rawXp) || rawXp <= 0)
+    ) {
       sellableEquipmentCounts.set(
         internalName,
         (sellableEquipmentCounts.get(internalName) || 0) + amount,
@@ -159,21 +188,13 @@ export function parseInventory(
       categoryLabel: finalLabel,
       rank,
       maxRank,
-      imageUrl: resolved.imageUrl ?? null,
+      imageUrl: modular ? modular.imageUrl : (resolved.imageUrl ?? null),
       isPrime: resolved.isPrime ?? false,
       partType: resolved.isPrime ? "prime" : "normal",
       masteryReq: resolved.masteryReq ?? 0,
       vaulted: resolved.vaulted ?? false,
-      // For recipe paths the catalog is the authority: WFM lists the exact
-      // uniqueName it trades (frame parts only as ...Blueprint, weapon parts
-      // bare), so a crafted ...Component never shows as sellable. The item-DB
-      // flag covers the row until the catalog has loaded.
-      tradable: recipePath
-        ? marketGameRefs.size > 0
-          ? marketListed
-          : (dbEntry.tradable ?? resolved.isPrime ?? false)
-        : isMarketListedMissionKey(internalName, marketListed) ||
-          (dbEntry.tradable ?? resolved.isPrime ?? false),
+      // A built modular item is account-bound; only its loose parts ever trade.
+      tradable: modular ? false : catalogTradable,
       amount,
       inventoryGroup: group,
       leveledUp: rank > 0 || leveledSignal,
@@ -181,11 +202,12 @@ export function parseInventory(
       components: Array.isArray(dbEntry.components) ? dbEntry.components : [],
       drops: Array.isArray(dbEntry.drops) ? dbEntry.drops : [],
       wikiaUrl: typeof dbEntry.wikiaUrl === "string" ? dbEntry.wikiaUrl : null,
-      ducats: dbDucats,
+      ducats: modular ? null : dbDucats,
       keywords: [sourceKey.toLowerCase()],
       inventoryKey: instanceKey,
     };
 
+    if (modular && modular.partNames.length > 0) nextItem.modularParts = modular.partNames;
     if (favorite !== undefined) nextItem.favorite = favorite;
     if (inferredEquipped !== undefined) nextItem.equipped = inferredEquipped;
     if (equippedIn.length > 0) nextItem.equippedIn = equippedIn;
@@ -232,6 +254,8 @@ export function parseInventory(
     }
   };
 
+  const record = data as Record<string, unknown>;
+
   for (const { key, cat, label } of CATEGORIES) {
     const entries = normalizeCollectionEntries(data[key]);
     if (entries.length === 0) continue;
@@ -240,7 +264,16 @@ export function parseInventory(
     }
   }
 
-  const record = data as Record<string, unknown>;
+  // Not in CATEGORIES: these collections also hold plain pets, so only the
+  // modular builds become rows.
+  for (const key of MODULAR_COLLECTION_KEYS) {
+    for (const entry of normalizeCollectionEntries(record[key])) {
+      if (!entry.ItemType) continue;
+      if (!resolveModularBuild(key, entry, entry.ItemType, itemDb)) continue;
+      addEntry(entry, key, "misc", "Misc");
+    }
+  }
+
   for (const { key, cat, label } of SUPPLEMENTAL_COLLECTIONS) {
     const entries = normalizeCollectionEntries(record[key]);
     if (entries.length === 0) continue;

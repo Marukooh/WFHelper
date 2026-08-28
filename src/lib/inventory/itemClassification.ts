@@ -3,7 +3,12 @@ import {
   fallbackNameFromUniqueName,
   sanitizeDisplayName,
 } from "../../../config/shared/displayName.js";
-import type { InventoryGroup, ItemDbEntry, RawInventoryData } from "../../types/inventory.js";
+import type {
+  InventoryGroup,
+  ItemDbEntry,
+  RawInventoryData,
+  RawInventoryEntry,
+} from "../../types/inventory.js";
 
 export interface ResolvedItem extends ItemDbEntry {
   name: string;
@@ -381,6 +386,90 @@ export function inferCategory(
     return defaultCat;
   }
   return mapped;
+}
+
+interface ModularBuild {
+  /** English display name, taken from the part that defines the build. */
+  name: string;
+  category: string;
+  categoryLabel: string;
+  /** The defining part's icon; a build of its own has none to show. */
+  imageUrl: string | null;
+  /** Every fitted part, resolved for display. */
+  partNames: string[];
+}
+
+interface ModularKind {
+  cat: string;
+  label: string;
+  /** Part the build is named after: chamber, strike, prism, deck, model head. */
+  definingPart: RegExp | null;
+}
+
+const MODULAR_KINDS: Record<string, ModularKind> = {
+  LongGuns: { cat: "primary", label: "Kitgun", definingPart: /\/Barrels?\//i },
+  Pistols: { cat: "secondary", label: "Kitgun", definingPart: /\/Barrels?\//i },
+  Melee: { cat: "melee", label: "Zaw", definingPart: /\/Tips?\//i },
+  OperatorAmps: { cat: "amps", label: "Amp", definingPart: /\/Barrel\//i },
+  // K-Drives have no filter chip of their own; Misc is where their parts sit.
+  Hoverboards: { cat: "misc", label: "K-Drive", definingPart: /Deck$/i },
+  MoaPets: { cat: "companions", label: "Moa", definingPart: /MoaPetHead/i },
+  KubrowPets: { cat: "companions", label: "Companion", definingPart: null },
+};
+
+// MoaPets stores Hounds too, and their model part is the Zanuka head.
+const HOUND_KIND: ModularKind = {
+  cat: "companions",
+  label: "Hound",
+  definingPart: /ZanukaPetPartHead/i,
+};
+
+/** Modular collections DE keeps outside CATEGORIES, so parseInventory walks
+ *  them separately and takes only the builds they hold. */
+export const MODULAR_COLLECTION_KEYS = ["Hoverboards", "MoaPets", "KubrowPets"];
+
+// Everything in these two is a build; elsewhere ModularParts is what tells a
+// build apart from a normal weapon or a plain kubrow.
+const ALWAYS_MODULAR_COLLECTIONS = new Set(["Hoverboards", "MoaPets"]);
+
+function modularPartList(entry: RawInventoryEntry): string[] {
+  const raw = (entry as { ModularParts?: unknown }).ModularParts;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((part): part is string => typeof part === "string" && part.length > 0);
+}
+
+/** A built kitgun/zaw/amp/K-Drive/Moa: DE stores it under a generic ItemType
+ *  with the fitted parts in ModularParts, so the name has to come from a part. */
+export function resolveModularBuild(
+  sourceKey: string,
+  entry: RawInventoryEntry,
+  internalName: string,
+  itemDb: Record<string, ItemDbEntry>,
+): ModularBuild | null {
+  const kind =
+    sourceKey === "MoaPets" && /\/ZanukaPets\//i.test(internalName)
+      ? HOUND_KIND
+      : MODULAR_KINDS[sourceKey];
+  if (!kind) return null;
+
+  const parts = modularPartList(entry);
+  if (parts.length === 0 && !ALWAYS_MODULAR_COLLECTIONS.has(sourceKey)) return null;
+
+  const pattern = kind.definingPart;
+  const defining = pattern ? parts.find((part) => pattern.test(part)) : undefined;
+  const definingEntry = itemDb[defining ?? ""];
+  const baseEntry = itemDb[internalName];
+  const name = definingEntry?.name || baseEntry?.name || kind.label;
+
+  return {
+    name: sanitizeDisplayName(name),
+    category: kind.cat,
+    categoryLabel: kind.label,
+    imageUrl: definingEntry?.imageUrl ?? baseEntry?.imageUrl ?? null,
+    partNames: parts.map((part) =>
+      sanitizeDisplayName(itemDb[part]?.name || fallbackNameFromUniqueName(part)),
+    ),
+  };
 }
 
 export function deriveGroup(

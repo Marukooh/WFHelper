@@ -266,6 +266,19 @@
           </div>
         {/if}
 
+        {#if (item.modularParts || []).length > 0}
+          <div class="detail-section">
+            <h3>{$tr("detail.components")}</h3>
+            <ul class="m-0 list-none p-0 text-sm text-text-secondary">
+              {#each item.modularParts || [] as part}
+                <li class="border-b border-dashed border-white/[0.08] py-1.5 last:border-b-0">
+                  {part}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+
         <DropsList drops={item.drops || []} />
 
         <MarketPrice text={priceText} slug={priceSlug} />

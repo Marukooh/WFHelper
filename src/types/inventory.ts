@@ -75,6 +75,8 @@ export interface RawInventoryEntry {
   ItemCount?: number;
   XP?: number;
   CompletionDate?: unknown;
+  /** Parts fitted to a modular build (kitgun, zaw, amp, K-Drive, Moa). */
+  ModularParts?: string[];
   [key: string]: unknown;
 }
 
@@ -91,6 +93,9 @@ export interface RawInventoryData {
   SpaceMelee?: RawInventoryEntry[];
   OperatorAmps?: RawInventoryEntry[];
   MechSuits?: RawInventoryEntry[];
+  Hoverboards?: RawInventoryEntry[];
+  MoaPets?: RawInventoryEntry[];
+  KubrowPets?: RawInventoryEntry[];
   PendingRecipes?: RawInventoryEntry[];
   Recipes?: RawInventoryEntry[];
   MiscItems?: RawInventoryEntry[];
@@ -152,6 +157,8 @@ export interface ParsedItem {
   totalPartTypes?: number | null;
   orderPlaced?: boolean;
   partType?: PartType;
+  /** Fitted part names of a built modular item, resolved for display. */
+  modularParts?: string[];
   inventoryGroup?: InventoryGroup;
   favorite?: boolean;
   equipped?: boolean;

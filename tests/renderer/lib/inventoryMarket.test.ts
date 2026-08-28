@@ -173,6 +173,35 @@ describe("inventoryMarket view mapping", () => {
     ]);
   });
 
+  it("never prices a built modular item off a same-name listing", () => {
+    // warframe.market lists panzer_vulpaphyla, but the row is the pet the
+    // player built and cannot trade.
+    const build = makeBaseItem({
+      name: "Panzer Vulpaphyla",
+      internalName: "/Lotus/Types/Friendly/Pets/CreaturePets/ArmoredInfestedCatbrowPetPowerSuit",
+      inventoryGroup: "equipment",
+      category: "companions",
+      categoryLabel: "Companion",
+      tradable: false,
+      marketSlug: null,
+      modularParts: ["Adra Mutagen"],
+    });
+    const lookup = {
+      "panzer vulpaphyla": {
+        url_name: "panzer_vulpaphyla",
+        item_name: "Panzer Vulpaphyla",
+        thumb: null,
+        icon: null,
+        maxRank: 0,
+        gameRef: null,
+      },
+    };
+    const { orderedNames, orderedSlugs } = buildOrderLookups({ sell: [], buy: [] });
+
+    const [row] = buildBaseInventoryItems([build], "equipment", lookup, orderedNames, orderedSlugs);
+    expect(row.marketSlug).toBeNull();
+  });
+
   it("keeps a hyphenated catalog slug so the order still matches", () => {
     // The Tektolyst arcanes are the only slugs warframe.market mints with
     // hyphens. Folding them to zid_an_asheir lost both the price and the badge.

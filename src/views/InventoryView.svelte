@@ -222,7 +222,14 @@
   }
 
   // Rows without a parsed backing (generated set rows) have no detail modal.
-  $: detailKeys = new Set($parsedItems.map((entry) => entry.internalName));
+  // Modular gear is keyed per build, so its card id is the inventoryKey.
+  $: detailKeys = new Set(
+    $parsedItems.flatMap((entry) =>
+      entry.modularParts && typeof entry.inventoryKey === "string"
+        ? [entry.internalName, entry.inventoryKey]
+        : [entry.internalName],
+    ),
+  );
 
   function handleItemExpand(event: CustomEvent<InventoryViewItem>): void {
     // Relic cards open the reward breakdown, matching the Relics tab.
@@ -231,7 +238,10 @@
       activeRelic.set(relicGroup);
       return;
     }
-    const parsed = $parsedItems.find((entry) => entry.internalName === event.detail.internalName);
+    const cardKey = event.detail.internalName;
+    const parsed =
+      $parsedItems.find((entry) => entry.inventoryKey === cardKey) ??
+      $parsedItems.find((entry) => entry.internalName === cardKey);
     // Base items predate hydration - carry the slug so the modal prices by it.
     if (parsed) activeItem.set({ ...parsed, marketSlug: event.detail.marketSlug });
   }

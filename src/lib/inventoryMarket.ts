@@ -426,8 +426,12 @@ export function buildBaseInventoryItems(
         fallbackRelicSlug ||
         (group === "all_parts" && item.tradable !== true ? null : resolveSlug(item, wfmLookup));
       const cachedMeta = getCachedWfmItemMeta(slugCandidate);
+      // A built modular item is account-bound, and it carries the name of its
+      // defining part, so a same-name listing prices the loose part instead.
+      const isModularBuild = Array.isArray(item.modularParts) && item.modularParts.length > 0;
       const canIndexMarket =
-        !isRankedListingItem || (item.tradable === true && !excludedRankedItem);
+        !isModularBuild &&
+        (!isRankedListingItem || (item.tradable === true && !excludedRankedItem));
       const marketSlug = canIndexMarket ? slugCandidate : null;
       // formatWfmAssetUrl also heals persisted caches that still hold direct
       // warframe.market URLs (challenge-gated since mid-2026) into mirror URLs.

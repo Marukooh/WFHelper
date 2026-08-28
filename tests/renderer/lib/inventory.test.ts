@@ -8,6 +8,7 @@ import {
   isFoundryRecipeReady,
 } from "../../../src/lib/inventory/foundryResources.js";
 import { buildFullSetItems, setRootOf } from "../../../src/lib/inventory/fullSets.js";
+import { isCountedForValue } from "../../../src/lib/inventory/valueTotals.js";
 import { shouldHydrateMetrics } from "../../../src/lib/inventoryMarket.js";
 import { gameRefKey } from "../../../src/lib/marketNaming.js";
 import type {
@@ -1327,14 +1328,43 @@ describe("inventory parsing", () => {
 
 const KDRIVE_DECK =
   "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardCorpusA/HoverboardCorpusADeck";
+const KDRIVE_JET =
+  "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardCorpusA/HoverboardCorpusAJet";
 const MOA_HEAD = "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadLambeo";
 const KITGUN_CHAMBER =
   "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart";
+const KITGUN_CHAMBER_B =
+  "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart";
+const KITGUN_GRIP =
+  "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Clip/SUModularCapIClipPart";
+const KITGUN_BASE = "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondary";
+const ZAW_TIP = "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipOne";
+const ZAW_BASE = "/Lotus/Weapons/Ostron/Melee/LotusModularWeapon";
+const AMP_PRISM = "/Lotus/Weapons/Sentients/OperatorAmplifiers/Set1/Barrel/SentAmpSet1BarrelPartA";
+const AMP_BASE = "/Lotus/Weapons/Sentients/OperatorAmplifiers/SentAmpPreBuiltGun";
+const KDRIVE_BASE = "/Lotus/Types/Vehicles/Hoverboard/HoverboardSuit";
+const MOA_BASE = "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetPowerSuit";
+const VULPAPHYLA_BASE =
+  "/Lotus/Types/Friendly/Pets/CreaturePets/ArmoredInfestedCatbrowPetPowerSuit";
+const VULPAPHYLA_MUTAGEN =
+  "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenA";
+const PLAIN_KUBROW = "/Lotus/Types/Friendly/Pets/KubrowPets/SunikaKubrowPetPowerSuit";
 
 const MODULAR_DB: Record<string, ItemDbEntry> = {
   [KDRIVE_DECK]: { name: "Ventkid Deck", productCategory: "Pistols" },
+  [KDRIVE_JET]: { name: "Ventkid Jet", productCategory: "Pistols" },
   [MOA_HEAD]: { name: "Lambeo Moa", productCategory: "Pistols" },
-  [KITGUN_CHAMBER]: { name: "Catchmoon", productCategory: "Pistols" },
+  [KITGUN_CHAMBER]: {
+    name: "Catchmoon",
+    productCategory: "Pistols",
+    imageUrl: "https://assets.example/catchmoon.png",
+  },
+  [KITGUN_CHAMBER_B]: { name: "Rattleguts", productCategory: "Pistols" },
+  [KITGUN_GRIP]: { name: "Ramble", productCategory: "Pistols" },
+  [ZAW_TIP]: { name: "Cyath", productCategory: "Pistols" },
+  [AMP_PRISM]: { name: "Raplak Prism", productCategory: "Pistols" },
+  [VULPAPHYLA_BASE]: { name: "Panzer Vulpaphyla", productCategory: "KubrowPets" },
+  [PLAIN_KUBROW]: { name: "Sunika Kubrow", productCategory: "KubrowPets" },
 };
 
 describe("modular part classification", () => {
@@ -1366,6 +1396,116 @@ describe("modular part classification", () => {
 
     expect(items[0]?.category).toBe("secondary");
     expect(items[0]?.categoryLabel).toBe("Secondary");
+  });
+});
+
+describe("built modular equipment", () => {
+  it("gives every kitgun build its own row named after the chamber", () => {
+    const data: RawInventoryData = {
+      Pistols: [
+        {
+          ItemType: KITGUN_BASE,
+          ItemId: { $oid: "aaa" },
+          XP: 900_000,
+          Features: 8,
+          ModularParts: [KITGUN_CHAMBER, KITGUN_GRIP],
+        },
+        {
+          ItemType: KITGUN_BASE,
+          ItemId: { $oid: "bbb" },
+          XP: 0,
+          Features: 8,
+          ModularParts: [KITGUN_CHAMBER_B, KITGUN_GRIP],
+        },
+      ],
+    };
+
+    const items = parseInventory(data, MODULAR_DB);
+    expect(items).toHaveLength(2);
+
+    const catchmoon = items.find((item) => item.name === "Catchmoon");
+    expect(catchmoon?.category).toBe("secondary");
+    expect(catchmoon?.categoryLabel).toBe("Kitgun");
+    expect(catchmoon?.inventoryGroup).toBe("equipment");
+    // The chamber names the build, so its icon stands in for the whole kitgun.
+    expect(catchmoon?.imageUrl).toBe("https://assets.example/catchmoon.png");
+    expect(catchmoon?.modularParts).toEqual(["Catchmoon", "Ramble"]);
+    expect(items.some((item) => item.name === "Rattleguts")).toBe(true);
+  });
+
+  it("labels zaws, amps, K-Drives and Moas by their kit", () => {
+    const data: RawInventoryData = {
+      Melee: [{ ItemType: ZAW_BASE, ItemId: "z1", ModularParts: [ZAW_TIP] }],
+      OperatorAmps: [{ ItemType: AMP_BASE, ItemId: "a1", ModularParts: [AMP_PRISM] }],
+      Hoverboards: [
+        { ItemType: KDRIVE_BASE, ItemId: "k1", ModularParts: [KDRIVE_DECK, KDRIVE_JET] },
+      ],
+      MoaPets: [{ ItemType: MOA_BASE, ItemId: "m1", ModularParts: [MOA_HEAD] }],
+    };
+
+    const byName = new Map(parseInventory(data, MODULAR_DB).map((item) => [item.name, item]));
+
+    expect(byName.get("Cyath")?.categoryLabel).toBe("Zaw");
+    expect(byName.get("Cyath")?.category).toBe("melee");
+    expect(byName.get("Raplak Prism")?.categoryLabel).toBe("Amp");
+    expect(byName.get("Raplak Prism")?.category).toBe("amps");
+    expect(byName.get("Ventkid Deck")?.categoryLabel).toBe("K-Drive");
+    expect(byName.get("Ventkid Deck")?.modularParts).toEqual(["Ventkid Deck", "Ventkid Jet"]);
+    expect(byName.get("Lambeo Moa")?.categoryLabel).toBe("Moa");
+    expect(byName.get("Lambeo Moa")?.category).toBe("companions");
+    for (const item of byName.values()) {
+      expect(item.inventoryGroup).toBe("equipment");
+    }
+  });
+
+  it("falls back to a generic kit name when no part resolves", () => {
+    const data: RawInventoryData = {
+      Melee: [{ ItemType: ZAW_BASE, ItemId: "z1", ModularParts: ["/Lotus/Unknown/Tip/Mystery"] }],
+    };
+
+    const items = parseInventory(data, {});
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe("Zaw");
+    expect(items[0].categoryLabel).toBe("Zaw");
+    expect(items[0].imageUrl).toBeNull();
+  });
+
+  it("includes modular Vulpaphylas but leaves plain kubrows out", () => {
+    const data: RawInventoryData = {
+      KubrowPets: [
+        { ItemType: VULPAPHYLA_BASE, ItemId: "v1", ModularParts: [VULPAPHYLA_MUTAGEN] },
+        { ItemType: PLAIN_KUBROW, ItemId: "p1" },
+      ],
+    };
+
+    const items = parseInventory(data, MODULAR_DB);
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe("Panzer Vulpaphyla");
+    expect(items[0].category).toBe("companions");
+  });
+
+  it("keeps built modular gear out of the inventory value totals", () => {
+    const data: RawInventoryData = {
+      Pistols: [{ ItemType: KITGUN_BASE, ItemId: "aaa", ModularParts: [KITGUN_CHAMBER] }],
+    };
+
+    const kitgun = parseInventory(data, MODULAR_DB)[0];
+    expect(kitgun.tradable).toBe(false);
+    expect(kitgun.ducats).toBeNull();
+    // A hydrated slug must not drag the row back into the totals.
+    expect(
+      isCountedForValue(
+        {
+          inventoryGroup: kitgun.inventoryGroup ?? null,
+          partType: kitgun.partType ?? null,
+          tradable: kitgun.tradable,
+          amount: kitgun.amount ?? null,
+          marketSlug: "catchmoon",
+          platinum: 40,
+        },
+        "tradable",
+      ),
+    ).toBe(false);
   });
 });
 
