@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
 
   import HeaderTabs from "../HeaderTabs.svelte";
   import SharedFilterBar from "../SharedFilterBar.svelte";
@@ -34,6 +34,26 @@
   function handleTabSelect(value: string): void {
     selectFilter(value as InventoryFilterTab);
   }
+
+  let stickyEl: HTMLDivElement | null = null;
+
+  // The order-book panel is sticky in the same scroll container and has to pin
+  // below this band, which is opaque and sits above it. The band grows with the
+  // tab rows, the value strip and the filter popover, so publish the measured
+  // height instead of hard-coding one.
+  onMount(() => {
+    const root = document.documentElement;
+    const publish = (): void => {
+      root.style.setProperty("--inventory-sticky-height", `${stickyEl?.offsetHeight ?? 0}px`);
+    };
+    publish();
+    const observer = new ResizeObserver(publish);
+    if (stickyEl) observer.observe(stickyEl);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--inventory-sticky-height");
+    };
+  });
 </script>
 
 <!-- Keep the sticky row outside the scrolling heading. -->
@@ -42,7 +62,7 @@
 >
   {$tr("inventory.title", { count: totalCount })}
 </h2>
-<div class="view-sticky-filters mb-4">
+<div class="view-sticky-filters mb-4" bind:this={stickyEl}>
   <!-- The tab row will not shrink below its own labels, so the controls take the
        next row whole once they no longer fit beside it. A px breakpoint measured
        the window while the zoom factor decided what a tab costs, which on a

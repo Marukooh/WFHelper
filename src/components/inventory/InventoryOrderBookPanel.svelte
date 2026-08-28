@@ -420,23 +420,39 @@
 </script>
 
 <aside
-  class="sticky top-2.5 flex flex-col gap-2.5 rounded-lg border border-border bg-bg-surface p-2.5 min-[1101px]:max-h-[calc(100vh-var(--titlebar-height)-var(--statusbar-height)-1.25rem)] min-[1101px]:overflow-y-auto max-[1100px]:fixed max-[1100px]:right-2.5 max-[1100px]:top-[calc(var(--titlebar-height)+0.625rem)] max-[1100px]:bottom-[calc(var(--statusbar-height)+0.625rem)] max-[1100px]:z-40 max-[1100px]:w-[min(360px,calc(100vw-5rem))] max-[1100px]:overflow-y-auto"
+  data-orderbook-panel
+  class="inventory-orderbook-panel sticky flex flex-col gap-2.5 rounded-lg border border-border bg-bg-surface p-2.5 min-[1101px]:overflow-y-auto max-[1100px]:fixed max-[1100px]:right-2.5 max-[1100px]:top-[calc(var(--titlebar-height)+0.625rem)] max-[1100px]:bottom-[calc(var(--statusbar-height)+0.625rem)] max-[1100px]:z-40 max-[1100px]:w-[min(360px,calc(100vw-5rem))] max-[1100px]:overflow-y-auto"
 >
-  <div class="flex justify-between items-center gap-1.5">
-    <h3 class="m-0 font-display text-base text-text-primary">{$tr("orderbook.title")}</h3>
-    <div class="flex gap-1.5">
+  <!-- Sticky inside the panel's own scrollport so the warframe.market button
+       stays reachable however far the listings are scrolled (issue #29); the
+       breakpoint fix below only pins the panel itself. It wraps as a whole row
+       because a squeezed panel used to break labels and double button height. -->
+  <div
+    class="sticky -top-2.5 z-10 -mx-2.5 -mt-2.5 flex flex-wrap items-center justify-between gap-1.5 bg-bg-surface px-2.5 pt-2.5"
+  >
+    <h3 class="m-0 min-w-0 truncate font-display text-base text-text-primary">
+      {$tr("orderbook.title")}
+    </h3>
+    <div class="flex shrink-0 gap-1.5">
       {#if currentSlug}
-        <button class="btn-secondary btn-sm" on:click={refresh}>{$tr("common.refresh")}</button>
-        <button class="btn-secondary btn-sm" data-orderbook-stats on:click={openStats}
-          >{$tr("browse.tabStatistics")}</button
+        <button class="btn-secondary btn-sm whitespace-nowrap" on:click={refresh}
+          >{$tr("common.refresh")}</button
         >
-        <button class="btn-secondary btn-sm" on:click={openOnWarframeMarket}
-          >{$tr("orderbook.openWfm")}</button
+        <button
+          class="btn-secondary btn-sm whitespace-nowrap"
+          data-orderbook-stats
+          on:click={openStats}>{$tr("browse.tabStatistics")}</button
+        >
+        <button
+          class="btn-secondary btn-sm whitespace-nowrap"
+          data-orderbook-wfm
+          on:click={openOnWarframeMarket}>{$tr("orderbook.openWfm")}</button
         >
       {/if}
       {#if onClose}
         <button
           class="btn-secondary btn-sm !px-2"
+          data-orderbook-close
           aria-label={$tr("orderbook.closeListings")}
           title={$tr("common.close")}
           on:click={onClose}>&times;</button
@@ -631,6 +647,22 @@
 {/if}
 
 <style>
+  /* Pinned under the sticky filter band, not at the scrollport top: the band is
+     opaque and paints above this panel, so a top of 0.625rem buried the header
+     row with the warframe.market button (issue #29). The cap keeps an opened
+     filter popover from pushing the panel off the bottom of the window. */
+  .inventory-orderbook-panel {
+    --orderbook-pin-top: min(calc(var(--inventory-sticky-height, 0px) + 0.625rem), 45vh);
+  }
+  @media (min-width: 1101px) {
+    .inventory-orderbook-panel {
+      top: var(--orderbook-pin-top);
+      max-height: calc(
+        100vh - var(--titlebar-height) - var(--statusbar-height) - var(--orderbook-pin-top) -
+          0.625rem
+      );
+    }
+  }
   .inventory-orderbook-feedback {
     font-size: 0.76rem;
     color: var(--accent-bright);
