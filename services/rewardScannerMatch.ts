@@ -406,7 +406,21 @@ export function matchSingleRewardTextDetailed(
   );
 }
 
-export function detectRelicEraFromText(text: string): { era: string | null; confidence: number } {
+/** Era words mentioned as whole words, so a screen listing several fissures
+ *  reads as ambiguous instead of as whichever era happens to come first. */
+function distinctEraMentions(normalized: string): Set<string> {
+  const found = new Set<string>();
+  for (const raw of normalized.split(" ")) {
+    const word = normalizeForOcr(raw);
+    if (word === "OMNIA") found.add("omnia");
+    for (const era of RELIC_ERA_TOKENS) {
+      if (word === era.text) found.add(era.token);
+    }
+  }
+  return found;
+}
+
+function detectRelicEraFromText(text: string): { era: string | null; confidence: number } {
   const normalized = String(text || "")
     .toUpperCase()
     .replace(/[^A-Z0-9\s]+/g, " ")
@@ -478,6 +492,23 @@ export function detectRelicEraFromFilterLabelText(text: string): {
   return eraHit.confidence > best.confidence ? eraHit : best;
 }
 
+/** Header band above the relic grid. Shares the tile guard: the band is wide
+ *  enough to catch a fissure list or a neighbouring panel. */
+export function detectRelicEraFromBandText(text: string): {
+  era: string | null;
+  confidence: number;
+} {
+  const normalized = String(text || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) return { era: null, confidence: 0 };
+  if (distinctEraMentions(normalized).size > 1) return { era: null, confidence: 0 };
+  return detectRelicEraFromText(normalized);
+}
+
 export function detectRelicEraFromTileLabelText(text: string): {
   era: string | null;
   confidence: number;
@@ -489,6 +520,13 @@ export function detectRelicEraFromTileLabelText(text: string): {
     .trim();
 
   if (!normalized) {
+    return { era: null, confidence: 0 };
+  }
+
+  // The star chart lists every active fissure, so a tile crop that catches the
+  // navigation panel sees several eras at once. Guessing the first one is what
+  // pinned requiem on a player who picked an Omnia fissure.
+  if (distinctEraMentions(normalized).size > 1) {
     return { era: null, confidence: 0 };
   }
 

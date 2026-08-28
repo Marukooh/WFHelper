@@ -7,8 +7,8 @@ import { withScope } from "./logger";
 import { captureScreenFast, type CaptureResult } from "./screenCapture";
 import { buildOcrVariants, cropBand, cropRect } from "./rewardScannerImage";
 import {
+  detectRelicEraFromBandText,
   detectRelicEraFromFilterLabelText,
-  detectRelicEraFromText,
   detectRelicEraFromTileLabelText,
 } from "./rewardScannerMatch";
 import {
@@ -255,7 +255,7 @@ async function scanHeaderBands(
         continue;
       }
 
-      const hit = detectRelicEraFromText(ocrText);
+      const hit = detectRelicEraFromBandText(ocrText);
       if (hit.confidence > best.confidence) {
         best = {
           era: hit.era,
