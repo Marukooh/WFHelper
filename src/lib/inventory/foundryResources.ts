@@ -42,6 +42,13 @@ export const EQUIPMENT_CATEGORY_ORDER = [
   "Misc",
 ];
 
+// DE exports every modular part with productCategory "Pistols" (amp prisms,
+// kitgun chambers, zaw strikes, K-Drive decks), so the weapon-slot branch would
+// file them under Secondary. Kitgun and zaw paths carry no "kitguns"/"zaws"
+// segment, only the SUModular/InfKitGun/ModularMelee ones. Mirrors inferCategory.
+const MODULAR_PART_PATH =
+  /\/(?:kdrives|zaws|kitguns|hoverboard|moapets|operatoramplifiers?)\/|\/(?:infkitgun|modularmelee|sumodular)[a-z0-9]*\//;
+
 // Exported because the Full Sets category chips bucket sets the same way.
 // Prefers productCategory, raw category, then path fallbacks; component blueprints
 // inherit their parent's category because their raw category is Resource.
@@ -62,7 +69,7 @@ export function classifyForFoundry(
   const joinedPath = `${productUn ?? ""} ${parentUn ?? ""} ${blueprintUn}`.toLowerCase();
 
   // Modular first (most specific).
-  if (/\/(kdrives|zaws|kitguns|hoverboard|moapets)\//.test(joinedPath)) return "Modular";
+  if (MODULAR_PART_PATH.test(joinedPath)) return "Modular";
 
   // Pet parts (Infested critter mutagens etc.) carry PEP productCategory
   // "Pistols" which would wrongly bucket them as Secondary. Path wins.
