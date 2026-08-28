@@ -1325,6 +1325,50 @@ describe("inventory parsing", () => {
   });
 });
 
+const KDRIVE_DECK =
+  "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardCorpusA/HoverboardCorpusADeck";
+const MOA_HEAD = "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadLambeo";
+const KITGUN_CHAMBER =
+  "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart";
+
+const MODULAR_DB: Record<string, ItemDbEntry> = {
+  [KDRIVE_DECK]: { name: "Ventkid Deck", productCategory: "Pistols" },
+  [MOA_HEAD]: { name: "Lambeo Moa", productCategory: "Pistols" },
+  [KITGUN_CHAMBER]: { name: "Catchmoon", productCategory: "Pistols" },
+};
+
+describe("modular part classification", () => {
+  it("keeps K-Drive and pet parts in their source bucket despite the Pistols export", () => {
+    const data: RawInventoryData = {
+      MiscItems: [
+        { ItemType: KDRIVE_DECK, ItemCount: 1 },
+        { ItemType: MOA_HEAD, ItemCount: 1 },
+        { ItemType: KITGUN_CHAMBER, ItemCount: 1 },
+      ],
+    };
+
+    const byName = new Map(
+      parseInventory(data, MODULAR_DB).map((item) => [item.internalName, item]),
+    );
+
+    for (const uniqueName of [KDRIVE_DECK, MOA_HEAD, KITGUN_CHAMBER]) {
+      expect(byName.get(uniqueName)?.category).toBe("misc");
+      expect(byName.get(uniqueName)?.categoryLabel).toBe("Misc");
+    }
+  });
+
+  it("still lets a real secondary weapon claim the Pistols product category", () => {
+    const lex = "/Lotus/Weapons/Tenno/Pistols/Lex";
+    const items = parseInventory(
+      { MiscItems: [{ ItemType: lex, ItemCount: 1 }] },
+      { [lex]: { name: "Lex", productCategory: "Pistols" } },
+    );
+
+    expect(items[0]?.category).toBe("secondary");
+    expect(items[0]?.categoryLabel).toBe("Secondary");
+  });
+});
+
 describe("chainBuildableBlueprints", () => {
   const FRAME = "/wf/Frame";
   const CHASSIS = "/wf/FrameChassis";

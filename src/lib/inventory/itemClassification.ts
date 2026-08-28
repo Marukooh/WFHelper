@@ -358,16 +358,29 @@ export function shouldHide(
   return false;
 }
 
+const WEAPON_SLOT_FILTERS = new Set(["primary", "secondary", "melee"]);
+
+// DE exports modular and pet parts with productCategory "Pistols" (K-Drive
+// decks, Moa heads, kitgun chambers, zaw strikes), so the slot lookup would
+// file them under Secondary. classifyForFoundry guards the same trap.
+const MODULAR_OR_PET_PART_PATH =
+  /\/(?:kdrives|zaws|kitguns|hoverboard|pets|moapets|zanukapets|creaturepets|catbrowpets|kubrowpets|sentinels)\/|\/(?:infkitgun|modularmelee|sumodular)[a-z0-9]*\//i;
+
 export function inferCategory(
   internalName: string,
   defaultCat: string,
   dbEntry: ItemDbEntry = {},
 ): string {
   if (/\/OperatorAmplifiers?\//i.test(internalName)) return "amps";
-  if (typeof dbEntry.productCategory === "string" && PRODUCT_TO_FILTER[dbEntry.productCategory]) {
-    return PRODUCT_TO_FILTER[dbEntry.productCategory];
+  const mapped =
+    typeof dbEntry.productCategory === "string"
+      ? PRODUCT_TO_FILTER[dbEntry.productCategory]
+      : undefined;
+  if (!mapped) return defaultCat;
+  if (WEAPON_SLOT_FILTERS.has(mapped) && MODULAR_OR_PET_PART_PATH.test(internalName)) {
+    return defaultCat;
   }
-  return defaultCat;
+  return mapped;
 }
 
 export function deriveGroup(
