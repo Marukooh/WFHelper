@@ -496,7 +496,7 @@
         {copyState === "done"
           ? $tr("common.copied")
           : copyState === "error"
-            ? $tr("arbisched.copyFailed")
+            ? $tr("common.copyFailed")
             : copyState === "max"
               ? $tr("arbisched.copyMax", { max: String(MAX_COPY_ROWS) })
               : $tr("arbisched.copySelected", { n: String(selectedCopyEntries.length) })}
