@@ -96,7 +96,9 @@ async function poll(): Promise<void> {
 
   polling = true;
   try {
-    const status = await warframeStatus.getStatus();
+    // Only isFocused is read here, and resolving the game geometry costs an X
+    // tree walk on linux, so this poll asks for the bounds-free status.
+    const status = await warframeStatus.getStatus({ needBounds: false });
     // Named on change only: flipping every poll with WFHelper in the foreground
     // means the overlay is stealing focus, not that the user alt-tabbed away.
     if (lastFocused !== status.isFocused) {

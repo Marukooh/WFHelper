@@ -38,7 +38,11 @@ interface WarframeStatus {
 
 let lastStatus: WarframeStatus | null = null;
 let lastStatusAt = 0;
-let inFlight: Promise<WarframeStatus> | null = null;
+let lastStatusHadBounds = false;
+// One slot per request shape. A shared slot let either completion free the
+// other's, so the next caller opened a third probe against a live one.
+let inFlightWithBounds: Promise<WarframeStatus> | null = null;
+let inFlightWithoutBounds: Promise<WarframeStatus> | null = null;
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- native FFI bindings are untyped at compile time */
 let _win32: {
@@ -312,11 +316,13 @@ export async function getWarframeWindowBoundsLinux(): Promise<WindowBounds | nul
   }
 }
 
-async function collectStatusLinux(): Promise<WarframeStatus> {
+async function collectStatusLinux(needBounds: boolean): Promise<WarframeStatus> {
   const processRunning = isWarframeProcessRunningLinux();
   // Warframe is an XWayland client under Proton, so its X geometry is readable
-  // on both session types; focus itself has no portable query.
-  const focusedWindowBounds = processRunning ? await getWarframeWindowBoundsLinux() : null;
+  // on both session types; focus itself has no portable query. The probe walks
+  // the X tree, so pollers that only read isFocused skip it.
+  const focusedWindowBounds =
+    processRunning && needBounds ? await getWarframeWindowBoundsLinux() : null;
   return {
     isOpen: processRunning,
     isFocused: processRunning,
@@ -328,8 +334,8 @@ async function collectStatusLinux(): Promise<WarframeStatus> {
   };
 }
 
-async function collectStatus(): Promise<WarframeStatus> {
-  if (process.platform === "linux") return collectStatusLinux();
+async function collectStatus(needBounds: boolean): Promise<WarframeStatus> {
+  if (process.platform === "linux") return collectStatusLinux(needBounds);
 
   const [processRunning, foregroundWindow] = await Promise.all([
     isWarframeProcessRunning(),
@@ -353,35 +359,56 @@ async function collectStatus(): Promise<WarframeStatus> {
   };
 }
 
-export async function getStatus(options: { force?: boolean } = {}): Promise<WarframeStatus> {
+export async function getStatus(
+  options: { force?: boolean; needBounds?: boolean } = {},
+): Promise<WarframeStatus> {
   const force = !!options.force;
+  // Bounds-free results are cached too, so a caller that needs geometry must
+  // not be served one; it collects again instead of inheriting a null. Only
+  // linux can skip the probe, so elsewhere every result is bounds-complete.
+  const needBounds = options.needBounds !== false;
+  const willHaveBounds = needBounds || process.platform !== "linux";
   const now = Date.now();
-  if (!force && lastStatus && now - lastStatusAt < WARFRAME_STATUS_CACHE_TTL_MS) {
-    return lastStatus;
+  const cacheUsable = lastStatus && (lastStatusHadBounds || !needBounds);
+  if (!force && cacheUsable && now - lastStatusAt < WARFRAME_STATUS_CACHE_TTL_MS) {
+    return lastStatus as WarframeStatus;
   }
 
-  if (inFlight) {
-    return inFlight;
+  // A bounds-complete probe already answers a bounds-free caller.
+  const joinable = inFlightWithBounds ?? (needBounds ? null : inFlightWithoutBounds);
+  if (joinable) return joinable;
+
+  const collected = collectStatus(needBounds).catch((err) => {
+    log.warn("[WarframeStatus] status collection failed:", normalizeErrorMessage(err));
+    return {
+      isOpen: false,
+      isFocused: false,
+      processRunning: false,
+      focusedProcessName: null,
+      focusedWindowBounds: null,
+      focusedDisplayId: null,
+      checkedAt: Date.now(),
+    };
+  });
+  if (willHaveBounds) inFlightWithBounds = collected;
+  else inFlightWithoutBounds = collected;
+
+  const status = await collected;
+  // Identity guard: a later request may already own the slot.
+  if (inFlightWithBounds === collected) inFlightWithBounds = null;
+  if (inFlightWithoutBounds === collected) inFlightWithoutBounds = null;
+
+  // A bounds-free result landing after a bounds-complete peer must not drop its
+  // geometry from the cache.
+  const downgradesFresher =
+    lastStatus != null &&
+    lastStatusHadBounds &&
+    !willHaveBounds &&
+    status.checkedAt <= lastStatus.checkedAt;
+  if (!downgradesFresher) {
+    lastStatus = status;
+    lastStatusAt = Date.now();
+    lastStatusHadBounds = willHaveBounds;
   }
-
-  inFlight = collectStatus()
-    .catch((err) => {
-      log.warn("[WarframeStatus] status collection failed:", normalizeErrorMessage(err));
-      return {
-        isOpen: false,
-        isFocused: false,
-        processRunning: false,
-        focusedProcessName: null,
-        focusedWindowBounds: null,
-        focusedDisplayId: null,
-        checkedAt: Date.now(),
-      };
-    })
-    .finally(() => {
-      inFlight = null;
-    });
-
-  lastStatus = await inFlight;
-  lastStatusAt = Date.now();
-  return lastStatus;
+  return status;
 }
