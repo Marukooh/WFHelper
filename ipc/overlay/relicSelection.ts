@@ -607,7 +607,10 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
       let eraConfidence = era ? 1.0 : 0;
 
       if (era) {
-        activeMissionTierSetAt = Date.now(); // refresh TTL
+        // Only the EE.log tag renews its lease; it is authoritative for the
+        // whole mission. An OCR guess ages from when it was read, or one wrong
+        // read survives every relic screen the player opens after it.
+        if (logMissionTier) activeMissionTierSetAt = Date.now();
         log.info(
           logMissionTier
             ? `[RelicSelection] mission tier from EE.log tag: ${era}`

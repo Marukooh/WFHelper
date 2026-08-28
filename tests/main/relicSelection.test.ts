@@ -342,6 +342,35 @@ describe("relic selection planner", () => {
     expect(lastRecommendation().rows?.map((row) => row.label)).toEqual(["1x Lith Test Intact"]);
   });
 
+  it("an OCR era ages out instead of renewing itself on every pick", async () => {
+    const { controller, ocrSpy, lastRecommendation } = makeTwoEraController();
+    const realNow = Date.now();
+    let clock = realNow;
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => clock);
+
+    try {
+      ocrSpy.mockResolvedValue({ era: "neo", confidence: 1, candidateId: "tile-slot-1" });
+      await controller.onRelicSelectionTrigger("manual");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(lastRecommendation().era).toBe("neo");
+
+      // Keep picking inside the window: the cached read is reused, but its
+      // clock must not restart, or a wrong era never expires.
+      clock += 20 * 60 * 1000;
+      await controller.onRelicSelectionTrigger("manual");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(lastRecommendation().era).toBe("neo");
+
+      clock += 10 * 60 * 1000;
+      ocrSpy.mockResolvedValue({ era: null, confidence: 0 });
+      await controller.onRelicSelectionTrigger("manual");
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      expect(lastRecommendation().era).toBeNull();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
   it("retries an empty era read once before sending unfiltered rows", async () => {
     const { controller, ocrSpy, lastRecommendation } = makeTwoEraController();
     ocrSpy.mockResolvedValueOnce({ era: null, confidence: 0 });
