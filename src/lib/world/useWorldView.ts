@@ -20,6 +20,7 @@ import {
 } from "../../stores/overlaySettings.js";
 import { addToast } from "../../stores/toasts.js";
 import { worldData, worldLastFetch, worldLoading } from "../../stores/world.js";
+import type { FissureMode } from "../../stores/world.js";
 import type { CycleData, Fissure, SyndicateBounty, WorldState } from "../../types/world.js";
 import { readStorage, writeStorage } from "../persistence.js";
 
@@ -55,13 +56,14 @@ const BOUNTY_ORDER: Record<string, number> = {
   "The Hex": 5,
 };
 
-type FissureMode = "normal" | "steel" | "railjack";
 type CycleAlertKey = "earth" | "cetus" | "vallis" | "cambion" | "duviri";
 
-export const FISSURE_MODE_OPTIONS: Array<{ value: FissureMode; label: string }> = [
-  { value: "normal", label: "Normal" },
-  { value: "steel", label: "Steel Path" },
-  { value: "railjack", label: "Railjack" },
+// Labels stay as keys so the caller can resolve them reactively with $tr.
+export const FISSURE_MODE_OPTIONS: ReadonlyArray<{ value: FissureMode; labelKey: MessageKey }> = [
+  { value: "all", labelKey: "common.all" },
+  { value: "normal", labelKey: "common.normal" },
+  { value: "steel", labelKey: "common.steelPath" },
+  { value: "railjack", labelKey: "world.railjack" },
 ];
 
 async function fetchWorldData(force: boolean = false): Promise<void> {
@@ -228,6 +230,11 @@ export function buildWorldTimes({
   };
 }
 
+function fissureSourceMode(f: Fissure): Exclude<FissureMode, "all"> {
+  if (f.isStorm === true) return "railjack";
+  return f.isHard === true ? "steel" : "normal";
+}
+
 export function buildFissureRows(
   fissures: Fissure[] | undefined,
   mode: FissureMode,
@@ -241,9 +248,11 @@ export function buildFissureRows(
         return false;
       }
       // Railjack mode = all Void Storm fissures (both normal and Steel Path railjack).
-      // Normal/Steel modes show only standard fissures, split by isHard.
+      // Normal/Steel modes show only standard fissures, split by isHard; "all"
+      // merges both of those but still keeps Void Storms in their own tab.
       if (mode === "railjack") return f.isStorm === true;
       if (f.isStorm === true) return false;
+      if (mode === "all") return true;
       return mode === "steel" ? f.isHard === true : f.isHard !== true;
     })
     .sort((a, b) => {
@@ -256,6 +265,7 @@ export function buildFissureRows(
       ...f,
       timeStr: timeToStrict(parseIsoDate(f.expiry), nowMs),
       tierCls: fissureTierClass(f.tier || ""),
+      sourceMode: fissureSourceMode(f),
     }));
 }
 

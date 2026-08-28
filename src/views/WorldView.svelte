@@ -186,6 +186,12 @@
   });
 
   $: fissureFlat = buildFissureRows(wd?.fissures, $worldFissureMode, nowMs, nowCoarseMs);
+  $: fissureModeOptions = FISSURE_MODE_OPTIONS.map((o) => ({
+    value: o.value,
+    label: $tr(o.labelKey),
+  }));
+  $: fissureModeLabel =
+    fissureModeOptions.find((o) => o.value === $worldFissureMode)?.label ?? $tr("common.normal");
 
   $: cycleRows = buildCycleRows({
     earth,
@@ -606,21 +612,16 @@
             <svelte:fragment slot="actions">
               <SegmentedControl
                 value={$worldFissureMode}
-                options={FISSURE_MODE_OPTIONS}
+                options={fissureModeOptions}
                 onChange={(mode) => worldFissureMode.set(mode)}
               />
             </svelte:fragment>
             <div class="flex flex-col">
               {#if fissureFlat.length === 0}
                 <span class="text-sm text-text-secondary opacity-70"
-                  >{$tr("world.noActiveFissures", {
-                    mode:
-                      $worldFissureMode === "steel"
-                        ? $tr("common.steelPath")
-                        : $worldFissureMode === "railjack"
-                          ? $tr("world.railjack")
-                          : $tr("common.normal"),
-                  })}</span
+                  >{$worldFissureMode === "all"
+                    ? $tr("world.noFissuresAny")
+                    : $tr("world.noActiveFissures", { mode: fissureModeLabel })}</span
                 >
               {:else}
                 {#each fissureFlat as f}
@@ -645,7 +646,8 @@
                       <strong class="text-text-primary"
                         >{f.missionType || $tr("common.mission")}</strong
                       >
-                      {#if f.isStorm && f.isHard}
+                      <!-- The chip only disambiguates mixed lists: Railjack and "all". -->
+                      {#if f.isHard && (f.sourceMode === "railjack" || $worldFissureMode === "all")}
                         <span
                           class="ml-1.5 rounded-sm bg-warning/20 px-1 py-0.5 text-[0.625rem] font-bold uppercase tracking-[0.06em] text-warning"
                           >{$tr("world.spBadge")}</span

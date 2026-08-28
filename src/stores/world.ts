@@ -5,8 +5,14 @@ import type { WorldState } from "../types/world.js";
 export const worldData = writable<WorldState | null>(null);
 export const worldLastFetch = writable<number>(0);
 export const worldLoading = writable<boolean>(false);
-export const worldFissureMode = persistedString<"normal" | "steel" | "railjack">(
+export type FissureMode = "all" | "normal" | "steel" | "railjack";
+
+// persistedString rejects anything outside this list, so a value written by a
+// newer build (or a corrupted key) degrades to "normal" on a downgrade.
+const FISSURE_MODES: readonly FissureMode[] = ["all", "normal", "steel", "railjack"];
+
+export const worldFissureMode = persistedString<FissureMode>(
   "wf_fissure_mode",
-  ["normal", "steel", "railjack"],
+  FISSURE_MODES,
   "normal",
 );

@@ -1249,6 +1249,7 @@
   "world.nextLabelIn": "{nextLabel} in",
   "world.nextWeek": "Next week",
   "world.noActiveFissures": "No active {mode} fissures",
+  "world.noFissuresAny": "No active fissures",
   "world.noData": "No data",
   "world.noFeaturedPrimes": "No featured prime items found",
   "world.normalRotation": "Normal rotation",
