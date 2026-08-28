@@ -1,3 +1,4 @@
+import { canonicalRivenStatName } from "../../renderer/riven-similarity.js";
 import { normalizeWfmSlugKey } from "../../config/shared/wfm.js";
 import type { ListingInventoryMatch } from "./marketListing.js";
 import type { DecodedRiven } from "../types/ipc.js";
@@ -20,6 +21,12 @@ type OwnedRiven = Pick<
   "weaponName" | "rivenName" | "currentRank" | "maxRank" | "rerolls" | "masteryReq"
 >;
 
+// A generated suffix is ASCII, but a name that travelled through OCR or a
+// localized client can carry accents; fold them so both sides still meet.
+function foldName(value: string): string {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 // warframe.market spells "&" as "and" in its slugs (silva_and_aegis), so folding
 // the game name straight to underscores would never meet its side.
 function weaponSlug(weaponName: string): string {
@@ -40,12 +47,11 @@ function sameWeapon(contractSlug: string, ownedWeaponName: string): boolean {
 
 /** The generated part of the name, which is what WFM stores as rivenSuffix. */
 function ownedSuffix(riven: OwnedRiven): string {
-  const name = riven.rivenName ?? "";
-  const weapon = riven.weaponName ?? "";
-  const suffix = name.toLowerCase().startsWith(weapon.toLowerCase())
-    ? name.slice(weapon.length)
-    : name;
-  return suffix.trim().toLowerCase();
+  // Slice the folded name, not the raw one: folding collapses whitespace, so the
+  // raw weapon length would cut in the wrong place on a padded name.
+  const name = foldName(riven.rivenName ?? "");
+  const weapon = foldName(riven.weaponName ?? "");
+  return weapon && name.startsWith(weapon) ? name.slice(weapon.length).trim() : name;
 }
 
 /**
@@ -56,7 +62,7 @@ export function contractInventoryMatch(
   contract: ContractIdentity,
   owned: readonly OwnedRiven[],
 ): ListingInventoryMatch {
-  const suffix = (contract.rivenSuffix ?? "").trim().toLowerCase();
+  const suffix = foldName(contract.rivenSuffix ?? "");
   const slug = normalizeWfmSlugKey(contract.weaponUrlName);
   // Without both halves of the identity any answer would be a guess.
   if (!suffix || !slug) return { state: "match" };
@@ -84,4 +90,82 @@ export function contractInventoryMatch(
   );
   if (ranked) return { state: "match" };
   return { state: "rank-mismatch", ownedRank: candidates[0].currentRank };
+}
+
+type ListedRiven = OwnedRiven & Pick<DecodedRiven, "itemId" | "stats">;
+type ListedContract = ContractIdentity & Pick<WfmContract, "stats">;
+
+// WFM names an attribute by slug and by label, and neither is guaranteed to be
+// the wording the game shows, so both spellings are folded through the same
+// alias table the overlay uses. Substring matching is deliberately absent:
+// "damage" is contained in half the stat names.
+function contractStatKeys(attribute: WfmContractAttribute): string[] {
+  const keys = new Set<string>();
+  for (const raw of [String(attribute.urlName ?? "").replace(/_/g, " "), attribute.label ?? ""]) {
+    const key = canonicalRivenStatName(raw);
+    if (key) keys.add(key);
+  }
+  return [...keys];
+}
+
+/** Exact set equality on canonical stat names, used only when a name is absent. */
+function sameStatSet(
+  attributes: readonly WfmContractAttribute[],
+  stats: readonly DecodedRiven["stats"][number][],
+): boolean {
+  if (attributes.length === 0 || attributes.length !== stats.length) return false;
+  const pool = stats.map((stat) => ({ key: canonicalRivenStatName(stat.name), used: false }));
+  for (const attribute of attributes) {
+    const keys = contractStatKeys(attribute);
+    const hit = pool.find((stat) => !stat.used && keys.includes(stat.key));
+    if (!hit) return false;
+    hit.used = true;
+  }
+  return true;
+}
+
+function sameRiven(contract: ListedContract, riven: ListedRiven): boolean {
+  const suffix = foldName(contract.rivenSuffix ?? "");
+  const owned = ownedSuffix(riven);
+  if (suffix && owned) return suffix === owned;
+  return sameStatSet(contract.stats, riven.stats);
+}
+
+/**
+ * Maps each owned riven to the live auction listing it. Rerolls and mastery only
+ * separate same-named twins, so a numeric mismatch never cancels a name match.
+ */
+export function matchRivenListings<C extends ListedContract>(
+  rivens: readonly ListedRiven[],
+  contracts: readonly C[],
+): Map<string, C> {
+  const matched = new Map<string, C>();
+  const claimed = new Set<string>();
+
+  for (const contract of contracts) {
+    const slug = normalizeWfmSlugKey(contract.weaponUrlName);
+    if (!slug) continue;
+
+    const named = rivens.filter(
+      (riven) =>
+        !claimed.has(riven.itemId) &&
+        sameWeapon(slug, riven.weaponName ?? "") &&
+        sameRiven(contract, riven),
+    );
+    if (named.length === 0) continue;
+
+    const narrowed = named.filter(
+      (riven) =>
+        (contract.rerolls == null || riven.rerolls === contract.rerolls) &&
+        (contract.masteryLevel == null || riven.masteryReq === contract.masteryLevel) &&
+        (contract.modRank == null ||
+          riven.currentRank === contract.modRank ||
+          riven.maxRank === contract.modRank),
+    );
+    const winner = (narrowed.length > 0 ? narrowed : named)[0];
+    claimed.add(winner.itemId);
+    matched.set(winner.itemId, contract);
+  }
+
+  return matched;
 }

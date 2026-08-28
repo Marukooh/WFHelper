@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { contractInventoryMatch } from "../../../src/lib/marketContract.js";
+import { contractInventoryMatch, matchRivenListings } from "../../../src/lib/marketContract.js";
 
 function contract(overrides: Partial<Parameters<typeof contractInventoryMatch>[0]> = {}) {
   return {
@@ -118,5 +118,163 @@ describe("contractInventoryMatch", () => {
   it("normalises the listing slug before comparing it", () => {
     const listing = contract({ weaponUrlName: "  Rubico  " });
     expect(contractInventoryMatch(listing, [riven()])).toEqual({ state: "match" });
+  });
+});
+
+type Auction = Parameters<typeof matchRivenListings>[1][number] & { id: string };
+type OwnedRiven = Parameters<typeof matchRivenListings>[0][number];
+
+function statAttr(urlName: string, label = "") {
+  return { urlName, label, value: 100, positive: true };
+}
+
+function ownedStat(name: string) {
+  return {
+    tag: name,
+    name,
+    displayValue: 100,
+    maxRankValue: 100,
+    rollFloat: 1,
+    grade: "A",
+    positive: true,
+    multiplier: false,
+  };
+}
+
+function auction(overrides: Partial<Auction> = {}): Auction {
+  return {
+    id: "auction-1",
+    weaponUrlName: "rubico",
+    rivenSuffix: "visi-critacan",
+    modRank: 8,
+    rerolls: null,
+    masteryLevel: null,
+    stats: [statAttr("critical_chance"), statAttr("damage_vs_corpus")],
+    ...overrides,
+  } as Auction;
+}
+
+function owned(overrides: Partial<OwnedRiven> = {}): OwnedRiven {
+  return {
+    itemId: "riven-1",
+    weaponName: "Rubico",
+    rivenName: "Rubico Visi-critacan",
+    currentRank: 8,
+    maxRank: 8,
+    rerolls: 0,
+    masteryReq: 16,
+    stats: [ownedStat("Critical Chance"), ownedStat("Damage vs Corpus")],
+    ...overrides,
+  } as OwnedRiven;
+}
+
+describe("matchRivenListings", () => {
+  it("marks the riven an auction lists", () => {
+    const matched = matchRivenListings([owned()], [auction()]);
+    expect(matched.get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("leaves an unlisted riven unmarked", () => {
+    const matched = matchRivenListings([owned({ rivenName: "Rubico Croni-ampitis" })], [auction()]);
+    expect(matched.size).toBe(0);
+  });
+
+  // WFM lists the whole family under the base slug, so the variant name has to
+  // survive the join or a Prime copy would read as unlisted.
+  it("survives a variant weapon name renamed on the WFM side", () => {
+    const prime = owned({
+      weaponName: "Rubico Prime",
+      rivenName: "Rubico Prime Visi-critacan",
+    });
+    expect(matchRivenListings([prime], [auction()]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("matches a weapon warframe.market spells with 'and'", () => {
+    const listing = auction({ weaponUrlName: "silva_and_aegis" });
+    const mine = owned({
+      weaponName: "Silva & Aegis",
+      rivenName: "Silva & Aegis Visi-critacan",
+    });
+    expect(matchRivenListings([mine], [listing]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("does not cross weapons that share a suffix", () => {
+    const mine = owned({ weaponName: "Braton", rivenName: "Braton Visi-critacan" });
+    expect(matchRivenListings([mine], [auction()]).size).toBe(0);
+  });
+
+  it("ignores case and accents in the riven name", () => {
+    const listing = auction({ rivenSuffix: "VISI-CRÍTACAN" });
+    const mine = owned({ rivenName: "Rubico Visi-crítacan" });
+    expect(matchRivenListings([mine], [listing]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("tolerates padding around the owned riven name", () => {
+    const mine = owned({ rivenName: "  Rubico   Visi-critacan " });
+    expect(matchRivenListings([mine], [auction()]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("falls back to the stat set when the auction lost its riven name", () => {
+    const listing = auction({ rivenSuffix: null });
+    expect(matchRivenListings([owned()], [listing]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("falls back to the stat set when the owned riven has no generated name", () => {
+    const mine = owned({ rivenName: "Rubico" });
+    expect(matchRivenListings([mine], [auction()]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  // The overlay alias table is the only bridge between "Attack Speed" on a melee
+  // riven and the "fire rate" slug warframe.market stores.
+  it("resolves aliased stat names in the fallback", () => {
+    const listing = auction({
+      rivenSuffix: null,
+      stats: [statAttr("attack_speed"), statAttr("melee_damage")],
+    });
+    const mine = owned({
+      rivenName: "Rubico",
+      stats: [ownedStat("Fire Rate"), ownedStat("Damage")],
+    });
+    expect(matchRivenListings([mine], [listing]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("rejects the fallback when the stat sets differ", () => {
+    const listing = auction({ rivenSuffix: null, stats: [statAttr("critical_chance")] });
+    const mine = owned({ rivenName: "Rubico" });
+    expect(matchRivenListings([mine], [listing]).size).toBe(0);
+  });
+
+  // "damage" is a substring of half the stat names, so a contained-in test would
+  // pair "Damage vs Corpus" with the plain damage slug.
+  it("does not pair stats by substring", () => {
+    const listing = auction({ rivenSuffix: null, stats: [statAttr("damage_vs_corpus")] });
+    const mine = owned({ rivenName: "Rubico", stats: [ownedStat("Damage")] });
+    expect(matchRivenListings([mine], [listing]).size).toBe(0);
+  });
+
+  it("gives each auction its own riven when twins share a name", () => {
+    const twins = [owned(), owned({ itemId: "riven-2" })];
+    const listings = [auction(), auction({ id: "auction-2" })];
+    const matched = matchRivenListings(twins, listings);
+    expect(matched.get("riven-1")?.id).toBe("auction-1");
+    expect(matched.get("riven-2")?.id).toBe("auction-2");
+  });
+
+  it("prefers the twin whose reroll count the auction states", () => {
+    const twins = [owned({ rerolls: 0 }), owned({ itemId: "riven-2", rerolls: 12 })];
+    const matched = matchRivenListings(twins, [auction({ rerolls: 12 })]);
+    expect(matched.has("riven-1")).toBe(false);
+    expect(matched.get("riven-2")?.id).toBe("auction-1");
+  });
+
+  // A riven rerolled after it was listed still carries the auction, so the
+  // numeric hints must not be able to cancel a name match on their own.
+  it("keeps the name match when no riven answers the stated reroll count", () => {
+    const matched = matchRivenListings([owned({ rerolls: 3 })], [auction({ rerolls: 12 })]);
+    expect(matched.get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("skips an auction with no weapon slug", () => {
+    expect(matchRivenListings([owned()], [auction({ weaponUrlName: null })]).size).toBe(0);
   });
 });

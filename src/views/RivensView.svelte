@@ -1,9 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { invoke, on } from "../lib/ipc.js";
-  import { ELEMENT_ICON_URLS, RIVEN_TEMPLATE_URL } from "../lib/assetUrls.js";
+  import { ELEMENT_ICON_URLS, NAV_ICON_URLS, RIVEN_TEMPLATE_URL } from "../lib/assetUrls.js";
   import { compareSharedFilterSort, matchesSharedFilters } from "../lib/filters.js";
   import { gradeColor } from "../lib/rivenGradeColors.js";
+  import { matchRivenListings } from "../lib/marketContract.js";
+  import { ensureRivenContractsLoaded } from "../lib/marketContractsSync.js";
+  import { rivenChatTag, rivenWtsLine } from "../lib/rivenChatTag.js";
   import type { DecodedRiven, VeiledRivenEntry, VeiledRivenGroup } from "../types/ipc.js";
   import RivenDetailModal from "../modals/RivenDetailModal.svelte";
   import RivenFinder from "../components/RivenFinder.svelte";
@@ -12,6 +15,8 @@
   import SharedFilterBar from "../components/SharedFilterBar.svelte";
   import RivenPolarityIcon from "../components/RivenPolarityIcon.svelte";
   import { sharedFilters } from "../stores/filters.js";
+  import { marketContracts } from "../stores/market.js";
+  import { addToast } from "../stores/toasts.js";
   import { readStorage, writeStorage } from "../lib/persistence.js";
   import { tr } from "../lib/i18n.js";
   import { RIVEN_TYPE_KEYS } from "../lib/rivenLabels.js";
@@ -34,6 +39,8 @@
   let gradeFilter = $state("all");
   let selectedRiven = $state<DecodedRiven | null>(null);
   let viewTab = $state<RivenViewTab>(restoreViewTab());
+  let listingsRefreshing = $state(false);
+  let cardMenu = $state<{ riven: DecodedRiven; x: number; y: number } | null>(null);
 
   const TYPES = ["all", "Rifle", "Shotgun", "Pistol", "Melee", "Archgun", "Kitgun", "Zaw"];
   const TYPE_OPTIONS = $derived(
@@ -98,6 +105,47 @@
     veiledRivens.length + veiledUnseen.reduce((sum, g) => sum + g.count, 0),
   );
 
+  const listingByRiven = $derived(matchRivenListings(rivens, $marketContracts.contracts));
+
+  // Right-click menus are placed by hand, so keep the box inside the viewport.
+  const MENU_WIDTH = 224;
+  const MENU_HEIGHT = 96;
+
+  function openCardMenu(event: MouseEvent, riven: DecodedRiven): void {
+    event.preventDefault();
+    cardMenu = {
+      riven,
+      x: Math.max(8, Math.min(event.clientX, window.innerWidth - MENU_WIDTH)),
+      y: Math.max(8, Math.min(event.clientY, window.innerHeight - MENU_HEIGHT)),
+    };
+  }
+
+  async function copyToClipboard(text: string): Promise<void> {
+    cardMenu = null;
+    if (typeof navigator === "undefined" || typeof navigator.clipboard?.writeText !== "function") {
+      addToast({ level: "error", message: $tr("common.clipboardUnavailableInThisEnvironment") });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      addToast({ level: "success", message: $tr("common.copied") });
+    } catch {
+      addToast({ level: "error", message: $tr("common.copyFailed") });
+    }
+  }
+
+  async function refreshListings(): Promise<void> {
+    if (listingsRefreshing) return;
+    listingsRefreshing = true;
+    try {
+      if (!(await ensureRivenContractsLoaded(true))) {
+        addToast({ level: "error", message: $tr("rivens.listingsRefreshFailed") });
+      }
+    } finally {
+      listingsRefreshing = false;
+    }
+  }
+
   async function loadRivens() {
     loading = true;
     try {
@@ -136,12 +184,37 @@
 
   onMount(() => {
     loadRivens();
+    // Read-only and TTL-gated inside the loader, so entering the tab never polls.
+    void ensureRivenContractsLoaded();
     const unsub = on("inventory-updated", () => {
       loadRivens();
     });
     return unsub;
   });
 </script>
+
+<svelte:window
+  onclick={() => (cardMenu = null)}
+  onkeydown={(event) => {
+    if (event.key === "Escape") cardMenu = null;
+  }}
+/>
+
+{#snippet copyGlyph()}
+  <svg
+    class="h-3 w-3"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+{/snippet}
 
 {#snippet emptyState(message: string)}
   <div
@@ -193,6 +266,17 @@
         options={GRADE_OPTIONS}
         onChange={(value) => (gradeFilter = value)}
       />
+
+      <button
+        class="btn-secondary btn-sm inline-flex items-center gap-1.5"
+        onclick={refreshListings}
+        disabled={listingsRefreshing}
+        title={$tr("rivens.refreshListings")}
+        data-riven-listings-refresh
+      >
+        <img src={NAV_ICON_URLS.market} alt="" class="h-3 w-3" />
+        {$tr("common.refresh")}
+      </button>
     </div>
 
     {#if loading}
@@ -202,90 +286,133 @@
     {:else}
       <div class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 justify-items-center">
         {#each filteredRivens as riven (riven.itemId)}
-          <button
-            class="relative block mx-auto p-0 border-0 outline-none bg-transparent appearance-none cursor-pointer w-[min(100%,18rem)] max-[700px]:w-[min(100%,16rem)] aspect-[316/400] overflow-visible transition-transform duration-[0.18s] ease hover:-translate-y-1 hover:z-[2] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
-            onclick={() => (selectedRiven = riven)}
+          {@const listing = listingByRiven.get(riven.itemId)}
+          <div
+            class="relative mx-auto w-[min(100%,18rem)] max-[700px]:w-[min(100%,16rem)] aspect-[316/400] transition-transform duration-[0.18s] ease hover:-translate-y-1 hover:z-[2]"
           >
-            <div
-              class="relative w-full h-full bg-center bg-[length:100%_100%] bg-no-repeat"
-              style:background-image={`url("${RIVEN_TEMPLATE_URL}")`}
+            <button
+              class="relative block w-full h-full p-0 border-0 outline-none bg-transparent appearance-none cursor-pointer overflow-visible focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+              onclick={() => (selectedRiven = riven)}
+              oncontextmenu={(event) => openCardMenu(event, riven)}
             >
-              <span
-                class="absolute top-[10%] right-[15%] z-[2] font-display font-extrabold text-base leading-none [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,0.9)]"
-                style="color: {gradeColor(riven.overallGrade)}">{riven.overallGrade}</span
+              <div
+                class="relative w-full h-full bg-center bg-[length:100%_100%] bg-no-repeat"
+                style:background-image={`url("${RIVEN_TEMPLATE_URL}")`}
               >
-
-              <div class="absolute z-[1] left-[13%] right-[11%] top-[51%] text-center">
-                <span
-                  class="font-display text-xl max-[700px]:text-xl font-bold text-white leading-[1.1] [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,1),0_2px_12px_rgba(0,0,0,0.95),0_0_20px_rgba(80,40,160,0.3)]"
-                  >{riven.weaponName}</span
-                >
-                {#if rivenSuffix(riven)}
+                {#if listing}
                   <span
-                    class="font-display text-sm font-semibold text-[rgba(200,180,255,0.9)] leading-[1.1] [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,0.95)]"
+                    class="absolute top-[9%] left-[13%] z-[2] inline-flex items-center justify-center rounded-full border border-border bg-black/50 p-1"
+                    title={$tr("rivens.listedPrice", { plat: listing.platinum })}
+                    data-riven-listed
                   >
-                    {rivenSuffix(riven)}</span
-                  >
+                    <img
+                      src={NAV_ICON_URLS.market}
+                      alt={$tr("rivens.listedPrice", { plat: listing.platinum })}
+                      class="h-3 w-3"
+                    />
+                  </span>
                 {/if}
-              </div>
 
-              <div
-                class="absolute z-[1] left-[13%] right-[11%] top-[59%] flex flex-col gap-0 items-center text-center"
-              >
-                {#each riven.stats as stat}
-                  <div
-                    class="flex items-baseline justify-center gap-[0.25em] w-full text-base max-[700px]:text-sm font-display leading-[1.05] whitespace-nowrap overflow-hidden text-ellipsis [text-shadow:0_0_3px_rgba(0,0,0,1),0_0_6px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,0.95)]"
-                  >
-                    <span
-                      class="font-bold shrink-0 {stat.positive
-                        ? 'text-[#8ee4a8]'
-                        : 'text-[#ff7a7a]'}"
-                    >
-                      {stat.multiplier
-                        ? `x${stat.displayValue}`
-                        : `${stat.displayValue >= 0 ? "+" : ""}${stat.displayValue}%`}
-                    </span>
-                    {#if elementIcon(stat.name)}
-                      <img
-                        class="w-4 h-4 align-middle shrink-0 self-center [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.8))]"
-                        src={elementIcon(stat.name)}
-                        alt=""
-                      />
-                    {/if}
-                    <span class="overflow-hidden text-ellipsis text-white/90 font-medium min-w-0"
-                      >{stat.name}</span
-                    >
-                  </div>
-                {/each}
-              </div>
-
-              <div
-                class="absolute z-[1] left-[18%] right-[18%] top-[94%] flex justify-center gap-1"
-              >
-                {#each Array(riven.maxRank) as _, i}
-                  <span
-                    class="w-2 h-2 rounded-[1px] border {i < riven.currentRank
-                      ? 'bg-[#5ec8ff] border-[#7dd8ff] shadow-[0_0_4px_rgba(94,200,255,0.9),0_0_8px_rgba(94,200,255,0.5),0_0_12px_rgba(94,200,255,0.25)]'
-                      : 'bg-[rgba(40,35,65,0.6)] border-[rgba(80,70,120,0.5)]'}"
-                  ></span>
-                {/each}
-              </div>
-
-              <div
-                class="absolute z-[1] left-[22%] right-[22%] top-[83.5%] flex items-center justify-between text-xs font-display leading-none [text-shadow:0_0_3px_rgba(0,0,0,1),0_0_6px_rgba(0,0,0,1)]"
-              >
-                <span class="text-white/80 font-bold"
-                  >{$tr("rivens.mr", { level: riven.masteryReq })}</span
+                <span
+                  class="absolute top-[10%] right-[15%] z-[2] font-display font-extrabold text-base leading-none [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,0.9)]"
+                  style="color: {gradeColor(riven.overallGrade)}">{riven.overallGrade}</span
                 >
-                <RivenPolarityIcon
-                  polarity={riven.polarity}
-                  size={14}
-                  className="inline-flex min-w-3.5 -translate-y-0.5 object-contain"
-                />
-                <span class="text-[#f06dff] font-bold">⟳ {riven.rerolls}</span>
+
+                <div class="absolute z-[1] left-[13%] right-[11%] top-[51%] text-center">
+                  <span
+                    class="font-display text-xl max-[700px]:text-xl font-bold text-white leading-[1.1] [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,1),0_2px_12px_rgba(0,0,0,0.95),0_0_20px_rgba(80,40,160,0.3)]"
+                    >{riven.weaponName}</span
+                  >
+                  {#if rivenSuffix(riven)}
+                    <span
+                      class="font-display text-sm font-semibold text-[rgba(200,180,255,0.9)] leading-[1.1] [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,0.95)]"
+                    >
+                      {rivenSuffix(riven)}</span
+                    >
+                  {/if}
+                </div>
+
+                <div
+                  class="absolute z-[1] left-[13%] right-[11%] top-[59%] flex flex-col gap-0 items-center text-center"
+                >
+                  {#each riven.stats as stat}
+                    <div
+                      class="flex items-baseline justify-center gap-[0.25em] w-full text-base max-[700px]:text-sm font-display leading-[1.05] whitespace-nowrap overflow-hidden text-ellipsis [text-shadow:0_0_3px_rgba(0,0,0,1),0_0_6px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,0.95)]"
+                    >
+                      <span
+                        class="font-bold shrink-0 {stat.positive
+                          ? 'text-[#8ee4a8]'
+                          : 'text-[#ff7a7a]'}"
+                      >
+                        {stat.multiplier
+                          ? `x${stat.displayValue}`
+                          : `${stat.displayValue >= 0 ? "+" : ""}${stat.displayValue}%`}
+                      </span>
+                      {#if elementIcon(stat.name)}
+                        <img
+                          class="w-4 h-4 align-middle shrink-0 self-center [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.8))]"
+                          src={elementIcon(stat.name)}
+                          alt=""
+                        />
+                      {/if}
+                      <span class="overflow-hidden text-ellipsis text-white/90 font-medium min-w-0"
+                        >{stat.name}</span
+                      >
+                    </div>
+                  {/each}
+                </div>
+
+                <div
+                  class="absolute z-[1] left-[18%] right-[18%] top-[94%] flex justify-center gap-1"
+                >
+                  {#each Array(riven.maxRank) as _, i}
+                    <span
+                      class="w-2 h-2 rounded-[1px] border {i < riven.currentRank
+                        ? 'bg-[#5ec8ff] border-[#7dd8ff] shadow-[0_0_4px_rgba(94,200,255,0.9),0_0_8px_rgba(94,200,255,0.5),0_0_12px_rgba(94,200,255,0.25)]'
+                        : 'bg-[rgba(40,35,65,0.6)] border-[rgba(80,70,120,0.5)]'}"
+                    ></span>
+                  {/each}
+                </div>
+
+                <div
+                  class="absolute z-[1] left-[22%] right-[22%] top-[83.5%] flex items-center justify-between text-xs font-display leading-none [text-shadow:0_0_3px_rgba(0,0,0,1),0_0_6px_rgba(0,0,0,1)]"
+                >
+                  <span class="text-white/80 font-bold"
+                    >{$tr("rivens.mr", { level: riven.masteryReq })}</span
+                  >
+                  <RivenPolarityIcon
+                    polarity={riven.polarity}
+                    size={14}
+                    className="inline-flex min-w-3.5 -translate-y-0.5 object-contain"
+                  />
+                  <span class="text-[#f06dff] font-bold">⟳ {riven.rerolls}</span>
+                </div>
               </div>
+            </button>
+
+            <div class="absolute right-[7%] top-[90%] z-[3] flex gap-1">
+              <button
+                class="inline-flex items-center justify-center rounded border border-border bg-black/60 p-1 text-text-secondary opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+                title={$tr("rivens.copyChatTag")}
+                aria-label={$tr("rivens.copyChatTag")}
+                onclick={() => copyToClipboard(rivenChatTag(riven))}
+                data-riven-copy-tag
+              >
+                {@render copyGlyph()}
+              </button>
+              {#if listing}
+                <button
+                  class="inline-flex items-center justify-center rounded border border-border bg-black/60 px-1.5 py-1 font-display text-[0.625rem] font-bold leading-none text-text-secondary opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+                  title={$tr("rivens.copyWtsLine")}
+                  aria-label={$tr("rivens.copyWtsLine")}
+                  onclick={() => copyToClipboard(rivenWtsLine(riven, listing.platinum))}
+                  data-riven-copy-wts
+                >
+                  WTS
+                </button>
+              {/if}
             </div>
-          </button>
+          </div>
         {/each}
       </div>
     {/if}
@@ -367,6 +494,35 @@
     <RivenFinder />
   {/if}
 </section>
+
+{#if cardMenu}
+  {@const menuRiven = cardMenu.riven}
+  {@const menuListing = listingByRiven.get(menuRiven.itemId)}
+  <div
+    class="fixed z-[60] min-w-[13rem] rounded-lg border border-border bg-bg-surface py-1 shadow-lg"
+    style="left: {cardMenu.x}px; top: {cardMenu.y}px"
+    role="menu"
+    tabindex="-1"
+    data-riven-card-menu
+  >
+    <button
+      class="block w-full px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-white/[0.06] hover:text-text-primary"
+      role="menuitem"
+      onclick={() => copyToClipboard(rivenChatTag(menuRiven))}
+    >
+      {$tr("rivens.copyChatTag")}
+    </button>
+    {#if menuListing}
+      <button
+        class="block w-full px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-white/[0.06] hover:text-text-primary"
+        role="menuitem"
+        onclick={() => copyToClipboard(rivenWtsLine(menuRiven, menuListing.platinum))}
+      >
+        {$tr("rivens.copyWtsLine")}
+      </button>
+    {/if}
+  </div>
+{/if}
 
 {#if selectedRiven}
   <RivenDetailModal riven={selectedRiven} onclose={() => (selectedRiven = null)} />
