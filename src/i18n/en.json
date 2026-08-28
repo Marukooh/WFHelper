@@ -575,6 +575,10 @@
   "inventory.showIncompleteSets": "Show incomplete sets",
   "inventory.everythingInclude": "Include",
   "inventory.title": "Inventory ({count})",
+  "inventory.value.allTradables": "All tradables",
+  "inventory.value.hint": "Owned items at warframe.market median prices. Ducats count prime parts only; set rows are skipped because their parts are already counted. A ≥ figure means some counted items have no price yet.",
+  "inventory.value.title": "Est. value",
+  "inventory.value.unpriced": "{count} unpriced",
   "inventory.wtbR0": "WTB R0",
   "inventory.wtbRank": "WTB R{rank}",
   "inventory.wtsR0": "WTS R0",
@@ -1347,5 +1351,10 @@
   "dailies.task.steelPathHonors": "Steel Path Honors (Teshin)",
   "dailies.task.baro": "Visit Baro Ki'Teer",
   "dailies.task.varzia": "Visit Varzia",
-  "dailies.task.darvo": "Buy Darvo's Deal"
+  "dailies.task.darvo": "Buy Darvo's Deal",
+  "inventory.value.inView": "In view",
+  "inventory.value.wholeInventory": "Whole inventory",
+  "inventory.value.scopePrime": "Prime parts only",
+  "inventory.value.scopePrimeHint": "Counts prime parts only, the stock that actually sells. Sets are skipped because their parts are already counted.",
+  "inventory.value.allTradablesHint": "Counts every tradable row, mods and arcanes included, multiplied by its stack. Thousands of common duplicates you would never list still add up here."
 }

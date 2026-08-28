@@ -329,7 +329,7 @@
   "settings.helperSourceOnly": "Nur bei Helper-Quelle",
   "settings.hideFounderItems": "Founder-Items ausblenden",
   "settings.hideFoundryPending": "Blaupausen ausblenden, die in der Schmiede warten",
-  "settings.autoFocusSearch": "Suchfeld beim \u00d6ffnen eines Tabs fokussieren",
+  "settings.autoFocusSearch": "Suchfeld beim Öffnen eines Tabs fokussieren",
   "settings.inGameMessageNotifications": "Benachrichtigungen für Ingame-Nachrichten",
   "settings.inventoryDesc": "Blaupausen bleiben in den Inventardaten, bis ihr Schmiede-Bau abgeholt wird. Die automatische Synchronisation läuft nur mit warframe-api-helper als Quelle; importierte Dateien werden nie überschrieben.",
   "settings.inventorySourceChangeFailed": "Inventar-Quelle konnte nicht geändert werden.",
@@ -780,6 +780,10 @@
   "inventory.showIncompleteSets": "Unvollständige Sets anzeigen",
   "inventory.everythingInclude": "Enthalten",
   "inventory.title": "Inventar ({count})",
+  "inventory.value.allTradables": "Alle handelbaren Gegenstände",
+  "inventory.value.hint": "Besitz zu warframe.market-Medianpreisen. Dukaten zählen nur Prime-Teile; Set-Zeilen werden übersprungen, da ihre Teile bereits gezählt sind. Ein ≥ bedeutet, dass für einige gezählte Gegenstände noch kein Preis vorliegt.",
+  "inventory.value.title": "Gesch. Wert",
+  "inventory.value.unpriced": "{count} ohne Preis",
   "market.applyChanges": "Änderungen übernehmen",
   "market.applyNewPriceQty": "Neuen Preis / neue Anzahl übernehmen",
   "market.autoInGame": "Auto Im Spiel",
@@ -1330,5 +1334,10 @@
   "dailies.task.steelPathHonors": "Ehrungen des Stählernen Pfads (Teshin)",
   "dailies.task.baro": "Baro Ki'Teer besuchen",
   "dailies.task.varzia": "Varzia besuchen",
-  "dailies.task.darvo": "Darvos Deal kaufen"
+  "dailies.task.darvo": "Darvos Deal kaufen",
+  "inventory.value.inView": "Angezeigt",
+  "inventory.value.wholeInventory": "Gesamter Bestand",
+  "inventory.value.scopePrime": "Nur Prime-Teile",
+  "inventory.value.scopePrimeHint": "Zählt nur Prime-Teile, also den Bestand, der sich wirklich verkauft. Set-Zeilen werden übersprungen, da ihre Teile bereits gezählt sind.",
+  "inventory.value.allTradablesHint": "Zählt jede handelbare Zeile inklusive Mods und Arkana, multipliziert mit ihrem Stapel. Tausende häufige Duplikate, die du nie anbieten würdest, summieren sich hier mit."
 }

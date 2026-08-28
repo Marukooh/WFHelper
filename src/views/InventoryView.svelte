@@ -10,6 +10,7 @@
   import { relicDb } from "../stores/relics.js";
   import InventoryHeader from "../components/inventory/InventoryHeader.svelte";
   import InventoryGrid from "../components/inventory/InventoryGrid.svelte";
+  import InventoryValueStrip from "../components/inventory/InventoryValueStrip.svelte";
   import InventoryOrderBookPanel from "../components/inventory/InventoryOrderBookPanel.svelte";
   import SharedFilterBar from "../components/SharedFilterBar.svelte";
   import ResourcesView from "./ResourcesView.svelte";
@@ -21,6 +22,11 @@
   } from "../lib/inventory/foundryResources.js";
   import { applySharedFiltersAndSort, compareNames, matchesSearch } from "../lib/filters.js";
   import { setRootOf } from "../lib/inventory/fullSets.js";
+  import {
+    createValueTotalsMemo,
+    isCountedForValue,
+    type InventoryValueScope,
+  } from "../lib/inventory/valueTotals.js";
   import {
     EVERYTHING_DEFAULT_SOURCES,
     EVERYTHING_SOURCES,
@@ -48,6 +54,7 @@
   import { ARCANE_STAND_IN_ART } from "../data/arcaneStandInArt.js";
   import { devMode, degradedIcons } from "../stores/devMode.js";
   import { sharedFilters, updateSharedFilters } from "../stores/filters.js";
+  import { inventoryValueAllTradables } from "../stores/preferences.js";
   import { activeItem, activeRelic } from "../stores/modals.js";
   import { isRankedGroup } from "../../config/shared/numeric.js";
   import type { SharedSortKey, SharedFiltersState } from "../types/filters.js";
@@ -133,6 +140,8 @@
 
   const hydration = getInventoryHydrationController();
   const hydrationMetrics = hydration.metricsByKey;
+  const inventoryValueMemo = createValueTotalsMemo();
+  const inViewValueMemo = createValueTotalsMemo();
   let hotsetRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   let hotsetRefreshSignature = "";
   let hotsetRefreshCompletedSignature = "";
@@ -187,6 +196,10 @@
 
   function handleToggleFilterPanel(): void {
     showFilterPanel = !showFilterPanel;
+  }
+
+  function setValueScope(allTradables: boolean): void {
+    inventoryValueAllTradables.set(allTradables);
   }
 
   function handleItemSelect(event: CustomEvent<InventoryViewItem>): void {
@@ -447,6 +460,27 @@
             $degradedIcons.has(item.name),
         )
       : filtered;
+  // Annotated so the reactive assignment keeps the literal union instead of string.
+  let valueScope: InventoryValueScope;
+  let valueSourceTab: InventoryFilterTab;
+  $: valueScope = $inventoryValueAllTradables ? "tradable" : "prime";
+  $: valueSourceTab = $inventoryValueAllTradables ? "everything" : "all_parts";
+  // Gate the cheap base rows first so the priced rows are only built for what
+  // the totals actually count; this pass reruns on every metric flush.
+  $: valueBaseItems = buildBaseInventoryItems(
+    $parsedItems,
+    valueSourceTab,
+    $wfmItems,
+    orderedNames,
+    orderedSlugs,
+    $relicDb,
+    orderedSubtypes,
+  ).filter((item) => isCountedForValue(item, valueScope));
+  $: valueInventoryItems = buildInventoryViewItems(valueBaseItems, $hydrationMetrics);
+  $: inventoryValueTotals = inventoryValueMemo(valueInventoryItems, valueScope);
+  // visibleItems is the tab after its chips, the search and the advanced filters,
+  // so this figure is the one the user can point at on screen.
+  $: inViewValueTotals = inViewValueMemo(visibleItems, valueScope);
   // Mount the grid a page at a time: a thousands-row tab (Everything) otherwise
   // creates every card synchronously and re-diffs them on each metric patch.
   const GRID_PAGE_SIZE = 120;
@@ -520,6 +554,14 @@
     on:filter={handleFilterSelect}
     on:toggle={handleToggleFilterPanel}
   >
+    {#if filter !== "resources"}
+      <InventoryValueStrip
+        inView={inViewValueTotals}
+        inventory={inventoryValueTotals}
+        allTradables={$inventoryValueAllTradables}
+        onSelectScope={setValueScope}
+      />
+    {/if}
     {#if showFilterPanel && filter !== "resources"}
       <div
         class="inventory-filter-popover mb-3.5 max-h-[67vh] overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--ui-panel-border)] bg-[var(--ui-panel-bg)] p-2.5 shadow-[var(--ui-panel-shadow)] [backdrop-filter:var(--ui-backdrop-blur)]"
