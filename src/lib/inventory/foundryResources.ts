@@ -6,7 +6,12 @@ import type {
   RecipeIngredient,
   Resource,
 } from "../../types/inventory.js";
-import { isResourceItem, resolveItem } from "./itemClassification.js";
+import {
+  MODULAR_PART_PATH,
+  PET_PART_PATH,
+  isResourceItem,
+  resolveItem,
+} from "./itemClassification.js";
 
 function parseCompletionDate(value: unknown): Date | null {
   if (!value) return null;
@@ -42,16 +47,9 @@ export const EQUIPMENT_CATEGORY_ORDER = [
   "Misc",
 ];
 
-// DE exports every modular part with productCategory "Pistols" (amp prisms,
-// kitgun chambers, zaw strikes, K-Drive decks), so the weapon-slot branch would
-// file them under Secondary. Kitgun and zaw paths carry no "kitguns"/"zaws"
-// segment, only the SUModular/InfKitGun/ModularMelee ones. Mirrors inferCategory.
-const MODULAR_PART_PATH =
-  /\/(?:kdrives|zaws|kitguns|hoverboard|moapets|operatoramplifiers?)\/|\/(?:infkitgun|modularmelee|sumodular)[a-z0-9]*\//;
-
 // Exported because the Full Sets category chips bucket sets the same way.
-// Prefers productCategory, raw category, then path fallbacks; component blueprints
-// inherit their parent's category because their raw category is Resource.
+// Component blueprints inherit their parent's category because their own raw
+// category is Resource.
 export function classifyForFoundry(
   productUn: string | null,
   blueprintUn: string,
@@ -68,15 +66,14 @@ export function classifyForFoundry(
 
   const joinedPath = `${productUn ?? ""} ${parentUn ?? ""} ${blueprintUn}`.toLowerCase();
 
-  // Modular first (most specific).
+  // Moa and Hound parts sit under /Pets/ too, so modular has to answer first.
   if (MODULAR_PART_PATH.test(joinedPath)) return "Modular";
 
   // Pet parts (Infested critter mutagens etc.) carry PEP productCategory
   // "Pistols" which would wrongly bucket them as Secondary. Path wins.
-  if (/\/(pets|creaturepets|catbrowpets|kubrowpets|sentinels)\//.test(joinedPath))
-    return "Companion";
+  if (PET_PART_PATH.test(joinedPath)) return "Companion";
 
-  // Archwing (before Warframe to catch SpaceSuits etc.).
+  // Before the Warframe branch: Archwing suits live under /Powersuits/ as well.
   if (
     productCategory === "spacesuits" ||
     productCategory === "spaceguns" ||
@@ -90,7 +87,6 @@ export function classifyForFoundry(
   )
     return "Archwing";
 
-  // Warframe.
   if (
     productCategory === "suits" ||
     productCategory === "mechsuits" ||
@@ -104,7 +100,6 @@ export function classifyForFoundry(
   )
     return "Warframe";
 
-  // Companion.
   if (
     productCategory === "sentinels" ||
     productCategory === "kubrowpets" ||

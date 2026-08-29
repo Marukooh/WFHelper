@@ -416,6 +416,23 @@ describe("inferCategory", () => {
   it("falls back to default category", () => {
     expect(inferCategory("/Lotus/X", "misc", {})).toBe("misc");
   });
+
+  // Same path families classifyForFoundry buckets; both read them from here.
+  it("keeps modular and pet parts out of the weapon slots", () => {
+    const asPistol: ItemDbEntry = { productCategory: "Pistols" };
+    const paths = [
+      "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardSolarisA/HoverboardSolarisADeck",
+      "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart",
+      "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart",
+      "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFour",
+      "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadLambeo",
+      "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadA",
+      "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenA",
+    ];
+    for (const path of paths) {
+      expect(inferCategory(path, "misc", asPistol)).toBe("misc");
+    }
+  });
 });
 
 describe("deriveGroup", () => {

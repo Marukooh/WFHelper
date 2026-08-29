@@ -365,11 +365,18 @@ export function shouldHide(
 
 const WEAPON_SLOT_FILTERS = new Set(["primary", "secondary", "melee"]);
 
-// DE exports modular and pet parts with productCategory "Pistols" (K-Drive
-// decks, Moa heads, kitgun chambers, zaw strikes), so the slot lookup would
-// file them under Secondary. classifyForFoundry guards the same trap.
-const MODULAR_OR_PET_PART_PATH =
-  /\/(?:kdrives|zaws|kitguns|hoverboard|pets|moapets|zanukapets|creaturepets|catbrowpets|kubrowpets|sentinels)\/|\/(?:infkitgun|modularmelee|sumodular)[a-z0-9]*\//i;
+// DE exports every modular part with productCategory "Pistols" (amp prisms,
+// kitgun chambers, zaw strikes, K-Drive decks, Moa heads), so any bucket that
+// trusts productCategory files them under Secondary. Kitgun and zaw paths carry
+// no "kitguns"/"zaws" segment, only the SUModular/InfKitGun/ModularMelee ones.
+export const MODULAR_PART_PATH =
+  /\/(?:kdrives|zaws|kitguns|hoverboard|moapets|operatoramplifiers?)\/|\/(?:infkitgun|modularmelee|sumodular)[a-z0-9]*\//i;
+
+// Pet and sentinel parts hit the same "Pistols" export trap. Kept apart from the
+// modular family because classifyForFoundry answers Companion here and Modular
+// there; inferCategory only cares that either one matched.
+export const PET_PART_PATH =
+  /\/(?:pets|zanukapets|creaturepets|catbrowpets|kubrowpets|sentinels)\//i;
 
 export function inferCategory(
   internalName: string,
@@ -382,7 +389,10 @@ export function inferCategory(
       ? PRODUCT_TO_FILTER[dbEntry.productCategory]
       : undefined;
   if (!mapped) return defaultCat;
-  if (WEAPON_SLOT_FILTERS.has(mapped) && MODULAR_OR_PET_PART_PATH.test(internalName)) {
+  if (
+    WEAPON_SLOT_FILTERS.has(mapped) &&
+    (MODULAR_PART_PATH.test(internalName) || PET_PART_PATH.test(internalName))
+  ) {
     return defaultCat;
   }
   return mapped;

@@ -152,5 +152,8 @@ describe("classifyForFoundry keeps real gear in its own slot", () => {
         { [critter]: part("Mutagen Vome") },
       ),
     ).toBe("Companion");
+    // Hound parts share the /Pets/ prefix with the Modular family; pets win.
+    const hound = "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadA";
+    expect(classify(hound, part("Bhaira Head"))).toBe("Companion");
   });
 });
