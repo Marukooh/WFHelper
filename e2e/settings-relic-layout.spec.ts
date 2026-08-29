@@ -1,5 +1,3 @@
-import fs from "node:fs";
-
 import { test, expect, type Page } from "@playwright/test";
 
 import {
@@ -10,9 +8,11 @@ import {
   type ElectronTestHarness,
 } from "./electronTestHarness";
 
-const SHOTS =
-  process.env.LAYOUT_SHOTS ??
-  "C:/Users/User/AppData/Local/Temp/claude/D--Github-wfhelper-public/925a51d2-d97e-4c8f-8e5a-a9d040b31dcc/scratchpad/layout-shots";
+// Screenshots belong in Playwright's per-test output dir so the CI artifact
+// upload picks them up and no machine-specific path is baked in.
+function shotPath(name: string): string {
+  return test.info().outputPath(name);
+}
 
 /**
  * Label beside control, both measured. A wrapped control shares no line with its
@@ -125,7 +125,6 @@ test.describe("Settings rows and relic cards degrade without colliding", () => {
   let page: Page;
 
   test.beforeAll(async () => {
-    fs.mkdirSync(SHOTS, { recursive: true });
     harness = await launchElectronTestHarness("wfh-settings-relic-layout-e2e-");
     page = harness.page;
   });
@@ -147,7 +146,7 @@ test.describe("Settings rows and relic cards degrade without colliding", () => {
     for (const width of [700, 900, 1100]) {
       await openSettings(page, width);
       const layout = await measureSettingsRows(page);
-      await page.screenshot({ path: `${SHOTS}/settings-${width}.png` });
+      await page.screenshot({ path: shotPath(`settings-${width}.png`) });
 
       expect(layout.count, `no settings rows rendered at ${width}px`).toBeGreaterThan(5);
       expect(layout.overlapping, `label and control overlap at ${width}px`).toEqual([]);
@@ -159,7 +158,7 @@ test.describe("Settings rows and relic cards degrade without colliding", () => {
   test("a settings column narrower than the masonry floor stacks the control", async () => {
     await openSettings(page, 1240, 240);
     const layout = await measureSettingsRows(page);
-    await page.screenshot({ path: `${SHOTS}/settings-narrow-column.png` });
+    await page.screenshot({ path: shotPath("settings-narrow-column.png") });
 
     expect(layout.overlapping, "label and control overlap in a narrow column").toEqual([]);
     expect(layout.overflowing, "row overflows a narrow column").toEqual([]);
@@ -195,7 +194,7 @@ test.describe("Settings rows and relic cards degrade without colliding", () => {
     for (const width of [1600, 1240]) {
       await openRelics(page, width);
       const layout = await measureRelicCards(page);
-      await page.screenshot({ path: `${SHOTS}/relics-${width}.png` });
+      await page.screenshot({ path: shotPath(`relics-${width}.png`) });
 
       expect(layout.cards, `no relic cards rendered at ${width}px`).toBeGreaterThan(5);
       expect(layout.collisions, `status tag hits the price row at ${width}px`).toEqual([]);
@@ -223,7 +222,7 @@ test.describe("Settings rows and relic cards degrade without colliding", () => {
       }
       return closest === -Infinity ? null : Math.round(panelTop - closest);
     });
-    await page.screenshot({ path: `${SHOTS}/settings-supporters.png` });
+    await page.screenshot({ path: shotPath("settings-supporters.png") });
     expect(gap, "no card sits above the supporters panel").not.toBeNull();
     expect(gap, "supporters panel touches the card above it").toBeGreaterThanOrEqual(8);
   });
