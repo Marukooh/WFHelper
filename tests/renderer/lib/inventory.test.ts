@@ -1458,6 +1458,36 @@ describe("built modular equipment", () => {
     }
   });
 
+  it("labels a build in the game language of the part that names it", () => {
+    const db: Record<string, ItemDbEntry> = {
+      ...MODULAR_DB,
+      [KITGUN_BASE]: { name: "Kitgun", displayName: "Schussgeraet", productCategory: "Pistols" },
+      [KITGUN_CHAMBER]: { ...MODULAR_DB[KITGUN_CHAMBER], displayName: "Fangschuss" },
+    };
+    const data: RawInventoryData = {
+      Pistols: [{ ItemType: KITGUN_BASE, ItemId: "aaa", ModularParts: [KITGUN_CHAMBER] }],
+    };
+
+    const kitgun = parseInventory(data, db)[0];
+    expect(kitgun.name).toBe("Catchmoon");
+    // The base row's "Schussgeraet" would render as the generic weapon.
+    expect(kitgun.displayName).toBe("Fangschuss");
+  });
+
+  it("drops the base item's localized name when the naming part has none", () => {
+    const db: Record<string, ItemDbEntry> = {
+      ...MODULAR_DB,
+      [KITGUN_BASE]: { name: "Kitgun", displayName: "Schussgeraet", productCategory: "Pistols" },
+    };
+    const data: RawInventoryData = {
+      Pistols: [{ ItemType: KITGUN_BASE, ItemId: "aaa", ModularParts: [KITGUN_CHAMBER] }],
+    };
+
+    const kitgun = parseInventory(data, db)[0];
+    expect(kitgun.name).toBe("Catchmoon");
+    expect(kitgun.displayName).toBeUndefined();
+  });
+
   it("falls back to a generic kit name when no part resolves", () => {
     const data: RawInventoryData = {
       Melee: [{ ItemType: ZAW_BASE, ItemId: "z1", ModularParts: ["/Lotus/Unknown/Tip/Mystery"] }],

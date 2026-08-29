@@ -401,6 +401,8 @@ export function inferCategory(
 interface ModularBuild {
   /** English display name, taken from the part that defines the build. */
   name: string;
+  /** Active game language, absent when the naming part has no localized name. */
+  displayName?: string;
   category: string;
   categoryLabel: string;
   /** The defining part's icon; a build of its own has none to show. */
@@ -469,10 +471,16 @@ export function resolveModularBuild(
   const defining = pattern ? parts.find((part) => pattern.test(part)) : undefined;
   const definingEntry = itemDb[defining ?? ""];
   const baseEntry = itemDb[internalName];
-  const name = definingEntry?.name || baseEntry?.name || kind.label;
+  // name and displayName must come from the SAME entry. Inheriting the base
+  // item's localized name would render the generic weapon (a plain "Kitgun") in
+  // every non-English client while `name` already says the fitted part.
+  const naming = definingEntry?.name ? definingEntry : baseEntry?.name ? baseEntry : null;
+  const name = naming?.name || kind.label;
+  const localized = naming?.displayName;
 
   return {
     name: sanitizeDisplayName(name),
+    ...(localized ? { displayName: sanitizeDisplayName(localized) } : {}),
     category: kind.cat,
     categoryLabel: kind.label,
     imageUrl: definingEntry?.imageUrl ?? baseEntry?.imageUrl ?? null,

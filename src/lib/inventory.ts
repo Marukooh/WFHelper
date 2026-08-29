@@ -145,6 +145,9 @@ export function parseInventory(
     const englishName = modular
       ? modular.name
       : canonicalBuildPartName(internalName, resolved.name);
+    // The renderer prefers displayName, so a build has to carry the naming
+    // part's localized name or none at all; the base row's would be generic.
+    const localizedName = modular ? modular.displayName : resolved.displayName;
 
     const dbDucats =
       typeof dbEntry.ducats === "number" && Number.isFinite(dbEntry.ducats) ? dbEntry.ducats : null;
@@ -181,7 +184,7 @@ export function parseInventory(
 
     const nextItem: ParsedItem = {
       name: englishName,
-      ...(resolved.displayName ? { displayName: resolved.displayName } : {}),
+      ...(localizedName ? { displayName: localizedName } : {}),
       ...(resolved.cardArt ? { cardArt: true as const } : {}),
       internalName,
       category: finalCat,
