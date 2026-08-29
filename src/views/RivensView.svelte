@@ -5,7 +5,10 @@
   import { compareSharedFilterSort, matchesSharedFilters } from "../lib/filters.js";
   import { gradeColor } from "../lib/rivenGradeColors.js";
   import { matchRivenListings } from "../lib/marketContract.js";
-  import { ensureRivenContractsLoaded } from "../lib/marketContractsSync.js";
+  import {
+    ensureRivenContractsLoaded,
+    invalidateRivenContractsRefresh,
+  } from "../lib/marketContractsSync.js";
   import { rivenChatTag, rivenWtsLine } from "../lib/rivenChatTag.js";
   import type { DecodedRiven, VeiledRivenEntry, VeiledRivenGroup } from "../types/ipc.js";
   import RivenDetailModal from "../modals/RivenDetailModal.svelte";
@@ -132,6 +135,12 @@
     } catch {
       addToast({ level: "error", message: $tr("common.copyFailed") });
     }
+  }
+
+  /** The cached list is stale the moment the modal creates or removes a listing. */
+  function reloadListings(): void {
+    invalidateRivenContractsRefresh();
+    void ensureRivenContractsLoaded(true);
   }
 
   async function refreshListings(): Promise<void> {
@@ -525,5 +534,10 @@
 {/if}
 
 {#if selectedRiven}
-  <RivenDetailModal riven={selectedRiven} onclose={() => (selectedRiven = null)} />
+  <RivenDetailModal
+    riven={selectedRiven}
+    contract={listingByRiven.get(selectedRiven.itemId) ?? null}
+    oncontractupdated={reloadListings}
+    onclose={() => (selectedRiven = null)}
+  />
 {/if}
