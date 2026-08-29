@@ -6,14 +6,43 @@ const os = require("node:os");
 const path = require("node:path");
 const { _electron } = require("@playwright/test");
 
-const READER_FILTER = process.env.REWARD_SCAN_READERS
-  ? new Set(
-      process.env.REWARD_SCAN_READERS.split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
-    )
-  : null;
 const { buildRealScreens } = require("./build-screens.cjs");
+
+const KNOWN_READERS = ["windows", "onnx", "both"];
+
+// A typo in REWARD_SCAN_READERS used to filter every screen down to no reader,
+// skip the whole suite and still exit 0, silently disarming the CI gate.
+function parseReaderFilter(raw) {
+  if (raw == null || raw.trim() === "") return null;
+  const names = raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const unknown = names.filter((name) => !KNOWN_READERS.includes(name));
+  if (unknown.length > 0) {
+    throw new Error(
+      `REWARD_SCAN_READERS names unknown reader(s): ${unknown.join(", ")} (known: ${KNOWN_READERS.join(", ")})`,
+    );
+  }
+  if (names.length === 0) throw new Error("REWARD_SCAN_READERS is set but names no reader");
+  return new Set(names);
+}
+
+// The host dies partway through a long ONNX+sharp run, so one or two relaunches
+// are a survivable flake. More than that is the process defect this gate exists
+// to catch, so the budget is small and exceeding it fails the run.
+const MAX_RELAUNCHES = 3;
+const relaunches = [];
+
+function printRelaunchSummary() {
+  console.log(
+    relaunches.length === 0
+      ? "RELAUNCH SUMMARY: 0 Electron host crashes"
+      : `RELAUNCH SUMMARY: ${relaunches.length} Electron host crash(es), budget ${MAX_RELAUNCHES} - ${relaunches.join(", ")}`,
+  );
+}
+
+class RelaunchBudgetExceeded extends Error {}
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const GEOMETRY_NOTE =
@@ -231,6 +260,7 @@ async function buildAspectPadSims(screenDir) {
 }
 
 (async () => {
+  const readerFilter = parseReaderFilter(process.env.REWARD_SCAN_READERS);
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "wfh-scan-e2e-"));
   const screenDir = path.join(workDir, "screens");
   fs.mkdirSync(screenDir);
@@ -276,6 +306,7 @@ async function buildAspectPadSims(screenDir) {
   // "Target page ... has been closed" at a point that moves between runs.
   let app = await launchApp();
   const failures = [];
+  let gatingRuns = 0;
 
   async function scanImage(imgPath, scannerPath, reader) {
     // retries cover the relic item list still loading at boot
@@ -305,7 +336,14 @@ async function buildAspectPadSims(screenDir) {
         );
       } catch (err) {
         if (!/has been closed|Target closed/i.test(String(err))) throw err;
-        console.log(`RELAUNCH: host died before ${path.basename(imgPath)} [${reader}]`);
+        const where = `${path.basename(imgPath)}[${reader}]`;
+        relaunches.push(where);
+        console.log(`RELAUNCH: host died before ${where}`);
+        if (relaunches.length > MAX_RELAUNCHES) {
+          throw new RelaunchBudgetExceeded(
+            `Electron host crashed ${relaunches.length} times, over the budget of ${MAX_RELAUNCHES}`,
+          );
+        }
         await app.close().catch(() => {});
         app = await launchApp();
         continue;
@@ -328,7 +366,7 @@ async function buildAspectPadSims(screenDir) {
       const declared = screen.readers || (screen.info ? ["both"] : ["windows", "onnx", "both"]);
       // CI runners are Windows Server with no OCR language pack, so the windows
       // reader dies there. REWARD_SCAN_READERS narrows the run to what can work.
-      const readers = READER_FILTER ? declared.filter((r) => READER_FILTER.has(r)) : declared;
+      const readers = readerFilter ? declared.filter((r) => readerFilter.has(r)) : declared;
       if (readers.length === 0) {
         console.log(`SKIP: ${screen.file} - no reader in REWARD_SCAN_READERS`);
         continue;
@@ -341,6 +379,7 @@ async function buildAspectPadSims(screenDir) {
         continue;
       }
       for (const reader of readers) {
+        if (!screen.info) gatingRuns += 1;
         const result = await scanImage(screenPath, scannerPath, reader);
         const bySlot = new Map((result?.items || []).map((it) => [it.slotIndex, it.name]));
         console.log(
@@ -364,15 +403,24 @@ async function buildAspectPadSims(screenDir) {
       }
       if (screen.info) console.log(`NOTE: ${screen.file} not gating - ${screen.info}`);
     }
+  } catch (err) {
+    if (!(err instanceof RelaunchBudgetExceeded)) throw err;
+    failures.push(err.message);
   } finally {
     await app.close().catch(() => {});
   }
+  printRelaunchSummary();
   fs.rmSync(workDir, { recursive: true, force: true });
+  // Every fixture being skipped is not a pass; it means the gate never ran.
+  if (gatingRuns === 0) failures.push("no gating fixture executed");
   console.log(
-    failures.length === 0 ? "ALL GATING CHECKS PASSED" : `FAILURES: ${failures.join(", ")}`,
+    failures.length === 0
+      ? `ALL GATING CHECKS PASSED (${gatingRuns} gating screen/reader runs)`
+      : `FAILURES: ${failures.join(", ")}`,
   );
   process.exit(failures.length === 0 ? 0 : 1);
 })().catch((err) => {
   console.error(err);
+  printRelaunchSummary();
   process.exit(1);
 });
