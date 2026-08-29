@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { parseInventory } from "../../../../src/lib/inventory.js";
+import { buildDetailKeys } from "../../../../src/lib/inventory/detailKeys.js";
 import { buildBaseInventoryItems } from "../../../../src/lib/inventoryMarket.js";
 import type { ItemDbEntry, ParsedItem, RawInventoryData } from "../../../../src/types/inventory.js";
 
@@ -31,17 +32,6 @@ function detailKeysBefore(parsed: ParsedItem[]): Set<string> {
   );
 }
 
-/** The same set as InventoryView builds it now. */
-function detailKeysAfter(parsed: ParsedItem[]): Set<string> {
-  return new Set(
-    parsed.flatMap((entry) =>
-      typeof entry.inventoryKey === "string" && entry.inventoryKey !== entry.internalName
-        ? [entry.internalName, entry.inventoryKey]
-        : [entry.internalName],
-    ),
-  );
-}
-
 /** The card id InventoryGrid checks against detailKeys. */
 function cardIds(parsed: ParsedItem[]): string[] {
   return buildBaseInventoryItems(parsed, "everything", {}, {}, {}).map((item) => item.internalName);
@@ -62,7 +52,7 @@ describe("detailKeys covers every card id", () => {
     const [cardId] = cardIds(parsed);
     expect(cardId).toBe(`${HOUND_BASE}#bh1`);
     expect(detailKeysBefore(parsed).has(cardId!)).toBe(false);
-    expect(detailKeysAfter(parsed).has(cardId!)).toBe(true);
+    expect(buildDetailKeys(parsed).has(cardId!)).toBe(true);
   });
 
   it("keeps expanding a Moa build that does carry parts", () => {
@@ -72,7 +62,7 @@ describe("detailKeys covers every card id", () => {
 
     const parsed = parseInventory(data, DB);
     const [cardId] = cardIds(parsed);
-    expect(detailKeysAfter(parsed).has(cardId!)).toBe(true);
+    expect(buildDetailKeys(parsed).has(cardId!)).toBe(true);
   });
 
   it("expands a rank-keyed mod row, which the modularParts gate also missed", () => {
@@ -84,7 +74,7 @@ describe("detailKeys covers every card id", () => {
     const [cardId] = cardIds(parsed);
     expect(cardId).toBe(`${MOD}#r3m5`);
     expect(detailKeysBefore(parsed).has(cardId!)).toBe(false);
-    expect(detailKeysAfter(parsed).has(cardId!)).toBe(true);
+    expect(buildDetailKeys(parsed).has(cardId!)).toBe(true);
   });
 
   it("leaves a plain row keyed by its own uniqueName", () => {
@@ -93,11 +83,11 @@ describe("detailKeys covers every card id", () => {
     };
 
     const parsed = parseInventory(data, DB);
-    expect(detailKeysAfter(parsed)).toEqual(new Set([FRAME]));
+    expect(buildDetailKeys(parsed)).toEqual(new Set([FRAME]));
   });
 
   it("still hides the button on a row with no parsed backing", () => {
     const parsed = parseInventory({ Suits: [{ ItemType: FRAME, ItemCount: 1 }] }, DB);
-    expect(detailKeysAfter(parsed).has("/Lotus/Generated/VoltPrimeSet")).toBe(false);
+    expect(buildDetailKeys(parsed).has("/Lotus/Generated/VoltPrimeSet")).toBe(false);
   });
 });

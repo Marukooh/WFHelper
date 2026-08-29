@@ -21,6 +21,7 @@
     classifyForFoundry,
   } from "../lib/inventory/foundryResources.js";
   import { applySharedFiltersAndSort, compareNames, matchesSearch } from "../lib/filters.js";
+  import { buildDetailKeys } from "../lib/inventory/detailKeys.js";
   import { setRootOf } from "../lib/inventory/fullSets.js";
   import {
     computeInventoryValueTotals,
@@ -223,16 +224,7 @@
     }
   }
 
-  // Rows without a parsed backing (generated set rows) have no detail modal.
-  // Modular builds and ranked stacks carry their inventoryKey as the card id,
-  // so both keys have to be listed; a parts-less build has no other marker.
-  $: detailKeys = new Set(
-    $parsedItems.flatMap((entry) =>
-      typeof entry.inventoryKey === "string" && entry.inventoryKey !== entry.internalName
-        ? [entry.internalName, entry.inventoryKey]
-        : [entry.internalName],
-    ),
-  );
+  $: detailKeys = buildDetailKeys($parsedItems);
 
   function handleItemExpand(event: CustomEvent<InventoryViewItem>): void {
     // Relic cards open the reward breakdown, matching the Relics tab.
