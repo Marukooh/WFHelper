@@ -231,6 +231,74 @@ describe("view scoping", () => {
   });
 });
 
+describe("minimum platinum floor", () => {
+  const CHEAP_MOD = row({
+    inventoryGroup: "mods",
+    partType: "normal",
+    isPrime: false,
+    marketSlug: "quickdraw",
+    platinum: 4,
+    ducats: null,
+    amount: 4263,
+  });
+  const PRICEY_PART = row({ marketSlug: "mesa_prime_systems", platinum: 40, ducats: 45 });
+
+  it("matches today's behaviour at a floor of zero", () => {
+    const entries = [CHEAP_MOD, PRICEY_PART];
+    expect(computeInventoryValueTotals(entries, "tradable", 0)).toEqual(
+      computeInventoryValueTotals(entries, "tradable"),
+    );
+  });
+
+  it("drops a row whose per-unit median is below the floor", () => {
+    const totals = computeInventoryValueTotals([CHEAP_MOD, PRICEY_PART], "tradable", 5);
+    expect(totals.platinum).toBe(40);
+    expect(totals.counted).toBe(1);
+  });
+
+  it("keeps a row at or above the floor", () => {
+    expect(computeInventoryValueTotals([PRICEY_PART], "tradable", 40).counted).toBe(1);
+    expect(computeInventoryValueTotals([PRICEY_PART], "tradable", 41).counted).toBe(0);
+  });
+
+  it("compares the per-unit median, not the stack total", () => {
+    // 4,263 x 4p is 17,052p of stock that nobody buys; the floor still drops it.
+    expect(computeInventoryValueTotals([CHEAP_MOD], "tradable").platinum).toBe(17_052);
+    expect(computeInventoryValueTotals([CHEAP_MOD], "tradable", 5).platinum).toBe(0);
+    expect(computeInventoryValueTotals([CHEAP_MOD], "tradable", 5).counted).toBe(0);
+  });
+
+  it("keeps unpriced rows so the floor never hides the hint", () => {
+    const unpriced = row({ marketSlug: "volt_prime_chassis", platinum: null, ducats: 15 });
+    const zeroPriced = row({ marketSlug: "ash_prime_blueprint", platinum: 0, ducats: 15 });
+    const totals = computeInventoryValueTotals(
+      [CHEAP_MOD, unpriced, zeroPriced, PRICEY_PART],
+      "tradable",
+      15,
+    );
+    expect(totals.counted).toBe(3);
+    expect(totals.platinumUnpriced).toBe(2);
+    expect(totals.unpriced).toBe(2);
+    expect(totals.platinum).toBe(40);
+  });
+
+  it("drops the ducats of an excluded row along with its platinum", () => {
+    const cheapPart = row({ marketSlug: "volt_prime_chassis", platinum: 2, ducats: 15 });
+    const kept = computeInventoryValueTotals([cheapPart, PRICEY_PART], "prime");
+    expect(kept.ducats).toBe(60);
+
+    const floored = computeInventoryValueTotals([cheapPart, PRICEY_PART], "prime", 5);
+    expect(floored.ducats).toBe(45);
+    expect(floored.ducatsUnpriced).toBe(0);
+  });
+
+  it("applies to both scopes the same way", () => {
+    const entries = [CHEAP_MOD, PRICEY_PART];
+    expect(computeInventoryValueTotals(entries, "prime", 5).counted).toBe(1);
+    expect(computeInventoryValueTotals(entries, "tradable", 5).counted).toBe(1);
+  });
+});
+
 describe("selectValueStripRows", () => {
   function totals(counted: number): InventoryValueTotals {
     return {
@@ -284,5 +352,15 @@ describe("createValueTotalsMemo", () => {
     const widened = memo(rows, "tradable");
     expect(widened).not.toBe(first);
     expect(memo([...rows], "tradable")).not.toBe(widened);
+  });
+
+  it("recomputes when the floor changes", () => {
+    const memo = createValueTotalsMemo();
+    const rows = [row({ platinum: 4 })];
+    const off = memo(rows, "prime", 0);
+    expect(memo(rows, "prime")).toBe(off);
+    const floored = memo(rows, "prime", 5);
+    expect(floored).not.toBe(off);
+    expect(floored.counted).toBe(0);
   });
 });

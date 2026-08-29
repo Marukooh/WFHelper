@@ -1344,5 +1344,8 @@
   "inventory.value.wholeInventory": "Gesamter Bestand",
   "inventory.value.scopePrime": "Nur Prime-Teile",
   "inventory.value.scopePrimeHint": "Zählt nur Prime-Teile, also den Bestand, der sich wirklich verkauft. Set-Zeilen werden übersprungen, da ihre Teile bereits gezählt sind.",
-  "inventory.value.allTradablesHint": "Zählt jede handelbare Zeile inklusive Mods und Arkana, multipliziert mit ihrem Stapel. Tausende häufige Duplikate, die du nie anbieten würdest, summieren sich hier mit."
+  "inventory.value.allTradablesHint": "Zählt jede handelbare Zeile inklusive Mods und Arkana, multipliziert mit ihrem Stapel. Tausende häufige Duplikate, die du nie anbieten würdest, summieren sich hier mit.",
+  "inventory.value.minPlatHint": "Überspringt Gegenstände, deren warframe.market-Median unter diesem Preis liegt, damit tausende billige Duplikate die Summe nicht mehr aufblähen. Gegenstände ohne Preis werden weiterhin gezählt.",
+  "inventory.value.minPlatOff": "Aus",
+  "inventory.value.minPlatOption": "Mindestens {value} Platinum pro Gegenstand"
 }

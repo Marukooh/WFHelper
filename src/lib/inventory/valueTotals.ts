@@ -35,6 +35,9 @@ export interface InventoryValueTotals {
 /** The two figures the strip can show: the current view, and the whole inventory. */
 type InventoryValueRowKey = "inView" | "inventory";
 
+/** Per-unit platinum floors offered by the strip. 0 is off. */
+export const VALUE_MIN_PLATINUM_PRESETS: readonly number[] = [0, 5, 10, 15];
+
 // Set rows aggregate parts that are already counted one by one, so including
 // them would double the same stock.
 const AGGREGATE_GROUPS: ReadonlySet<string> = new Set(["full_sets", "incomplete_sets"]);
@@ -70,9 +73,21 @@ export function isCountedForValue(entry: InventoryValueEntry, scope: InventoryVa
   return entry.inventoryGroup === "all_parts" && isPrimeRow(entry);
 }
 
+/**
+ * The floor is per-unit, so a huge stack of a 4p mod is still 4p. An unpriced
+ * row is unknown rather than cheap and stays counted, feeding the ">=" hint.
+ */
+function passesPlatinumFloor(entry: InventoryValueEntry, minPlatinum: number): boolean {
+  if (!(minPlatinum > 0)) return true;
+  const median = toFiniteNumber(entry.platinum);
+  if (median == null || median <= 0) return true;
+  return median >= minPlatinum;
+}
+
 export function computeInventoryValueTotals(
   entries: readonly InventoryValueEntry[],
   scope: InventoryValueScope,
+  minPlatinum = 0,
 ): InventoryValueTotals {
   let platinum = 0;
   let ducats = 0;
@@ -83,6 +98,9 @@ export function computeInventoryValueTotals(
 
   for (const entry of entries) {
     if (!isCountedForValue(entry, scope)) continue;
+    // Below the floor the whole row drops, ducats included, so both figures
+    // describe the same stock.
+    if (!passesPlatinumFloor(entry, minPlatinum)) continue;
     const quantity = stackSize(entry);
     if (quantity <= 0) continue;
     counted++;
@@ -138,16 +156,26 @@ export function selectValueStripRows(
 export function createValueTotalsMemo(): (
   entries: readonly InventoryValueEntry[],
   scope: InventoryValueScope,
+  minPlatinum?: number,
 ) => InventoryValueTotals {
   let lastEntries: readonly InventoryValueEntry[] | null = null;
   let lastScope: InventoryValueScope | null = null;
+  let lastMinPlatinum: number | null = null;
   let lastResult: InventoryValueTotals | null = null;
 
-  return (entries, scope) => {
-    if (lastResult && entries === lastEntries && scope === lastScope) return lastResult;
+  return (entries, scope, minPlatinum = 0) => {
+    if (
+      lastResult &&
+      entries === lastEntries &&
+      scope === lastScope &&
+      minPlatinum === lastMinPlatinum
+    ) {
+      return lastResult;
+    }
     lastEntries = entries;
     lastScope = scope;
-    lastResult = computeInventoryValueTotals(entries, scope);
+    lastMinPlatinum = minPlatinum;
+    lastResult = computeInventoryValueTotals(entries, scope, minPlatinum);
     return lastResult;
   };
 }

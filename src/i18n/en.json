@@ -1361,5 +1361,8 @@
   "inventory.value.wholeInventory": "Whole inventory",
   "inventory.value.scopePrime": "Prime parts only",
   "inventory.value.scopePrimeHint": "Counts prime parts only, the stock that actually sells. Sets are skipped because their parts are already counted.",
-  "inventory.value.allTradablesHint": "Counts every tradable row, mods and arcanes included, multiplied by its stack. Thousands of common duplicates you would never list still add up here."
+  "inventory.value.allTradablesHint": "Counts every tradable row, mods and arcanes included, multiplied by its stack. Thousands of common duplicates you would never list still add up here.",
+  "inventory.value.minPlatHint": "Skips items whose warframe.market median is below this price, so thousands of cheap duplicates stop inflating the total. Items with no price yet are still counted.",
+  "inventory.value.minPlatOff": "Off",
+  "inventory.value.minPlatOption": "At least {value} platinum per item"
 }

@@ -2,6 +2,7 @@
   import { PLATINUM_ICON_URL, STAT_ICON_URLS } from "../../lib/assetUrls.js";
   import { locale, tr } from "../../lib/i18n.js";
   import {
+    VALUE_MIN_PLATINUM_PRESETS,
     selectValueStripRows,
     type InventoryValueTotals,
   } from "../../lib/inventory/valueTotals.js";
@@ -13,9 +14,13 @@
     inventory: InventoryValueTotals;
     allTradables: boolean;
     onSelectScope: (allTradables: boolean) => void;
+    /** Per-unit platinum floor applied to both figures; 0 is off. */
+    minPlatinum: number;
+    onSelectMinPlatinum: (minPlatinum: number) => void;
   }
 
-  let { inView, inventory, allTradables, onSelectScope }: Props = $props();
+  let { inView, inventory, allTradables, onSelectScope, minPlatinum, onSelectMinPlatinum }: Props =
+    $props();
 
   const PLAT_ICON = PLATINUM_ICON_URL;
   const DUCAT_ICON = STAT_ICON_URLS.ducatsDelta;
@@ -107,6 +112,31 @@
       >
         {$tr("inventory.value.allTradables")}
       </button>
+    </div>
+
+    <!-- The title sits on the group so all four buttons show it; browsers walk
+         up to the nearest titled ancestor. -->
+    <div class="filter-tabs" data-value-min-plat-toggle title={$tr("inventory.value.minPlatHint")}>
+      <img
+        src={PLAT_ICON}
+        alt=""
+        class="h-3.5 w-3.5 shrink-0 self-center object-contain opacity-70"
+      />
+      {#each VALUE_MIN_PLATINUM_PRESETS as preset (preset)}
+        <button
+          type="button"
+          class="filter-tab min-h-7 py-0 text-xs"
+          class:active={minPlatinum === preset}
+          aria-pressed={minPlatinum === preset}
+          aria-label={preset === 0
+            ? $tr("inventory.value.minPlatOff")
+            : $tr("inventory.value.minPlatOption", { value: preset })}
+          data-value-min-plat-option={preset}
+          onclick={() => onSelectMinPlatinum(preset)}
+        >
+          {preset === 0 ? $tr("inventory.value.minPlatOff") : `${preset.toLocaleString($locale)}+`}
+        </button>
+      {/each}
     </div>
   </div>
 {/if}

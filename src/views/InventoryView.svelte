@@ -54,7 +54,7 @@
   import { ARCANE_STAND_IN_ART } from "../data/arcaneStandInArt.js";
   import { devMode, degradedIcons } from "../stores/devMode.js";
   import { sharedFilters, updateSharedFilters } from "../stores/filters.js";
-  import { inventoryValueAllTradables } from "../stores/preferences.js";
+  import { inventoryValueAllTradables, inventoryValueMinPlatinum } from "../stores/preferences.js";
   import { activeItem, activeRelic } from "../stores/modals.js";
   import { isRankedGroup } from "../../config/shared/numeric.js";
   import type { SharedSortKey, SharedFiltersState } from "../types/filters.js";
@@ -200,6 +200,10 @@
 
   function setValueScope(allTradables: boolean): void {
     inventoryValueAllTradables.set(allTradables);
+  }
+
+  function setValueMinPlatinum(minPlatinum: number): void {
+    inventoryValueMinPlatinum.set(minPlatinum);
   }
 
   function handleItemSelect(event: CustomEvent<InventoryViewItem>): void {
@@ -487,10 +491,16 @@
     orderedSubtypes,
   ).filter((item) => isCountedForValue(item, valueScope));
   $: valueInventoryItems = buildInventoryViewItems(valueBaseItems, $hydrationMetrics);
-  $: inventoryValueTotals = inventoryValueMemo(valueInventoryItems, valueScope);
+  // The platinum floor belongs to the totals, not the prefilter above: base rows
+  // carry no median yet, so gating there would drop everything on first paint.
+  $: inventoryValueTotals = inventoryValueMemo(
+    valueInventoryItems,
+    valueScope,
+    $inventoryValueMinPlatinum,
+  );
   // visibleItems is the tab after its chips, the search and the advanced filters,
   // so this figure is the one the user can point at on screen.
-  $: inViewValueTotals = inViewValueMemo(visibleItems, valueScope);
+  $: inViewValueTotals = inViewValueMemo(visibleItems, valueScope, $inventoryValueMinPlatinum);
   // Mount the grid a page at a time: a thousands-row tab (Everything) otherwise
   // creates every card synchronously and re-diffs them on each metric patch.
   const GRID_PAGE_SIZE = 120;
@@ -570,6 +580,8 @@
         inventory={inventoryValueTotals}
         allTradables={$inventoryValueAllTradables}
         onSelectScope={setValueScope}
+        minPlatinum={$inventoryValueMinPlatinum}
+        onSelectMinPlatinum={setValueMinPlatinum}
       />
     {/if}
     {#if showFilterPanel && filter !== "resources"}
