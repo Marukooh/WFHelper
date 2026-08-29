@@ -43,6 +43,7 @@ function printRelaunchSummary() {
 }
 
 class RelaunchBudgetExceeded extends Error {}
+class SkipSyntheticScreens extends Error {}
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const GEOMETRY_NOTE =
@@ -259,17 +260,33 @@ async function buildAspectPadSims(screenDir) {
   }
 }
 
+// Turns a user bug report into an answer without a fixture: point it at a
+// reward screenshot and it prints what the shipped pipeline resolves per reader.
+function parseImageArg(argv) {
+  const at = argv.indexOf("--image");
+  if (at === -1) return null;
+  const value = argv[at + 1];
+  if (!value) throw new Error("--image needs a path to a reward screenshot");
+  const resolved = path.resolve(value);
+  if (!fs.existsSync(resolved)) throw new Error(`--image file not found: ${resolved}`);
+  return resolved;
+}
+
 (async () => {
   const readerFilter = parseReaderFilter(process.env.REWARD_SCAN_READERS);
+  const singleImage = parseImageArg(process.argv.slice(2));
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "wfh-scan-e2e-"));
   const screenDir = path.join(workDir, "screens");
   fs.mkdirSync(screenDir);
 
-  await buildRealScreens(screenDir);
-  await buildClientCroppedSims(screenDir);
-  await buildAspectPadSims(screenDir);
-  let syntheticOk = true;
+  if (!singleImage) {
+    await buildRealScreens(screenDir);
+    await buildClientCroppedSims(screenDir);
+    await buildAspectPadSims(screenDir);
+  }
+  let syntheticOk = !singleImage;
   try {
+    if (singleImage) throw new SkipSyntheticScreens();
     execFileSync(
       "powershell",
       [
@@ -284,8 +301,12 @@ async function buildAspectPadSims(screenDir) {
       { stdio: "pipe" },
     );
   } catch (err) {
-    syntheticOk = false;
-    console.log(`NOTE: synthetic screen generation failed, skipping those checks (${err.message})`);
+    if (!(err instanceof SkipSyntheticScreens)) {
+      syntheticOk = false;
+      console.log(
+        `NOTE: synthetic screen generation failed, skipping those checks (${err.message})`,
+      );
+    }
   }
 
   const localAppData = path.join(workDir, "local");
@@ -358,6 +379,24 @@ async function buildAspectPadSims(screenDir) {
   try {
     await new Promise((r) => setTimeout(r, 9000));
     const scannerPath = path.join(ROOT, ".electron-build", "services", "rewardScanner.js");
+
+    if (singleImage) {
+      for (const reader of readerFilter ? [...readerFilter] : KNOWN_READERS) {
+        const result = await scanImage(singleImage, scannerPath, reader);
+        console.log(
+          `[${path.basename(singleImage)}][${reader}] strategy=${result?.meta?.strategy ?? "none"}`,
+        );
+        for (const item of result?.items || []) {
+          console.log(
+            `  slot ${Number(item.slotIndex) + 1}: ${item.name} (confidence ${item.confidence})`,
+          );
+        }
+        if (!(result?.items || []).length) console.log("  no item cleared the match gate");
+      }
+      await app.close().catch(() => {});
+      fs.rmSync(workDir, { recursive: true, force: true });
+      process.exit(0);
+    }
 
     for (const screen of SCREENS) {
       if (screen.synthetic && !syntheticOk) continue;
