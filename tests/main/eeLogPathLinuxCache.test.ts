@@ -124,8 +124,8 @@ describe("cachedLinuxEeLog", () => {
     expect(resolveEeLogPath()).toBe(expected);
   });
 
-  // The second discovery loop answers with a path it never checked, and pinning
-  // that guess left the session watching a file that was never going to exist.
+  // The second discovery loop can answer with a path it never found on disk, so
+  // only a confirmed EE.log is pinned and a guess stays on the re-probe cycle.
   it("does not pin a guessed path with no EE.log behind it", async () => {
     const home = makeTempRoot("wfh-eelog-home-");
     const steamRoot = path.join(home, ".local", "share", "Steam");

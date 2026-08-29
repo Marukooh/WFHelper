@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const holder = vi.hoisted(() => ({ png: Buffer.alloc(0) }));
 const recognizeStatAreaMock = vi.fn();
@@ -30,6 +30,13 @@ vi.mock("../../ipc/overlay/rivenScanImage", () => {
 import { recognizeRivenCardStats } from "../../ipc/overlay/rivenScanOcr";
 
 describe("recognizeRivenCardStats", () => {
+  // A test that pins its own confidence rule or queues reads with Once must not
+  // decide what the next one sees. mockReset puts the vi.fn factory impl back.
+  beforeEach(() => {
+    recognizeStatAreaMock.mockReset();
+    lowConfidenceMock.mockReset();
+  });
+
   it("refuses a read that recovered fewer than two stats", async () => {
     const sharp = (await import("sharp")).default;
     holder.png = await sharp({

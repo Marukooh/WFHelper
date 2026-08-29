@@ -196,8 +196,9 @@ test.describe("Settings rows degrade without colliding", () => {
   });
 
   // The About rows are a label beside a link, and the narrowest masonry column
-  // lands around 1040px. They used to squeeze into two ragged columns instead of
-  // stacking, which is only visible once the font scale is up.
+  // lands around 1040px. Each row keeps label and link on one line or stacks
+  // them, never splitting into two ragged columns. A raised font scale is what
+  // makes the row narrow enough for the difference to show.
   test("Settings About and Supporters cards stay readable when the window narrows", async () => {
     await setFontScale(page, 1.25);
 
