@@ -32,7 +32,6 @@ export interface InventoryValueTotals {
   counted: number;
 }
 
-/** The two figures the strip can show: the current view, and the whole inventory. */
 type InventoryValueRowKey = "inView" | "inventory";
 
 /** Per-unit platinum floors offered by the strip. 0 is off. */
