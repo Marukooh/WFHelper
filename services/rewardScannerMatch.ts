@@ -237,6 +237,8 @@ function normalizeRewardText(text: string): string {
 
 // Lift a partial structural match only when it uniquely identifies one item.
 const UNIQUE_STRUCTURAL_CONFIDENCE = 0.93;
+// Tight on purpose: only a read that is nearly the whole longer name may retarget.
+const CLIPPED_NAME_SIMILARITY = 0.95;
 
 // Word-level tolerance mirrors the fuzzy pass: OCR corruptions the alias table
 // doesn't know ("lueorint" for "Blueprint") must not break structural matching.
@@ -255,6 +257,43 @@ function isOrderedWordSubsequence(textWords: string[], nameWords: string[]): boo
     nameIndex += 1;
   }
   return true;
+}
+
+// A tier holding both "<X>" and "<X> Blueprint" is not ambiguous: the longer name
+// is the specific one and the rest are its own prefixes. Without this, a blueprint
+// whose built item is also a reward floors at 0.88 and misses the slot gate.
+function resolveTierWinner(hits: Map<string, SingleItemMatchResult>): SingleItemMatchResult | null {
+  if (hits.size === 1) return hits.values().next().value as SingleItemMatchResult;
+  const names = [...hits.keys()].sort((a, b) => b.length - a.length);
+  const longest = names[0];
+  if (!longest) return null;
+  const nested = names.every((name) => name === longest || containsRewardPhrase(longest, name));
+  return nested ? (hits.get(longest) as SingleItemMatchResult) : null;
+}
+
+// A read clipped mid-word ("Forma Blueprin") still contains the shorter sibling
+// whole, so containment alone hands the card to the built item. Exactly one
+// continuation retargets; several mean the tail is unresolved, so nothing is safe
+// to promote and the slot is better left as a gap.
+function resolveClippedContinuation(
+  ranked: SingleItemMatchResult[],
+  winner: SingleItemMatchResult,
+  text: string,
+): SingleItemMatchResult | "ambiguous" | null {
+  const winnerName = normalizeRewardText(winner.item?.name || "");
+  if (!winnerName || text.length <= winnerName.length) return null;
+  let found: SingleItemMatchResult | null = null;
+  for (const entry of ranked) {
+    if (entry === winner || !entry.item) continue;
+    const name = normalizeRewardText(entry.item.name);
+    if (!name.startsWith(`${winnerName} `)) continue;
+    // Edit distance is length biased, so one lost character sinks a short name.
+    // A literal prefix is the direct evidence that the read is that name, clipped.
+    if (!name.startsWith(text) && similarityScore(text, name) < CLIPPED_NAME_SIMILARITY) continue;
+    if (found) return "ambiguous";
+    found = entry;
+  }
+  return found;
 }
 
 function boostUniqueStructuralCandidate(
@@ -290,14 +329,20 @@ function boostUniqueStructuralCandidate(
 
   // Strongest available signal decides; an ambiguous tier blocks the boost.
   const tier = [prefixHits, containsHits, subsequenceHits].find((hits) => hits.size > 0);
-  if (!tier || tier.size !== 1) return;
+  if (!tier) return;
 
-  const entry = tier.values().next().value as SingleItemMatchResult;
-  if (!entry.item || entry.confidence >= UNIQUE_STRUCTURAL_CONFIDENCE) return;
-  entry.confidence = UNIQUE_STRUCTURAL_CONFIDENCE;
-  entry.item.confidence = UNIQUE_STRUCTURAL_CONFIDENCE;
-  const normalizedName = normalizeRewardText(entry.item.name);
-  entry.score = 400 + UNIQUE_STRUCTURAL_CONFIDENCE * 92 + Math.min(8, normalizedName.length / 4);
+  const winner = resolveTierWinner(tier);
+  if (!winner || !winner.item) return;
+
+  const continuation = resolveClippedContinuation(ranked, winner, text);
+  if (continuation === "ambiguous") return;
+  const target = continuation || winner;
+  if (!target.item) return;
+  if (target === winner && target.confidence >= UNIQUE_STRUCTURAL_CONFIDENCE) return;
+  target.confidence = Math.max(target.confidence, UNIQUE_STRUCTURAL_CONFIDENCE);
+  target.item.confidence = target.confidence;
+  const normalizedName = normalizeRewardText(target.item.name);
+  target.score = 400 + target.confidence * 92 + Math.min(8, normalizedName.length / 4);
 }
 
 export function rankRewardCandidatesDetailed(

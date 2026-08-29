@@ -169,6 +169,53 @@ describe("matchSingleRewardTextDetailed", () => {
   });
 });
 
+describe("a blueprint whose built item is also a reward", () => {
+  // Both names sit in the reward pool, so a read holding the blueprint holds the
+  // collar too. Before the tier collapse both floored at 0.88 and the slot gate
+  // (0.92 for substring) dropped the whole card.
+  const PAIR = [
+    { name: "Kavasa Prime Kubrow Collar Blueprint" },
+    { name: "Kavasa Prime Kubrow Collar" },
+  ];
+
+  it("keeps the blueprint above the slot gate when the read carries a quantity", () => {
+    const hit = matchSingleRewardTextDetailed("2 X Kavasa Prime Kubrow Collar Blueprint", PAIR);
+    expect(hit.item?.name).toBe("Kavasa Prime Kubrow Collar Blueprint");
+    expect(hit.confidence).toBeGreaterThanOrEqual(0.92);
+  });
+
+  it("reads a clipped tail as the longer name, not its shorter sibling", () => {
+    const pool = [{ name: "Forma" }, { name: "Forma Blueprint" }];
+    for (const read of ["Forma Blueprin", "Forma Bluepri", "Forma Blue"]) {
+      const hit = matchSingleRewardTextDetailed(read, pool);
+      expect(hit.item?.name, read).toBe("Forma Blueprint");
+      expect(hit.confidence, read).toBeGreaterThanOrEqual(0.92);
+    }
+  });
+
+  it("keeps the short name when nothing continues the read", () => {
+    const pool = [{ name: "Forma" }, { name: "Forma Blueprint" }];
+    expect(matchSingleRewardTextDetailed("Forma", pool).item?.name).toBe("Forma");
+  });
+
+  it("stays ambiguous when two longer names continue the read", () => {
+    const pool = [
+      { name: "Braton Prime" },
+      { name: "Braton Prime Blueprint" },
+      { name: "Braton Prime Barrel" },
+    ];
+    // "b" continues into both Blueprint and Barrel, so neither may be promoted.
+    const hit = matchSingleRewardTextDetailed("Braton Prime B", pool);
+    expect(hit.confidence).toBeLessThan(0.92);
+  });
+
+  it("still refuses to guess when the two contained names are unrelated", () => {
+    const pool = [{ name: "Forma Blueprint" }, { name: "Braton Prime Stock" }];
+    const hit = matchSingleRewardTextDetailed("Forma Blueprint Braton Prime Stock", pool);
+    expect(hit.confidence).toBeLessThan(0.92);
+  });
+});
+
 describe("detectRelicEraFromFilterLabelText", () => {
   it("maps the ALL tab to omnia", () => {
     expect(detectRelicEraFromFilterLabelText("ALL")).toEqual({ era: "omnia", confidence: 1 });
