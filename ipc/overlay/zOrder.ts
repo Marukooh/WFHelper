@@ -22,12 +22,39 @@ let lastFocused: boolean | null = null;
 // closes. Remembering what was applied is what stops the poll from restacking
 // over the fullscreen game every tick. Off linux the live style is authority.
 const linuxRaiseApplied = new WeakMap<OverlayWindow, boolean>();
+// A compositor that does answer _NET_WM_STATE can also say the band was taken
+// away, and linux isFocused is only "warframe is running", so that answer is
+// the one signal that a raised overlay was buried. Once it has confirmed a
+// raise its live state outranks the remembered flag.
+const linuxWmReportsBand = new WeakSet<OverlayWindow>();
+// A wm that keeps dropping the band the poll just re-asserted is flapping, not
+// reporting burials, and answering it every tick is the restack that cost
+// frames here. Its answer is ignored once this many re-raises went nowhere.
+const LINUX_MAX_DRIFT_RERAISES = 3;
+const linuxDriftReraises = new WeakMap<OverlayWindow, number>();
 let loggedLinuxRaise = false;
 
-/** Raised as far as this platform can tell: WM state, or what we last applied. */
 function isRaised(win: OverlayWindow, platform: NodeJS.Platform): boolean {
-  if (platform !== "linux") return win.isAlwaysOnTop();
-  return win.isAlwaysOnTop() || linuxRaiseApplied.get(win) === true;
+  const onTop = win.isAlwaysOnTop();
+  if (platform !== "linux") return onTop;
+  if (onTop) {
+    linuxWmReportsBand.add(win);
+    // The band outlived a poll interval, so the last raise held.
+    linuxDriftReraises.delete(win);
+    return true;
+  }
+  return linuxWmReportsBand.has(win) ? false : linuxRaiseApplied.get(win) === true;
+}
+
+/** Whether a raise the wm asked for by dropping the band is still worth sending. */
+function allowLinuxDriftRaise(win: OverlayWindow): boolean {
+  if (linuxRaiseApplied.get(win) !== true || !linuxWmReportsBand.has(win)) return true;
+  const used = (linuxDriftReraises.get(win) ?? 0) + 1;
+  linuxDriftReraises.set(win, used);
+  if (used <= LINUX_MAX_DRIFT_RERAISES) return true;
+  linuxWmReportsBand.delete(win);
+  log.info("[ZOrder] linux wm keeps dropping the band; falling back to the applied state");
+  return false;
 }
 
 // isAlwaysOnTop() is a cache; Windows strips WS_EX_TOPMOST from a clicked
@@ -41,6 +68,7 @@ export function applyOverlayZOrder(
   if (warframeFocused) {
     if (linux) {
       if (isRaised(win, platform)) return;
+      if (!allowLinuxDriftRaise(win)) return;
     } else if (warframeStatus.isWindowTopmost(win.getNativeWindowHandle()) ?? win.isAlwaysOnTop()) {
       return;
     }
@@ -52,10 +80,12 @@ export function applyOverlayZOrder(
     win.moveTop();
     if (!linux) return;
     linuxRaiseApplied.set(win, true);
+    // An echoing wm answers right here, a poll tick earlier than isRaised would.
+    if (win.isAlwaysOnTop()) linuxWmReportsBand.add(win);
     // Named once so a support log shows the raise ran and then went quiet.
     if (loggedLinuxRaise) return;
     loggedLinuxRaise = true;
-    log.info("[ZOrder] linux raise applied; re-asserted on show and drift only");
+    log.info("[ZOrder] linux raise applied; re-asserted on re-show and when the wm drops the band");
   } else if (isRaised(win, platform)) {
     win.setAlwaysOnTop(false);
     win.setVisibleOnAllWorkspaces(false);

@@ -45,6 +45,18 @@ function fakeWindow(alwaysOnTop = false) {
   return win;
 }
 
+// A compositor that echoes the band and then drops it again before the next
+// poll, so every tick looks like a fresh burial.
+function fakeFlappingWindow() {
+  const win = fakeWindow();
+  win.isAlwaysOnTop.mockImplementation(() => {
+    const reported = win.alwaysOnTop;
+    win.alwaysOnTop = false;
+    return reported;
+  });
+  return win;
+}
+
 // A compositor with no _NET_WM_STATE_ABOVE support never reports the band back,
 // so setAlwaysOnTop(true) leaves isAlwaysOnTop() false forever.
 function fakeWindowWithoutAboveSupport() {
@@ -201,6 +213,19 @@ describe("applyOverlayZOrder on linux", () => {
     expect(win.setAlwaysOnTop).toHaveBeenCalledTimes(1);
   });
 
+  // Without this the drift path answers a self-inflicted drop on every tick,
+  // which is the restack that cost frames on linux in the first place.
+  it("stops trusting a wm that drops the band it just re-asserted", () => {
+    const win = fakeFlappingWindow();
+
+    for (let tick = 0; tick < 6; tick += 1) apply(win, true, "linux");
+    const settled = win.moveTop.mock.calls.length;
+    for (let tick = 0; tick < 10; tick += 1) apply(win, true, "linux");
+
+    expect(settled).toBe(4);
+    expect(win.moveTop).toHaveBeenCalledTimes(4);
+  });
+
   it("does not read the win32 topmost style", () => {
     const win = fakeWindowWithoutAboveSupport();
 
@@ -252,6 +277,49 @@ describe("applyOverlayZOrder on linux", () => {
     expect(win.setAlwaysOnTop).not.toHaveBeenCalled();
     expect(win.setVisibleOnAllWorkspaces).not.toHaveBeenCalled();
   });
+
+  // isFocused is only "warframe is running" on linux, so the unraise branch
+  // never fires mid-session and the remembered raise alone would strand a
+  // buried overlay under the game until the next hide.
+  it("raises again after the wm reports the band was dropped", () => {
+    const win = fakeWindow();
+
+    apply(win, true, "linux");
+    apply(win, true, "linux");
+    expect(win.moveTop).toHaveBeenCalledTimes(1);
+
+    win.alwaysOnTop = false; // the game restacked over us
+
+    apply(win, true, "linux");
+
+    expect(win.setAlwaysOnTop).toHaveBeenLastCalledWith(true, "screen-saver");
+    expect(win.moveTop).toHaveBeenCalledTimes(2);
+  });
+
+  it("goes quiet again once the wm confirms the re-raise", () => {
+    const win = fakeWindow();
+
+    apply(win, true, "linux");
+    win.alwaysOnTop = false;
+    apply(win, true, "linux");
+    apply(win, true, "linux");
+    apply(win, true, "linux");
+
+    expect(win.moveTop).toHaveBeenCalledTimes(2);
+  });
+
+  // A reporting wm answering false is the drop itself, so the remembered flag
+  // must not send a second setAlwaysOnTop(false) after the game exits.
+  it("leaves a window the wm already de-banded alone on unfocus", () => {
+    const win = fakeWindow();
+
+    apply(win, true, "linux");
+    win.alwaysOnTop = false;
+    win.setAlwaysOnTop.mockClear();
+    apply(win, false, "linux");
+
+    expect(win.setAlwaysOnTop).not.toHaveBeenCalled();
+  });
 });
 
 describe("syncOverlayWindowZOrder", () => {
@@ -288,6 +356,22 @@ describe("syncOverlayWindowZOrder", () => {
     sync(controller, win, true, "linux");
     controller.setVisible(true);
     sync(controller, win, true, "linux");
+    sync(controller, win, true, "linux");
+
+    expect(win.moveTop).toHaveBeenCalledTimes(2);
+  });
+
+  // The 2s poll is the only thing still running once the overlay is up, so it
+  // has to be the one that rescues a window the game buried.
+  it("rescues a visible linux overlay the wm de-banded while the game runs", () => {
+    const win = fakeWindow();
+    const controller = fakeController(true);
+
+    sync(controller, win, true, "linux");
+    sync(controller, win, true, "linux");
+    expect(win.moveTop).toHaveBeenCalledTimes(1);
+
+    win.alwaysOnTop = false;
     sync(controller, win, true, "linux");
 
     expect(win.moveTop).toHaveBeenCalledTimes(2);
