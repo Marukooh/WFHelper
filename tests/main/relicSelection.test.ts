@@ -57,6 +57,8 @@ describe("relic selection planner", () => {
 
     const sentEvents: Array<{ channel: string; payload: unknown }> = [];
     const controller = createRelicSelectionController({
+      // Real timers here, so the production start delay would race every assertion.
+      eraStartDelayMs: 0,
       log: {
         info: vi.fn(),
         warn: vi.fn(),
@@ -142,6 +144,8 @@ describe("relic selection planner", () => {
       orderSummaries: {},
     });
     const controller = createRelicSelectionController({
+      // Real timers here, so the production start delay would race every assertion.
+      eraStartDelayMs: 0,
       log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
       ctx: {
         overlaySettings: { autoTriggerEnabled: true } as OverlaySettings,
@@ -206,6 +210,8 @@ describe("relic selection planner", () => {
       },
     });
     const controller = createRelicSelectionController({
+      // Real timers here, so the production start delay would race every assertion.
+      eraStartDelayMs: 0,
       log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
       ctx: {
         overlaySettings: { autoTriggerEnabled: true } as OverlaySettings,
@@ -426,6 +432,8 @@ describe("relic selection planner", () => {
     const uniqueName = (name: string) => `/Lotus/Types/Game/Projections/${name}Intact`;
 
     const controller = createRelicSelectionController({
+      // Real timers here, so the production start delay would race every assertion.
+      eraStartDelayMs: 0,
       log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
       ctx: {
         overlaySettings: { autoTriggerEnabled: true } as OverlaySettings,
@@ -578,6 +586,8 @@ describe("relic selection planner", () => {
     );
 
     const controller = createRelicSelectionController({
+      // Real timers here, so the production start delay would race every assertion.
+      eraStartDelayMs: 0,
       log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
       ctx: {
         overlaySettings: { autoTriggerEnabled: true } as OverlaySettings,

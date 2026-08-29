@@ -16,6 +16,10 @@ const MIN_EELOG_TRIGGER_GAP_MS = 900;
 /** Max time for the OCR era-detection pass before falling back to desktop filter hint. */
 const ERA_DETECTION_TIMEOUT_MS = 1500;
 const ERA_DETECTION_RETRY_DELAY_MS = 700;
+// The picker is not painted when the EE.log trigger lands, and reading it early
+// costs a wasted 700ms+ OCR pass and then the retry delay on top. Waiting a
+// little first is cheaper than the miss it avoids.
+const ERA_DETECTION_START_DELAY_MS = 100;
 /** Suppress overlay reopen for this long after an explicit close to prevent flicker. */
 const REOPEN_SUPPRESS_AFTER_CLOSE_MS = 3_000;
 
@@ -140,6 +144,8 @@ type OverlayRecommendationControllerOptions = {
   };
   fs: typeof import("node:fs");
   cacheFilePath: string;
+  /** Overrides the wait before the first era capture. Tests drive real timers. */
+  eraStartDelayMs?: number;
 };
 
 function eraOcrUnavailable(): boolean {
@@ -433,6 +439,7 @@ function toStableOwnedFingerprint(owned: Record<string, OwnedCountRow>): string 
 export function createRelicSelectionController(options: OverlayRecommendationControllerOptions) {
   const { log, ctx, windows, relicService, rewardScanner, wfmStatsPrice, fs, cacheFilePath } =
     options;
+  const eraStartDelayMs = options.eraStartDelayMs ?? ERA_DETECTION_START_DELAY_MS;
 
   let inFlight = false;
   let activeScanToken = 0;
@@ -874,7 +881,7 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
 
       setTimeout(() => {
         void runRefinement(scanToken, source, preferredDisplayId);
-      }, 0);
+      }, eraStartDelayMs);
     } catch (err) {
       if (scanToken !== activeScanToken) return;
       inFlight = false;
