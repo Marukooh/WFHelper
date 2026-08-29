@@ -78,7 +78,6 @@ type OverlayWindowsControllerOptions = {
   hasShadow?: boolean;
   /** When false the window gets a solid background off linux (default: true = transparent). */
   transparent?: boolean;
-  /** Background colour used when the window is opaque (default: '#060a12'). */
   backgroundColor?: string;
   windowStateKey?: OverlayWindowKey;
   onWindowBoundsChanged?: (

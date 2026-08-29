@@ -6,8 +6,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { RELIC_RECOMMENDATIONS } from "../../config/shared/ipcChannels";
 import type { OverlaySettings } from "../../config/runtime/overlaySettings";
 import { createRelicSelectionController } from "../../ipc/overlay/relicSelection";
+import { detectRelicEraFromBandText } from "../../services/rewardScannerMatch";
 
 const tempDirs: string[] = [];
+
+// Verbatim OCR previews from a user's main.log (2026-08-29). The first is the
+// star chart fissure list; the second is WFHelper's own planner overlay read
+// back off the screen, with "profits" and "VAULTED" mangled by the scan.
+const STAR_CHART_FISSURE_LIST =
+  "Requiem Fissure Garus (Kuva Fortres: CIII 14m ASSAULT (160-17 Requiem Fissure Koro " +
+  "(Kuva Fortress) C31m 27s VOID FLOOD (158. Omnia Fissure Everview Arc";
+const OWN_OVERLAY_BAND =
+  "29x Requiem III Intact 6.6 E. proflts: VAULTEO 29x Requiem IV Intact VAULTEO 6.6 E. proflts:";
 
 function makeTempSnapshot(snapshot: unknown): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wfhelper-relic-selection-"));
@@ -175,7 +185,12 @@ describe("relic selection planner", () => {
 
     const sentEvents: Array<{ channel: string; payload: unknown }> = [];
     const ocrSpy = vi.fn(
-      async (): Promise<{ era: string | null; confidence: number; candidateId?: string }> => ({
+      async (): Promise<{
+        era: string | null;
+        confidence: number;
+        candidateId?: string;
+        textPreview?: string;
+      }> => ({
         era: "Lith",
         confidence: 1,
       }),
@@ -382,5 +397,283 @@ describe("relic selection planner", () => {
     const payload = lastRecommendation();
     expect(payload.era).toBe("lith");
     expect(payload.rows?.map((row) => row.label)).toEqual(["1x Lith Test Intact"]);
+  });
+
+  function makeRequiemController() {
+    const cacheFilePath = makeTempSnapshot({
+      version: 1,
+      generatedAt: Date.now(),
+      prices: {},
+      meta: {},
+      orderSummaries: {},
+    });
+
+    const sentEvents: Array<{ channel: string; payload: unknown }> = [];
+    const ocrSpy = vi.fn(
+      async (): Promise<{
+        era: string | null;
+        confidence: number;
+        candidateId?: string;
+        textPreview?: string;
+      }> => ({ era: null, confidence: 0 }),
+    );
+    const group = (name: string, tier: string) => ({
+      key: name,
+      name,
+      tier,
+      qualities: { intact: { rewards: [{ chance: 100, urlName: "x", ducats: null }] } },
+    });
+    const uniqueName = (name: string) => `/Lotus/Types/Game/Projections/${name}Intact`;
+
+    const controller = createRelicSelectionController({
+      log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      ctx: {
+        overlaySettings: { autoTriggerEnabled: true } as OverlaySettings,
+        currentInventoryData: {
+          LevelKeys: [
+            { ItemType: uniqueName("Requiem III"), ItemCount: 29 },
+            { ItemType: uniqueName("Requiem IV"), ItemCount: 29 },
+            { ItemType: uniqueName("Lith Test"), ItemCount: 1 },
+          ],
+        },
+      },
+      windows: {
+        createOverlayWindow: vi.fn(),
+        clearOverlayAutoHideTimer: vi.fn(),
+        scheduleOverlayAutoHide: vi.fn(),
+        sendOverlayEvent: (channel, payload) => sentEvents.push({ channel, payload }),
+        positionOverlayWindow: vi.fn(),
+        getAnchorMeta: () => null,
+        setAnchorMeta: vi.fn(),
+      },
+      relicService: {
+        getRelicDatabase: () => ({
+          groups: {
+            "Requiem III": group("Requiem III", "Requiem"),
+            "Requiem IV": group("Requiem IV", "Requiem"),
+            "Lith Test": group("Lith Test", "Lith"),
+          },
+          byUniqueName: {
+            [uniqueName("Requiem III")]: { groupKey: "Requiem III", quality: "intact" as const },
+            [uniqueName("Requiem IV")]: { groupKey: "Requiem IV", quality: "intact" as const },
+            [uniqueName("Lith Test")]: { groupKey: "Lith Test", quality: "intact" as const },
+          },
+        }),
+      },
+      rewardScanner: { detectRelicSelectionEra: ocrSpy },
+      wfmStatsPrice: { getCachedPriceBySlug: vi.fn() },
+      fs,
+      cacheFilePath,
+    });
+
+    const lastRecommendation = () =>
+      sentEvents.filter((event) => event.channel === RELIC_RECOMMENDATIONS).at(-1)?.payload as {
+        era?: string | null;
+        rows?: Array<{ label: string }>;
+      };
+
+    return { controller, ocrSpy, lastRecommendation };
+  }
+
+  it("drops an era read that only matched the planner overlay's own cards", async () => {
+    // The band guard sees one era here, so nothing upstream rejects the
+    // self-read. The controller has to recognise the rows it just painted.
+    expect(detectRelicEraFromBandText(OWN_OVERLAY_BAND).era).toBe("requiem");
+
+    const { controller, ocrSpy, lastRecommendation } = makeRequiemController();
+
+    ocrSpy.mockResolvedValue({
+      era: "requiem",
+      confidence: 1,
+      candidateId: "header-band",
+      textPreview: "REQUIEM RELICS",
+    });
+    await controller.onRelicSelectionTrigger("manual");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(
+      lastRecommendation()
+        .rows?.map((row) => row.label)
+        .sort(),
+    ).toEqual(["29x Requiem III Intact", "29x Requiem IV Intact"]);
+
+    controller.resetMissionTier();
+    ocrSpy.mockClear();
+    ocrSpy.mockResolvedValue({
+      era: "requiem",
+      confidence: 1,
+      candidateId: "header-band",
+      textPreview: OWN_OVERLAY_BAND,
+    });
+    await controller.onRelicSelectionTrigger("manual");
+    await new Promise((resolve) => setTimeout(resolve, 900));
+
+    // A rejected read counts as empty, so it retries and then shows every era.
+    expect(ocrSpy).toHaveBeenCalledTimes(2);
+    const payload = lastRecommendation();
+    expect(payload.era).toBeNull();
+    expect(payload.rows?.map((row) => row.label).sort()).toEqual([
+      "1x Lith Test Intact",
+      "29x Requiem III Intact",
+      "29x Requiem IV Intact",
+    ]);
+  });
+
+  it("keeps a genuine single-era read while overlay rows are on screen", async () => {
+    const { controller, ocrSpy, lastRecommendation } = makeRequiemController();
+
+    ocrSpy.mockResolvedValue({
+      era: "lith",
+      confidence: 1,
+      candidateId: "filter-label",
+      textPreview: "LITH RELICS",
+    });
+    await controller.onRelicSelectionTrigger("manual");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(lastRecommendation().rows?.map((row) => row.label)).toEqual(["1x Lith Test Intact"]);
+
+    // The game's own tiles can echo the same words; only a contiguous run of a
+    // label we painted counts as reading ourselves.
+    controller.resetMissionTier();
+    ocrSpy.mockResolvedValue({
+      era: "requiem",
+      confidence: 1,
+      candidateId: "filter-label",
+      textPreview: "REQUIEM 1x Lith Test Relic Intact",
+    });
+    await controller.onRelicSelectionTrigger("manual");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(lastRecommendation().era).toBe("requiem");
+    expect(
+      lastRecommendation()
+        .rows?.map((row) => row.label)
+        .sort(),
+    ).toEqual(["29x Requiem III Intact", "29x Requiem IV Intact"]);
+  });
+
+  // An all-eras paint builds one row per owned relic group, and the planner
+  // grid scrolls, so every painted row can reach the screen and the capture.
+  function makeManyRowController(rowCount: number) {
+    const cacheFilePath = makeTempSnapshot({
+      version: 1,
+      generatedAt: Date.now(),
+      prices: {},
+      meta: {},
+      orderSummaries: {},
+    });
+
+    const names = Array.from(
+      { length: rowCount },
+      (_unused, index) => `Requiem A${String(index + 1).padStart(2, "0")}`,
+    );
+    const uniqueName = (name: string) => `/Lotus/Types/Game/Projections/${name}Intact`;
+    const sentEvents: Array<{ channel: string; payload: unknown }> = [];
+    const ocrSpy = vi.fn(
+      async (): Promise<{
+        era: string | null;
+        confidence: number;
+        candidateId?: string;
+        textPreview?: string;
+      }> => ({ era: null, confidence: 0 }),
+    );
+
+    const controller = createRelicSelectionController({
+      log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      ctx: {
+        overlaySettings: { autoTriggerEnabled: true } as OverlaySettings,
+        currentInventoryData: {
+          LevelKeys: names.map((name) => ({ ItemType: uniqueName(name), ItemCount: 1 })),
+        },
+      },
+      windows: {
+        createOverlayWindow: vi.fn(),
+        clearOverlayAutoHideTimer: vi.fn(),
+        scheduleOverlayAutoHide: vi.fn(),
+        sendOverlayEvent: (channel, payload) => sentEvents.push({ channel, payload }),
+        positionOverlayWindow: vi.fn(),
+        getAnchorMeta: () => null,
+        setAnchorMeta: vi.fn(),
+      },
+      relicService: {
+        getRelicDatabase: () => ({
+          groups: Object.fromEntries(
+            names.map((name) => [
+              name,
+              {
+                key: name,
+                name,
+                tier: "Requiem",
+                qualities: { intact: { rewards: [{ chance: 100, urlName: "x", ducats: null }] } },
+              },
+            ]),
+          ),
+          byUniqueName: Object.fromEntries(
+            names.map((name) => [uniqueName(name), { groupKey: name, quality: "intact" as const }]),
+          ),
+        }),
+      },
+      rewardScanner: { detectRelicSelectionEra: ocrSpy },
+      wfmStatsPrice: { getCachedPriceBySlug: vi.fn() },
+      fs,
+      cacheFilePath,
+    });
+
+    const lastRecommendation = () =>
+      sentEvents.filter((event) => event.channel === RELIC_RECOMMENDATIONS).at(-1)?.payload as {
+        era?: string | null;
+        rows?: Array<{ label: string }>;
+      };
+
+    return { controller, ocrSpy, lastRecommendation, names };
+  }
+
+  it("rejects a self-read of any row it painted", async () => {
+    const { controller, ocrSpy, lastRecommendation } = makeManyRowController(40);
+
+    ocrSpy.mockResolvedValue({
+      era: "requiem",
+      confidence: 1,
+      candidateId: "header-band",
+      textPreview: "REQUIEM RELICS",
+    });
+    await controller.onRelicSelectionTrigger("manual");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const painted = lastRecommendation().rows?.map((row) => row.label) ?? [];
+    expect(painted).toHaveLength(40);
+
+    controller.resetMissionTier();
+    ocrSpy.mockClear();
+    ocrSpy.mockResolvedValue({
+      era: "requiem",
+      confidence: 1,
+      candidateId: "header-band",
+      textPreview: `${painted[0]} VAULTEO 6.6 E. proflts:`,
+    });
+    await controller.onRelicSelectionTrigger("manual");
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(ocrSpy).toHaveBeenCalledTimes(2);
+    expect(lastRecommendation().era).toBeNull();
+
+    // The last row scrolls into view like the first one, so quoting it back is
+    // the same self-read and has to be rejected the same way.
+    controller.resetMissionTier();
+    ocrSpy.mockClear();
+    ocrSpy.mockResolvedValue({
+      era: "requiem",
+      confidence: 1,
+      candidateId: "header-band",
+      textPreview: `${painted[39]} VAULTEO 6.6 E. proflts:`,
+    });
+    await controller.onRelicSelectionTrigger("manual");
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(ocrSpy).toHaveBeenCalledTimes(2);
+    expect(lastRecommendation().era).toBeNull();
+  });
+
+  it("a fissure list naming several eras never reaches the planner", () => {
+    expect(detectRelicEraFromBandText(STAR_CHART_FISSURE_LIST)).toEqual({
+      era: null,
+      confidence: 0,
+    });
   });
 });

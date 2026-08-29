@@ -64,6 +64,18 @@ type OwnedCountRow = {
   radiant: number;
 };
 
+type EraDetection = {
+  era?: string | null;
+  confidence?: number;
+  textPreview?: string;
+  elapsedMs?: number;
+  sourceType?: string | null;
+  sourceName?: string | null;
+  sourceDisplayId?: string | null;
+  sourceId?: string | null;
+  candidateId?: string | null;
+};
+
 type RecommendationRow = {
   label: string;
   relicName: string;
@@ -112,17 +124,7 @@ type OverlayRecommendationControllerOptions = {
       timeoutMs?: number;
       preferredDisplayId?: string | null;
       labelOnly?: boolean;
-    }) => Promise<{
-      era?: string | null;
-      confidence?: number;
-      textPreview?: string;
-      elapsedMs?: number;
-      sourceType?: string | null;
-      sourceName?: string | null;
-      sourceDisplayId?: string | null;
-      sourceId?: string | null;
-      candidateId?: string | null;
-    }>;
+    }) => Promise<EraDetection>;
   };
   wfmStatsPrice: {
     getCachedPriceBySlug?: (slug: string) => number | null;
@@ -155,6 +157,22 @@ function normalizeEra(value: unknown): string | null {
   if (low.includes("axi")) return "axi";
   if (low.includes("omnia")) return "omnia";
   return null;
+}
+
+/** OCR-comparable form; a capture never reproduces case or punctuation exactly. */
+function normalizeScanText(value: unknown): string {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+}
+
+// Built from the row label we composed, so it is language-independent even
+// though the rest of the overlay is translated. Short labels are dropped
+// because a two-word fragment can occur in the game's own relic screen.
+function overlayRowSignature(label: string): string | null {
+  const normalized = normalizeScanText(label);
+  return normalized.split(" ").length >= 3 ? normalized : null;
 }
 
 // EE.log activeMissionTag values -> relic era; VoidT6 (omnia) accepts any era.
@@ -435,6 +453,11 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
   // The mission tag overrides OCR because omnia tiles can look like Lith.
   // It lasts through long endless runs and clears on the next non-fissure mission.
   let logMissionTier: string | null = null;
+  // Signatures of the rows currently painted on the overlay. The era capture
+  // can still catch our own panel, and reading it back re-confirms whatever
+  // era produced those rows, so a wrong era would never expire. They outlive
+  // the menu-closed event on purpose: a real log self-read 2s after it.
+  let overlayRowSignatures: string[] = [];
   let cache: {
     key: string;
     rows: RecommendationRow[];
@@ -554,12 +577,33 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
     return { rows, totalOwnedCount };
   }
 
+  function rememberOverlayRows(rows: readonly RecommendationRow[]): void {
+    overlayRowSignatures = rows
+      .map((row) => overlayRowSignature(row.label))
+      .filter((signature): signature is string => signature !== null);
+  }
+
+  function rejectSelfRead(detection: EraDetection | null): EraDetection | null {
+    if (!detection || !normalizeEra(detection.era || null)) return detection;
+    const preview = normalizeScanText(detection.textPreview);
+    if (!preview || !overlayRowSignatures.some((signature) => preview.includes(signature))) {
+      return detection;
+    }
+    log.info(
+      `[RelicSelection] era read matched our own overlay rows, ignoring candidate=${String(
+        detection.candidateId || "-",
+      )}`,
+    );
+    return { ...detection, era: null, confidence: 0 };
+  }
+
   function sendFallbackRows(scanToken: number, source: string, era: string | null): void {
     const startedAt = Date.now();
     try {
       const { rows, totalOwnedCount } = buildRecommendations(era);
       if (scanToken !== activeScanToken) return;
 
+      rememberOverlayRows(rows);
       windows.sendOverlayEvent(RELIC_RECOMMENDATIONS, {
         source,
         era,
@@ -619,11 +663,13 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
         if (logMissionTier && typeof rewardScanner.detectRelicSelectionEra === "function") {
           // Mission tags can linger into an omnia picker. A confident visible tab
           // overrides the tag; missing tabs keep it for mid-mission screens.
-          const labelDetection = await rewardScanner.detectRelicSelectionEra({
-            timeoutMs: ERA_DETECTION_TIMEOUT_MS,
-            preferredDisplayId,
-            labelOnly: true,
-          });
+          const labelDetection = rejectSelfRead(
+            await rewardScanner.detectRelicSelectionEra({
+              timeoutMs: ERA_DETECTION_TIMEOUT_MS,
+              preferredDisplayId,
+              labelOnly: true,
+            }),
+          );
           if (scanToken !== activeScanToken) return;
 
           if (labelDetection?.sourceDisplayId) {
@@ -681,21 +727,27 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
             ? rewardScanner.detectRelicSelectionEra
             : null;
         let eraDetection = detectEra
-          ? await detectEra({ timeoutMs: ERA_DETECTION_TIMEOUT_MS, preferredDisplayId })
+          ? rejectSelfRead(
+              await detectEra({ timeoutMs: ERA_DETECTION_TIMEOUT_MS, preferredDisplayId }),
+            )
           : null;
 
         if (scanToken !== activeScanToken) return;
 
-        // The first capture after app start can come back empty (capture/OCR
-        // cold start) - one delayed retry before dropping the era filter.
+        // The first capture after app start can come back empty from a cold
+        // capture/OCR start, so one delayed retry runs before the era filter is
+        // dropped. A rejected self-read lands here too, and the delay gives the
+        // overlay time to clear its stale cards before the second capture.
         if (detectEra && eraDetection && !normalizeEra(eraDetection.era || null)) {
           log.info("[RelicSelection] era read empty, retrying once");
           await new Promise((resolve) => setTimeout(resolve, ERA_DETECTION_RETRY_DELAY_MS));
           if (scanToken !== activeScanToken) return;
-          const retryDetection = await detectEra({
-            timeoutMs: ERA_DETECTION_TIMEOUT_MS,
-            preferredDisplayId,
-          });
+          const retryDetection = rejectSelfRead(
+            await detectEra({
+              timeoutMs: ERA_DETECTION_TIMEOUT_MS,
+              preferredDisplayId,
+            }),
+          );
           if (scanToken !== activeScanToken) return;
           if (retryDetection) eraDetection = retryDetection;
         }
@@ -732,6 +784,7 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
       const { rows, totalOwnedCount } = buildRecommendations(effectiveEra);
       if (scanToken !== activeScanToken) return;
 
+      rememberOverlayRows(rows);
       windows.sendOverlayEvent(RELIC_RECOMMENDATIONS, {
         source,
         era: effectiveEra,
@@ -757,6 +810,7 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
     } catch (err) {
       if (scanToken !== activeScanToken) return;
       log.error("[RelicSelection] recommendation refinement failed:", normalizeErrorMessage(err));
+      rememberOverlayRows([]);
       windows.sendOverlayEvent(RELIC_RECOMMENDATIONS, {
         source,
         era: null,
@@ -832,6 +886,7 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
       if (scanToken !== activeScanToken) return;
       inFlight = false;
       log.error("[RelicSelection] recommendation pipeline failed:", normalizeErrorMessage(err));
+      rememberOverlayRows([]);
       windows.sendOverlayEvent(RELIC_RECOMMENDATIONS, {
         source,
         era: null,
