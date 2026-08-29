@@ -576,7 +576,10 @@ export function getRivenFamilySlug(weaponName: string): string {
     name = baseIfKnown(name.slice(prefix.length), name);
     break;
   }
+  // WFM spells the ampersand out: its riven weapon list has silva_and_aegis and
+  // no silva_aegis, so dropping the "&" asks for a weapon it does not carry.
   return name
+    .replace(/&/g, " and ")
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "_")
