@@ -426,7 +426,8 @@ export function rankRewardCandidatesDetailed(
     const unexplained = textWords.filter(
       (word, index) => !explainedTextWords[index] && word.length >= MIN_MEANINGFUL_READ_WORD_LENGTH,
     ).length;
-    const readRatio = explained + unexplained > 0 ? explained / (explained + unexplained) : 1;
+    // The word-ratio gate above needed a matched word, so explained is never 0.
+    const readRatio = explained / (explained + unexplained);
     const coverage = Math.min(wordRatio, readRatio);
 
     let bestSpanScore = similarityScore(text, normalizedName);

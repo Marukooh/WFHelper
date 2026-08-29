@@ -104,7 +104,7 @@ const NEAR_MISS_RESCUE_MARGIN = 0.06;
 
 function isNearMissCandidate(candidate: SlotCandidate): boolean {
   // A substring score sitting on the clamp was never measured, so the rescue
-  // margin must not carry it over the 0.92 substring gate.
+  // margin must not carry it over SUBSTRING_SLOT_GATE.
   if (candidate.mode === "substring" && candidate.confidence <= SUBSTRING_SCORE_FLOOR + 1e-6) {
     return false;
   }
@@ -223,6 +223,10 @@ export interface SlotScanStats {
 // near miss while padding-slot junk does not.
 const NEAR_GATE_CONFIDENCE = 0.85;
 
+// A containment match only clears its tier above the SUBSTRING_SCORE_FLOOR
+// clamp, so a score that was never measured cannot fill a slot on its own.
+const SUBSTRING_SLOT_GATE = 0.92;
+
 function isUsableSlotCandidate(candidate: SlotCandidate): boolean {
   if (!candidate?.item?.name) return false;
   const normalizedName = String(candidate.item.name || "").trim();
@@ -231,7 +235,7 @@ function isUsableSlotCandidate(candidate: SlotCandidate): boolean {
     return candidate.mode === "exact" && candidate.confidence >= 0.99;
   }
   if (candidate.mode === "exact") return candidate.confidence >= 0.98;
-  if (candidate.mode === "substring") return candidate.confidence >= 0.92;
+  if (candidate.mode === "substring") return candidate.confidence >= SUBSTRING_SLOT_GATE;
   return candidate.confidence >= 0.86;
 }
 
