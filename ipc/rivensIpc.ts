@@ -7,6 +7,7 @@ import * as rivenBestAttributes from "../services/rivenBestAttributes";
 import { boundedInt, isObject, stringArray } from "./ipcValidators";
 import { toFiniteNumber } from "../config/shared/numeric";
 import { toNonEmptyString } from "../config/shared/stringValidation";
+import { polarityToWfm, tagToWfmUrlName } from "../config/shared/wfmRivenVocabulary";
 import {
   RIVENS_GET,
   RIVENS_GET_WEAPON_NAMES,
@@ -18,12 +19,6 @@ import {
   RIVENS_DELETE_AUCTION,
 } from "../config/shared/ipcChannels";
 
-/** Map game polarity internal names to WFM API names. */
-const POLARITY_TO_WFM: Record<string, string> = {
-  AP_ATTACK: "madurai",
-  AP_TACTIC: "naramon",
-  AP_DEFENSE: "vazarin",
-};
 const MAX_AUCTION_STATS = 8;
 const MAX_DESCRIPTION_LENGTH = 1000;
 const MAX_MIN_REPUTATION = 1_000_000;
@@ -142,7 +137,7 @@ function register(): void {
       if (!slug) return { ok: false, error: "Unknown weapon" };
 
       const attributes = stats.map((s) => {
-        const urlName = rivenData.tagToWfmUrlName(String(s.tag));
+        const urlName = tagToWfmUrlName(String(s.tag));
         // WFM preserves displayed signs, including negative recoil buffs and positive curses.
         const value = toFiniteNumber(s.value) ?? 0;
         return {
@@ -152,10 +147,9 @@ function register(): void {
         };
       });
 
-      const polarityValue = toNonEmptyString(polarity, 32);
-      const wfmPolarity = polarityValue
-        ? POLARITY_TO_WFM[polarityValue] || polarityValue.toLowerCase()
-        : "madurai";
+      // WFM rejects an unknown polarity, and every riven carries one, so an
+      // absent value is the default polarity rather than an error.
+      const wfmPolarity = polarityToWfm(toNonEmptyString(polarity, 32)) || "madurai";
 
       // WFM expects only the generated suffix portion of the riven name in lowercase
       // (e.g. "croni-visican"), NOT the full "Angstrum Croni-visican".
