@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeInventoryValueTotals,
-  createValueTotalsMemo,
   isCountedForValue,
   selectValueStripRows,
   type InventoryValueTotals,
@@ -351,33 +350,5 @@ describe("isCountedForValue", () => {
     expect(isCountedForValue(row({ isPrime: false, partType: "normal" }), "prime")).toBe(false);
     expect(isCountedForValue(row({ isPrime: false, partType: "normal" }), "tradable")).toBe(true);
     expect(isCountedForValue(row({ inventoryGroup: "full_sets" }), "tradable")).toBe(false);
-  });
-});
-
-describe("createValueTotalsMemo", () => {
-  it("reuses the result for the same array and scope", () => {
-    const memo = createValueTotalsMemo();
-    const rows = [row({ amount: 2 })];
-    const first = memo(rows, "prime");
-    expect(memo(rows, "prime")).toBe(first);
-  });
-
-  it("recomputes when the scope or the array changes", () => {
-    const memo = createValueTotalsMemo();
-    const rows = [row()];
-    const first = memo(rows, "prime");
-    const widened = memo(rows, "tradable");
-    expect(widened).not.toBe(first);
-    expect(memo([...rows], "tradable")).not.toBe(widened);
-  });
-
-  it("recomputes when the floor changes", () => {
-    const memo = createValueTotalsMemo();
-    const rows = [row({ platinum: 4 })];
-    const off = memo(rows, "prime", 0);
-    expect(memo(rows, "prime")).toBe(off);
-    const floored = memo(rows, "prime", 5);
-    expect(floored).not.toBe(off);
-    expect(floored.counted).toBe(0);
   });
 });

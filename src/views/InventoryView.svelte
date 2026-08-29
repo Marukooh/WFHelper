@@ -23,7 +23,7 @@
   import { applySharedFiltersAndSort, compareNames, matchesSearch } from "../lib/filters.js";
   import { setRootOf } from "../lib/inventory/fullSets.js";
   import {
-    createValueTotalsMemo,
+    computeInventoryValueTotals,
     isCountedForValue,
     type InventoryValueScope,
   } from "../lib/inventory/valueTotals.js";
@@ -140,8 +140,6 @@
 
   const hydration = getInventoryHydrationController();
   const hydrationMetrics = hydration.metricsByKey;
-  const inventoryValueMemo = createValueTotalsMemo();
-  const inViewValueMemo = createValueTotalsMemo();
   let hotsetRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   let hotsetRefreshSignature = "";
   let hotsetRefreshCompletedSignature = "";
@@ -481,7 +479,7 @@
   $: valueScope = $inventoryValueAllTradables ? "tradable" : "prime";
   $: valueSourceTab = $inventoryValueAllTradables ? "everything" : "all_parts";
   // Gate the cheap base rows first so the priced rows are only built for what
-  // the totals actually count; this pass reruns on every metric flush.
+  // the totals actually count.
   $: valueBaseItems = buildBaseInventoryItems(
     $parsedItems,
     valueSourceTab,
@@ -491,17 +489,22 @@
     $relicDb,
     orderedSubtypes,
   ).filter((item) => isCountedForValue(item, valueScope));
+  // Rebuilt on every metric flush, so the totals below re-walk with it.
   $: valueInventoryItems = buildInventoryViewItems(valueBaseItems, $hydrationMetrics);
   // The platinum floor belongs to the totals, not the prefilter above: base rows
   // carry no median yet, so gating there would drop everything on first paint.
-  $: inventoryValueTotals = inventoryValueMemo(
+  $: inventoryValueTotals = computeInventoryValueTotals(
     valueInventoryItems,
     valueScope,
     $inventoryValueMinPlatinum,
   );
   // visibleItems is the tab after its chips, the search and the advanced filters,
   // so this figure is the one the user can point at on screen.
-  $: inViewValueTotals = inViewValueMemo(visibleItems, valueScope, $inventoryValueMinPlatinum);
+  $: inViewValueTotals = computeInventoryValueTotals(
+    visibleItems,
+    valueScope,
+    $inventoryValueMinPlatinum,
+  );
   // Mount the grid a page at a time: a thousands-row tab (Everything) otherwise
   // creates every card synchronously and re-diffs them on each metric patch.
   const GRID_PAGE_SIZE = 120;

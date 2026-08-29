@@ -145,34 +145,3 @@ export function selectValueStripRows(
   if (inView.counted >= inventory.counted) return ["inView"];
   return ["inView", "inventory"];
 }
-
-/**
- * Single-slot memo keyed by reference. A `$:` block re-runs for any dependency
- * it lists, and a 3k-row walk must not repeat for inputs that did not change.
- */
-export function createValueTotalsMemo(): (
-  entries: readonly InventoryValueEntry[],
-  scope: InventoryValueScope,
-  minPlatinum?: number,
-) => InventoryValueTotals {
-  let lastEntries: readonly InventoryValueEntry[] | null = null;
-  let lastScope: InventoryValueScope | null = null;
-  let lastMinPlatinum: number | null = null;
-  let lastResult: InventoryValueTotals | null = null;
-
-  return (entries, scope, minPlatinum = 0) => {
-    if (
-      lastResult &&
-      entries === lastEntries &&
-      scope === lastScope &&
-      minPlatinum === lastMinPlatinum
-    ) {
-      return lastResult;
-    }
-    lastEntries = entries;
-    lastScope = scope;
-    lastMinPlatinum = minPlatinum;
-    lastResult = computeInventoryValueTotals(entries, scope, minPlatinum);
-    return lastResult;
-  };
-}
