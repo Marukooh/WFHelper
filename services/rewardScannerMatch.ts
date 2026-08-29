@@ -1,4 +1,6 @@
 import { levenshteinDistance } from "./rewardScannerUtils";
+import { normalizeOcrPhrase } from "../config/shared/ocrPhrase";
+import { hasQuantityPrefix, stripQuantityPrefix } from "../config/shared/quantityPrefix";
 import { normalizeForOcr, normalizeForSearch } from "../config/shared/textNormalize";
 
 export const MAX_REWARD_SLOTS = 4;
@@ -229,7 +231,6 @@ function normalizeRewardWord(word: string): string {
 // The card prints the bonus count as "2 X" while the pool name is "2X Forma
 // Blueprint", so the spacing is collapsed before anything compares the two.
 const QUANTITY_PREFIX_SPACING = /^(\d+)\s+x(?=\s|$)/;
-const QUANTITY_PREFIX = /^\d+\s*x\s+/;
 
 function normalizeRewardText(text: string): string {
   return String(text || "")
@@ -255,7 +256,7 @@ function dropQuantityPrefixMismatches(
   for (const entry of ranked) {
     if (!entry.item) continue;
     const name = normalizeRewardText(entry.item.name);
-    const bareName = name.replace(QUANTITY_PREFIX, "");
+    const bareName = stripQuantityPrefix(name);
     if (!bareName) continue;
     const counted = bareName !== name;
     entryBare.set(entry, { bareName, counted });
@@ -263,7 +264,7 @@ function dropQuantityPrefixMismatches(
   }
   if (countedSeen.size === 0) return ranked;
 
-  const textHasQuantity = QUANTITY_PREFIX.test(text);
+  const textHasQuantity = hasQuantityPrefix(text);
   return ranked.filter((entry) => {
     const info = entryBare.get(entry);
     if (!info) return true;
@@ -552,11 +553,7 @@ function distinctEraMentions(normalized: string): Set<string> {
 }
 
 function detectRelicEraFromText(text: string): { era: string | null; confidence: number } {
-  const normalized = String(text || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9\s]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const normalized = normalizeOcrPhrase(text);
 
   if (!normalized) {
     return { era: null, confidence: 0 };
@@ -585,11 +582,7 @@ export function detectRelicEraFromFilterLabelText(text: string): {
   era: string | null;
   confidence: number;
 } {
-  const normalized = String(text || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9\s]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const normalized = normalizeOcrPhrase(text);
 
   if (!normalized) {
     return { era: null, confidence: 0 };
@@ -616,11 +609,7 @@ export function detectRelicEraFromBandText(text: string): {
   era: string | null;
   confidence: number;
 } {
-  const normalized = String(text || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9\s]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const normalized = normalizeOcrPhrase(text);
 
   if (!normalized) return { era: null, confidence: 0 };
   if (distinctEraMentions(normalized).size > 1) return { era: null, confidence: 0 };
@@ -631,19 +620,14 @@ export function detectRelicEraFromTileLabelText(text: string): {
   era: string | null;
   confidence: number;
 } {
-  const normalized = String(text || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9\s]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const normalized = normalizeOcrPhrase(text);
 
   if (!normalized) {
     return { era: null, confidence: 0 };
   }
 
   // The star chart lists every active fissure, so a tile crop that catches the
-  // navigation panel sees several eras at once. Guessing the first one is what
-  // pinned requiem on a player who picked an Omnia fissure.
+  // navigation panel sees several eras at once; the first one is not the pick.
   if (distinctEraMentions(normalized).size > 1) {
     return { era: null, confidence: 0 };
   }

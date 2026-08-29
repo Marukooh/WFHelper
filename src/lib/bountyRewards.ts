@@ -1,6 +1,7 @@
 import { log } from "./log.js";
 import { BOUNTY_FALLBACK_ICON_URLS } from "./assetUrls.js";
 import { fetchWithTimeout } from "./fetchWithTimeout.js";
+import { stripQuantityPrefix } from "../../config/shared/quantityPrefix.js";
 import type { ItemDbEntry } from "../types/inventory.js";
 
 const DROPS_BASE_URL = "https://drops.warframestat.us/data";
@@ -37,8 +38,7 @@ function resolveRewardIconPath(
 ): string | undefined {
   if (!itemName) return undefined;
 
-  // Strip leading count prefix: "100X Kuva" -> "Kuva", "2X Orokin Cell" -> "Orokin Cell"
-  const stripped = itemName.replace(/^\d+x\s+/i, "").trim();
+  const stripped = stripQuantityPrefix(itemName).trim();
   const lowerStripped = stripped.toLowerCase();
 
   // Category overrides (by name pattern)
@@ -317,10 +317,7 @@ export function resolveRewardUniqueName(
   itemDb?: Record<string, ItemDbEntry>,
 ): string | undefined {
   if (!itemName || !itemDb) return undefined;
-  const stripped = itemName
-    .replace(/^\d+x\s+/i, "")
-    .trim()
-    .toLowerCase();
+  const stripped = stripQuantityPrefix(itemName).trim().toLowerCase();
   for (const [uniqueName, entry] of Object.entries(itemDb)) {
     if (entry.name?.toLowerCase() === stripped) return uniqueName;
   }

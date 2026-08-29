@@ -4,6 +4,7 @@ import { RELIC_RECOMMENDATIONS, RELIC_PLANNER_TRIGGER } from "../../config/share
 import { collectRelicInventoryCounts } from "../../config/shared/relicCounts";
 import { getWindowsOcrHealth } from "../../services/ocrServer";
 import { rewardOcrOnnxAvailable } from "../../services/rewardOcrOnnx";
+import { normalizeOcrPhrase } from "../../config/shared/ocrPhrase";
 import { normalizeWfmSlugKey } from "../../config/shared/wfm";
 import { RELIC_MISSION_TIER_CACHE_TTL_MS } from "../../config/runtime/cacheConfig";
 
@@ -159,19 +160,11 @@ function normalizeEra(value: unknown): string | null {
   return null;
 }
 
-/** OCR-comparable form; a capture never reproduces case or punctuation exactly. */
-function normalizeScanText(value: unknown): string {
-  return String(value || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, " ")
-    .trim();
-}
-
 // Built from the row label we composed, so it is language-independent even
 // though the rest of the overlay is translated. Short labels are dropped
 // because a two-word fragment can occur in the game's own relic screen.
 function overlayRowSignature(label: string): string | null {
-  const normalized = normalizeScanText(label);
+  const normalized = normalizeOcrPhrase(label);
   return normalized.split(" ").length >= 3 ? normalized : null;
 }
 
@@ -585,7 +578,7 @@ export function createRelicSelectionController(options: OverlayRecommendationCon
 
   function rejectSelfRead(detection: EraDetection | null): EraDetection | null {
     if (!detection || !normalizeEra(detection.era || null)) return detection;
-    const preview = normalizeScanText(detection.textPreview);
+    const preview = normalizeOcrPhrase(detection.textPreview);
     if (!preview || !overlayRowSignatures.some((signature) => preview.includes(signature))) {
       return detection;
     }
