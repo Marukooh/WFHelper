@@ -263,33 +263,45 @@ async function buildAspectPadSims(screenDir) {
   env.LOCALAPPDATA = localAppData;
   env.WFHELPER_USER_DATA = path.join(workDir, "roaming", "wfhelper");
 
-  const app = await _electron.launch({ args: ["--no-sandbox", ROOT], env });
+  const launchApp = () => _electron.launch({ args: ["--no-sandbox", ROOT], env });
+  // One host cannot survive ~130 ONNX+sharp scans; it dies partway with
+  // "Target page ... has been closed" at a point that moves between runs.
+  let app = await launchApp();
   const failures = [];
 
   async function scanImage(imgPath, scannerPath, reader) {
     // retries cover the relic item list still loading at boot
     for (let attempt = 0; attempt < 15; attempt++) {
-      const result = await app.evaluate(
-        async ({ nativeImage }, p) => {
-          const scanner = process.mainModule.require(p.scannerPath);
-          const image = nativeImage.createFromPath(p.imgPath);
-          if (image.isEmpty()) return { error: "image failed to load" };
-          // same frame is scanned once per reader - the dedup cache would
-          // otherwise return the first reader's result for the rest
-          scanner.resetFrameDedup();
-          return scanner.scanRewardsDetailed(
-            {
-              image,
-              sourceType: "file",
-              sourceName: "scan-e2e",
-              sourceId: null,
-              sourceDisplayId: null,
-            },
-            { reader: p.reader },
-          );
-        },
-        { imgPath, scannerPath, reader },
-      );
+      let result;
+      try {
+        result = await app.evaluate(
+          async ({ nativeImage }, p) => {
+            const scanner = process.mainModule.require(p.scannerPath);
+            const image = nativeImage.createFromPath(p.imgPath);
+            if (image.isEmpty()) return { error: "image failed to load" };
+            // same frame is scanned once per reader - the dedup cache would
+            // otherwise return the first reader's result for the rest
+            scanner.resetFrameDedup();
+            return scanner.scanRewardsDetailed(
+              {
+                image,
+                sourceType: "file",
+                sourceName: "scan-e2e",
+                sourceId: null,
+                sourceDisplayId: null,
+              },
+              { reader: p.reader },
+            );
+          },
+          { imgPath, scannerPath, reader },
+        );
+      } catch (err) {
+        if (!/has been closed|Target closed/i.test(String(err))) throw err;
+        console.log(`RELAUNCH: host died before ${path.basename(imgPath)} [${reader}]`);
+        await app.close().catch(() => {});
+        app = await launchApp();
+        continue;
+      }
       if (result && !result.error && Array.isArray(result.items)) return result;
       if (result?.error) throw new Error(result.error);
       await new Promise((r) => setTimeout(r, 2000));
