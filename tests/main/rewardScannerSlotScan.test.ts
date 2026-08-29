@@ -254,6 +254,53 @@ describe("scanRewardSlotsFallback layout merge", () => {
     expect(result?.emptySlots).toBe(0);
   });
 
+  it("never rescues a substring candidate sitting on the clamp floor", async () => {
+    h.layouts = [{ count: 4, confidence: 0.9, slots: [slot(0), slot(100), slot(200), slot(300)] }];
+    h.matches = {
+      "forma blueprint": match("Forma Blueprint"),
+      "lavos prime systems blueprint": match("Lavos Prime Systems Blueprint"),
+      // A wrap-eaten read that is a substring of one long name. 0.88 is the
+      // clamp, not a measurement, so the rescue margin must not carry it.
+      lueprint: match("Kavasa Prime Kubrow Collar Blueprint", 260, "substring", 0.88),
+      "caliban prime blueprint": match("Caliban Prime Blueprint"),
+    };
+    const result = await scan({
+      "crop:0": "forma blueprint",
+      "crop:100": "lavos prime systems blueprint",
+      "crop:200": "lueprint",
+      "crop:300": "caliban prime blueprint",
+    });
+
+    expect(result?.items.map((item) => item.name)).not.toContain(
+      "Kavasa Prime Kubrow Collar Blueprint",
+    );
+    expect(result?.emptySlots).toBe(1);
+  });
+
+  it("still rescues a substring candidate scored above the clamp floor", async () => {
+    h.layouts = [{ count: 4, confidence: 0.9, slots: [slot(0), slot(100), slot(200), slot(300)] }];
+    h.matches = {
+      "forma blueprint": match("Forma Blueprint"),
+      "lavos prime systems blueprint": match("Lavos Prime Systems Blueprint"),
+      "sevagoth prime systems blueprin": match(
+        "Sevagoth Prime Systems Blueprint",
+        300,
+        "substring",
+        0.9,
+      ),
+      "caliban prime blueprint": match("Caliban Prime Blueprint"),
+    };
+    const result = await scan({
+      "crop:0": "forma blueprint",
+      "crop:100": "lavos prime systems blueprint",
+      "crop:200": "sevagoth prime systems blueprin",
+      "crop:300": "caliban prime blueprint",
+    });
+
+    expect(result?.strategy).toBe("slot-rescued");
+    expect(result?.emptySlots).toBe(0);
+  });
+
   it("leaves far-below-gate junk and duplicate near-misses out", async () => {
     h.layouts = [{ count: 4, confidence: 0.9, slots: [slot(0), slot(100), slot(200), slot(300)] }];
     h.matches = {

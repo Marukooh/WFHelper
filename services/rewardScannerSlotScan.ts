@@ -100,8 +100,16 @@ interface LayoutRun {
 // Margin below the candidate's own tier gate, so substring/exact rescues stay
 // as strict relative to their tier as fuzzy ones.
 const NEAR_MISS_RESCUE_MARGIN = 0.06;
+// rewardScannerMatch clamps every substring score up to this, so a candidate
+// sitting on it was not measured at all. The margin would carry it to 0.94 and
+// past the 0.92 substring gate, which is how a read of "lueprint" once filled a
+// slot with the only long name that happens to end in Blueprint.
+const SUBSTRING_SCORE_FLOOR = 0.88;
 
 function isNearMissCandidate(candidate: SlotCandidate): boolean {
+  if (candidate.mode === "substring" && candidate.confidence <= SUBSTRING_SCORE_FLOOR + 1e-6) {
+    return false;
+  }
   return isUsableSlotCandidate({
     ...candidate,
     confidence: candidate.confidence + NEAR_MISS_RESCUE_MARGIN,
