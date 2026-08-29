@@ -68,7 +68,28 @@ export function setMarketViewState(patch: Partial<MarketViewState>): void {
   marketViewState.update((state) => ({ ...state, ...patch }));
 }
 
+// The token lives with the store because zeroing the freshness stamp has to
+// retire in-flight page walks too, and those are driven from lib/.
+let contractsWriteToken = 0;
+
+/** Claims the contracts store for a request that has not sent yet. */
+export function reserveContractsWrite(): number {
+  contractsWriteToken += 1;
+  return contractsWriteToken;
+}
+
+export function isCurrentContractsWrite(token: number): boolean {
+  return token === contractsWriteToken;
+}
+
+/** Drops the contracts freshness mark and every reservation taken before now. */
+export function invalidateContractsFreshness(): void {
+  contractsWriteToken += 1;
+  setMarketViewState({ contractsLastFetch: 0 });
+}
+
 export function resetMarketFetchTimes(): void {
+  contractsWriteToken += 1;
   setMarketViewState({ ordersLastFetch: 0, contractsLastFetch: 0 });
 }
 

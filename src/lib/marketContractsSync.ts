@@ -3,9 +3,12 @@ import { get } from "svelte/store";
 import { invoke } from "./ipc.js";
 import { isIpcError } from "./ipcGuards.js";
 import {
+  invalidateContractsFreshness,
+  isCurrentContractsWrite,
   marketContracts,
   marketSession,
   marketViewState,
+  reserveContractsWrite,
   setMarketViewState,
 } from "../stores/market.js";
 import type { WfmContract, WfmContractsResult } from "../types/market.js";
@@ -16,17 +19,12 @@ const PAGE_SIZE = 40;
 const MAX_PAGES = 10;
 
 let inFlight: Promise<boolean> | null = null;
-// Only the newest reservation may publish, so a slow reply cannot land on top of
-// a newer list or resurrect an auction the user removed while it was running.
-let writeToken = 0;
 // The store stamp of the last list this module paged to the end. Read back from
 // the store, so any other writer moving the stamp retires the mark by itself.
 let completedAt: { at: number; user: string | null } | null = null;
 
-/** Reserves the contracts store for a request that is about to start. */
 export function beginContractsWrite(): number {
-  writeToken += 1;
-  return writeToken;
+  return reserveContractsWrite();
 }
 
 /**
@@ -34,7 +32,7 @@ export function beginContractsWrite(): number {
  * is tracked apart from the token, which cannot tell page one from a whole list.
  */
 export function commitContracts(token: number, next: WfmContractsResult): boolean {
-  if (token !== writeToken) return false;
+  if (!isCurrentContractsWrite(token)) return false;
   marketContracts.set(next);
   setMarketViewState({ contractsLastFetch: Date.now() });
   return true;
@@ -45,15 +43,12 @@ export function commitContracts(token: number, next: WfmContractsResult): boolea
  * list again. Call it after anything that creates, edits or removes a listing.
  */
 export function invalidateRivenContractsRefresh(): void {
-  writeToken += 1;
   completedAt = null;
-  setMarketViewState({ contractsLastFetch: 0 });
+  invalidateContractsFreshness();
 }
 
 // Freshness alone proves only page one, because the Market tab pages lazily and
 // stamps the same timestamp; a partial store would leave later rivens unmarked.
-// The stamp is the shared invalidation point, so zeroing it anywhere retires
-// this mark too.
 function hasFreshFullList(user: string | null): boolean {
   const stamp = get(marketViewState).contractsLastFetch;
   if (!stamp || Date.now() - stamp >= CONTRACTS_TTL_MS) return false;

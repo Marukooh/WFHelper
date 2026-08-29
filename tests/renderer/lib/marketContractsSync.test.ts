@@ -13,6 +13,7 @@ import {
 } from "../../../src/lib/marketContractsSync.js";
 import { handleWfmNotification } from "../../../src/lib/wfmNotifications.js";
 import {
+  applyClosedWfmListing,
   clearMarketAccountState,
   marketContracts,
   marketSession,
@@ -129,8 +130,8 @@ describe("ensureRivenContractsLoaded", () => {
     expect(mocks.invoke).toHaveBeenCalledTimes(2);
   });
 
-  // A listing the user just created, edited or removed is announced this way,
-  // and the module cache used to outlive it by up to ten minutes.
+  // orders-changed announces a listing the user created, edited or removed, so
+  // the whole-list cache may not answer the next read.
   it("refetches after the orders-changed handler resets the fetch times", async () => {
     signIn();
     mocks.invoke.mockResolvedValue(contractPage(["a"], 1, false));
@@ -181,6 +182,48 @@ describe("ensureRivenContractsLoaded", () => {
     marketContracts.set(contractPage([], 1, false));
     invalidateRivenContractsRefresh();
     releasePage(contractPage(["a"], 1, false));
+
+    await expect(walk).resolves.toBe(true);
+    expect(listedIds()).toEqual([]);
+  });
+
+  it("drops a page walk that an orders-changed notification overtook", async () => {
+    signIn();
+    marketContracts.set(contractPage(["a"], 1, false));
+    let releasePage: (result: WfmContractsResult) => void = () => {};
+    mocks.invoke.mockImplementationOnce(
+      () =>
+        new Promise<WfmContractsResult>((resolve) => {
+          releasePage = resolve;
+        }),
+    );
+
+    const walk = ensureRivenContractsLoaded(true);
+    await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledTimes(1));
+    marketContracts.set(contractPage(["b"], 1, false));
+    handleWfmNotification({ type: "orders-changed" }, translate);
+    releasePage(contractPage(["a"], 1, false));
+
+    await expect(walk).resolves.toBe(true);
+    expect(listedIds()).toEqual(["b"]);
+    expect(get(marketViewState).contractsLastFetch).toBe(0);
+  });
+
+  it("drops a page walk that a closed listing overtook", async () => {
+    signIn();
+    marketContracts.set(contractPage(["r1"], 1, false));
+    let releasePage: (result: WfmContractsResult) => void = () => {};
+    mocks.invoke.mockImplementationOnce(
+      () =>
+        new Promise<WfmContractsResult>((resolve) => {
+          releasePage = resolve;
+        }),
+    );
+
+    const walk = ensureRivenContractsLoaded(true);
+    await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledTimes(1));
+    applyClosedWfmListing({ kind: "contract", orderId: "r1", quantity: 1 });
+    releasePage(contractPage(["r1"], 1, false));
 
     await expect(walk).resolves.toBe(true);
     expect(listedIds()).toEqual([]);
