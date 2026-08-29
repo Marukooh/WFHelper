@@ -8,6 +8,7 @@
   import { buildItemNameIndex } from "../lib/componentResolution.js";
   import { buildParsedItemFromDb } from "../lib/parsedItemFromDb.js";
   import { tr as t } from "../lib/i18n.js";
+  import { stripQuantityPrefix } from "../../config/shared/quantityPrefix.js";
   import type { DropRow, DropSearchMode } from "../types/drops.js";
 
   let query = "";
@@ -93,11 +94,7 @@
   // entry remain non-clickable.
   $: nameIndex = buildItemNameIndex($itemDb);
 
-  // Bundled rows like "2x Orokin Cell" carry a quantity prefix the db lacks.
-  function stripQuantityPrefix(name: string): string {
-    return name.replace(/^\d+\s*x\s+/i, "");
-  }
-
+  // Bundled rows like "2X Orokin Cell" carry a quantity prefix the db lacks.
   function openItem(name: string): void {
     const uniqueName = nameIndex.get(name) ?? nameIndex.get(stripQuantityPrefix(name));
     if (!uniqueName) return;
