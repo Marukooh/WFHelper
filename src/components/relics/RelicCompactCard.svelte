@@ -104,7 +104,10 @@
       </span>
     </span>
 
-    <span class="flex min-w-0 flex-1 basis-24 flex-col gap-1">
+    <!-- No min-w-0: it let this column fall under the vaulted tag's own width,
+         and the tag then overflowed right into the price. The name's ellipsis
+         yields instead. -->
+    <span class="flex flex-1 basis-24 flex-col gap-1">
       <span
         class="relic-row-name overflow-hidden text-ellipsis whitespace-nowrap font-display text-xl font-semibold tracking-[0.01em]"
         >{group.name}</span
@@ -114,8 +117,9 @@
       </span>
     </span>
 
-    <!-- min-w-0 lets the EV label truncate before it eats the relic name. -->
-    <span class="ml-auto flex min-w-0 flex-col items-end gap-0.5">
+    <!-- shrink-0 keeps the nowrap strip inside this column; min-w-0 let it
+         shrink underneath and the numbers spilled left onto the tag. -->
+    <span class="ml-auto flex shrink-0 flex-col items-end gap-0.5">
       <span
         class="relic-compact-block-label max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-right font-display text-[0.65rem] tracking-[0.06em] uppercase text-text-secondary"
         >{qualityHeader}</span
@@ -125,6 +129,7 @@
         ducats={selected.ducat != null ? selected.ducat.toFixed(1) : null}
         ratio={selected.ratio != null ? selected.ratio.toFixed(1) : null}
         state={selected.cls}
+        size="compact"
         wrap={false}
         justify="end"
       />
