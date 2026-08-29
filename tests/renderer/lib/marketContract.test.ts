@@ -62,14 +62,61 @@ describe("contractInventoryMatch", () => {
     });
   });
 
+  it("tells same-name twins apart by mastery requirement", () => {
+    const listing = contract({ masteryLevel: 12, modRank: 0 });
+    const twins = [
+      riven({ currentRank: 0, masteryReq: 16 }),
+      riven({ currentRank: 8, masteryReq: 12 }),
+    ];
+    expect(contractInventoryMatch(listing, twins)).toEqual({
+      state: "rank-mismatch",
+      ownedRank: 8,
+    });
+  });
+
   it("keeps the name set when no twin answers the stated reroll count", () => {
     const listing = contract({ rerolls: 12 });
     expect(contractInventoryMatch(listing, [riven({ rerolls: 3 })])).toEqual({ state: "match" });
   });
 
+  it("keeps the name set when no twin answers the stated mastery requirement", () => {
+    const listing = contract({ masteryLevel: 12 });
+    expect(contractInventoryMatch(listing, [riven({ masteryReq: 16 })])).toEqual({
+      state: "match",
+    });
+  });
+
   it("accepts the family slug WFM lists rivens under", () => {
     const owned = riven({ weaponName: "Rubico Prime", rivenName: "Rubico Prime Visi-critacan" });
     expect(contractInventoryMatch(contract(), [owned])).toEqual({ state: "match" });
+  });
+
+  // WFM strips the variant prefix as well: rivens for Kuva, Tenet, MK1 and
+  // Prisma weapons are all listed under the base weapon's slug.
+  it("accepts a family slug the variant prefix was stripped from", () => {
+    const cases: Array<[string, string]> = [
+      ["karak", "Kuva Karak"],
+      ["envoy", "Tenet Envoy"],
+      ["braton", "MK1-Braton"],
+      ["obex", "Prisma Obex"],
+      ["grakata", "Prisma Grakata"],
+      ["gorgon", "Prisma Gorgon"],
+    ];
+    for (const [slug, weaponName] of cases) {
+      const owned = riven({ weaponName, rivenName: `${weaponName} Visi-critacan` });
+      expect(contractInventoryMatch(contract({ weaponUrlName: slug }), [owned])).toEqual({
+        state: "match",
+      });
+    }
+  });
+
+  // A weapon whose base form was never made is its own WFM family, so the
+  // unstripped slug has to keep matching.
+  it("accepts a variant weapon that has no base form", () => {
+    const owned = riven({ weaponName: "Kuva Bramma", rivenName: "Kuva Bramma Visi-critacan" });
+    expect(contractInventoryMatch(contract({ weaponUrlName: "kuva_bramma" }), [owned])).toEqual({
+      state: "match",
+    });
   });
 
   it("does not match the same suffix on another weapon", () => {
@@ -119,6 +166,12 @@ describe("contractInventoryMatch", () => {
     const listing = contract({ weaponUrlName: "  Rubico  " });
     expect(contractInventoryMatch(listing, [riven()])).toEqual({ state: "match" });
   });
+
+  it("tolerates padding around the owned riven name", () => {
+    expect(
+      contractInventoryMatch(contract(), [riven({ rivenName: "  Rubico   Visi-critacan " })]),
+    ).toEqual({ state: "match" });
+  });
 });
 
 type Auction = Parameters<typeof matchRivenListings>[1][number] & { id: string };
@@ -128,9 +181,10 @@ function statAttr(urlName: string, label = "", value = 100) {
   return { urlName, label, value, positive: true };
 }
 
-function ownedStat(name: string, displayValue = 100, maxRankValue = displayValue) {
+/** Owned stats carry the game's own label, so the tag is the only join key. */
+function ownedStat(tag: string, name: string, displayValue = 100, maxRankValue = displayValue) {
   return {
-    tag: name,
+    tag,
     name,
     displayValue,
     maxRankValue,
@@ -165,7 +219,10 @@ function owned(overrides: Partial<OwnedRiven> = {}): OwnedRiven {
     rerolls: 0,
     masteryReq: 16,
     polarity: "",
-    stats: [ownedStat("Critical Chance"), ownedStat("Damage vs Corpus")],
+    stats: [
+      ownedStat("WeaponCritChanceMod", "Critical Chance"),
+      ownedStat("WeaponFactionDamageCorpus", "Damage to Corpus"),
+    ],
     ...overrides,
   } as OwnedRiven;
 }
@@ -189,6 +246,20 @@ describe("matchRivenListings", () => {
       rivenName: "Rubico Prime Visi-critacan",
     });
     expect(matchRivenListings([prime], [auction()]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  it("survives a variant prefix the WFM slug strips", () => {
+    const cases: Array<[string, string]> = [
+      ["karak", "Kuva Karak"],
+      ["envoy", "Tenet Envoy"],
+      ["braton", "MK1-Braton"],
+      ["obex", "Prisma Obex"],
+    ];
+    for (const [slug, weaponName] of cases) {
+      const mine = owned({ weaponName, rivenName: `${weaponName} Visi-critacan` });
+      const listing = auction({ weaponUrlName: slug });
+      expect(matchRivenListings([mine], [listing]).get("riven-1")?.id).toBe("auction-1");
+    }
   });
 
   it("matches a weapon warframe.market spells with 'and'", () => {
@@ -226,18 +297,27 @@ describe("matchRivenListings", () => {
     expect(matchRivenListings([mine], [auction()]).get("riven-1")?.id).toBe("auction-1");
   });
 
-  // The overlay alias table is the only bridge between "Attack Speed" on a melee
-  // riven and the "fire rate" slug warframe.market stores.
-  it("resolves aliased stat names in the fallback", () => {
-    const listing = auction({
-      rivenSuffix: null,
-      stats: [statAttr("attack_speed"), statAttr("melee_damage")],
-    });
-    const mine = owned({
-      rivenName: "Rubico",
-      stats: [ownedStat("Fire Rate"), ownedStat("Damage")],
-    });
-    expect(matchRivenListings([mine], [listing]).get("riven-1")?.id).toBe("auction-1");
+  // WFM's attribute slugs and the game's stat labels share no wording for the
+  // elements, the factions or the two split stats, so the join runs on the
+  // upgrade tag both sides carry.
+  it("joins WFM attribute slugs to the labels the game shows", () => {
+    const cases: Array<[string, string, string]> = [
+      ["cold_damage", "WeaponFreezeDamageMod", "Cold"],
+      ["heat_damage", "WeaponFireDamageMod", "Heat"],
+      ["electric_damage", "WeaponElectricityDamageMod", "Electricity"],
+      ["toxin_damage", "WeaponToxinDamageMod", "Toxin"],
+      ["damage_vs_corpus", "WeaponFactionDamageCorpus", "Damage to Corpus"],
+      ["damage_vs_grineer", "WeaponMeleeFactionDamageGrineer", "Damage to Grineer"],
+      ["fire_rate_/_attack_speed", "WeaponFireRateMod", "Attack Speed"],
+      ["base_damage_/_melee_damage", "WeaponMeleeDamageMod", "Melee Damage"],
+      ["critical_chance_on_slide_attack", "SlideAttackCritChanceMod", "Slide Attack"],
+      ["channeling_efficiency", "WeaponMeleeComboEfficiencyMod", "Heavy Attack Efficiency"],
+    ];
+    for (const [urlName, tag, label] of cases) {
+      const listing = auction({ rivenSuffix: null, stats: [statAttr(urlName)] });
+      const mine = owned({ rivenName: "Rubico", stats: [ownedStat(tag, label)] });
+      expect(matchRivenListings([mine], [listing]).get("riven-1")?.id).toBe("auction-1");
+    }
   });
 
   it("rejects the fallback when the stat sets differ", () => {
@@ -247,10 +327,13 @@ describe("matchRivenListings", () => {
   });
 
   // "damage" is a substring of half the stat names, so a contained-in test would
-  // pair "Damage vs Corpus" with the plain damage slug.
+  // pair "Damage to Corpus" with the plain damage slug.
   it("does not pair stats by substring", () => {
     const listing = auction({ rivenSuffix: null, stats: [statAttr("damage_vs_corpus")] });
-    const mine = owned({ rivenName: "Rubico", stats: [ownedStat("Damage")] });
+    const mine = owned({
+      rivenName: "Rubico",
+      stats: [ownedStat("WeaponDamageAmountMod", "Damage")],
+    });
     expect(matchRivenListings([mine], [listing]).size).toBe(0);
   });
 
@@ -265,6 +348,13 @@ describe("matchRivenListings", () => {
   it("prefers the twin whose reroll count the auction states", () => {
     const twins = [owned({ rerolls: 0 }), owned({ itemId: "riven-2", rerolls: 12 })];
     const matched = matchRivenListings(twins, [auction({ rerolls: 12 })]);
+    expect(matched.has("riven-1")).toBe(false);
+    expect(matched.get("riven-2")?.id).toBe("auction-1");
+  });
+
+  it("prefers the twin whose mastery requirement the auction states", () => {
+    const twins = [owned({ masteryReq: 16 }), owned({ itemId: "riven-2", masteryReq: 12 })];
+    const matched = matchRivenListings(twins, [auction({ masteryLevel: 12 })]);
     expect(matched.has("riven-1")).toBe(false);
     expect(matched.get("riven-2")?.id).toBe("auction-1");
   });
@@ -296,12 +386,34 @@ describe("matchRivenListings", () => {
     expect(matched.get("riven-2")?.id).toBe("auction-1");
   });
 
+  it("separates twins by a polarity only the shared table knows", () => {
+    const twins = [
+      owned({ polarity: "AP_POWER" }),
+      owned({ itemId: "riven-2", polarity: "AP_WARD" }),
+    ];
+    const listings = [
+      auction({ polarity: "unairu" }),
+      auction({ id: "auction-2", polarity: "zenurik" }),
+    ];
+    const matched = matchRivenListings(twins, listings);
+    expect(matched.get("riven-1")?.id).toBe("auction-2");
+    expect(matched.get("riven-2")?.id).toBe("auction-1");
+  });
+
   it("gives each twin the auction carrying its own stat rolls", () => {
     const twins = [
-      owned({ stats: [ownedStat("Critical Chance", 120), ownedStat("Damage vs Corpus", 90)] }),
+      owned({
+        stats: [
+          ownedStat("WeaponCritChanceMod", "Critical Chance", 120),
+          ownedStat("WeaponFactionDamageCorpus", "Damage to Corpus", 90),
+        ],
+      }),
       owned({
         itemId: "riven-2",
-        stats: [ownedStat("Critical Chance", 150), ownedStat("Damage vs Corpus", 90)],
+        stats: [
+          ownedStat("WeaponCritChanceMod", "Critical Chance", 150),
+          ownedStat("WeaponFactionDamageCorpus", "Damage to Corpus", 90),
+        ],
       }),
     ];
     const listings = [
@@ -322,8 +434,15 @@ describe("matchRivenListings", () => {
   // carries the rank-8 roll while the copy still shows its own.
   it("separates twins by the max-rank roll the auction was listed with", () => {
     const twins = [
-      owned({ currentRank: 0, stats: [ownedStat("Critical Chance", 40, 120)] }),
-      owned({ itemId: "riven-2", currentRank: 0, stats: [ownedStat("Critical Chance", 50, 150)] }),
+      owned({
+        currentRank: 0,
+        stats: [ownedStat("WeaponCritChanceMod", "Critical Chance", 40, 120)],
+      }),
+      owned({
+        itemId: "riven-2",
+        currentRank: 0,
+        stats: [ownedStat("WeaponCritChanceMod", "Critical Chance", 50, 150)],
+      }),
     ];
     const listing = auction({ stats: [statAttr("critical_chance", "", 150)] });
     const matched = matchRivenListings(twins, [listing]);
@@ -340,11 +459,37 @@ describe("matchRivenListings", () => {
 
   it("marks neither twin when only the polarity is unknown on both sides", () => {
     const twins = [
-      owned({ stats: [ownedStat("Critical Chance", 120)] }),
-      owned({ itemId: "riven-2", stats: [ownedStat("Critical Chance", 120)] }),
+      owned({ stats: [ownedStat("WeaponCritChanceMod", "Critical Chance", 120)] }),
+      owned({
+        itemId: "riven-2",
+        stats: [ownedStat("WeaponCritChanceMod", "Critical Chance", 120)],
+      }),
     ];
     const listing = auction({ stats: [statAttr("critical_chance", "", 120)] });
     expect(matchRivenListings(twins, [listing]).size).toBe(0);
+  });
+
+  // More auctions than twins still proves each twin is listed; the surplus
+  // auction belongs to a riven the candidate filter no longer reaches.
+  it("marks every twin when the auctions outnumber them", () => {
+    const twins = [owned(), owned({ itemId: "riven-2" })];
+    const listings = [auction(), auction({ id: "auction-2" }), auction({ id: "auction-3" })];
+    const matched = matchRivenListings(twins, listings);
+    expect(new Set(matched.keys())).toEqual(new Set(["riven-1", "riven-2"]));
+  });
+
+  it("marks nothing when the twins outnumber the auctions", () => {
+    const twins = [owned(), owned({ itemId: "riven-2" }), owned({ itemId: "riven-3" })];
+    const listings = [auction(), auction({ id: "auction-2" })];
+    expect(matchRivenListings(twins, listings).size).toBe(0);
+  });
+
+  it("marks the same rivens whichever order the auctions arrive in", () => {
+    const twins = [owned(), owned({ itemId: "riven-2" })];
+    const listings = [auction(), auction({ id: "auction-2" }), auction({ id: "auction-3" })];
+    const forward = matchRivenListings(twins, listings);
+    const reversed = matchRivenListings(twins, [...listings].reverse());
+    expect(new Set(reversed.keys())).toEqual(new Set(forward.keys()));
   });
 
   // Number(null) is 0, so an attribute WFM sent without a value used to demand a

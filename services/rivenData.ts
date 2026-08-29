@@ -1,5 +1,7 @@
 import { withScope } from "./logger";
 import { levenshteinDistance } from "./rewardScannerUtils";
+import { TAG_TO_WFM_URL_NAME } from "../config/shared/wfmRivenVocabulary";
+import { VARIANT_PREFIXES, VARIANT_SUFFIXES } from "../config/shared/weaponVariants";
 
 const log = withScope("rivenData");
 
@@ -111,48 +113,6 @@ for (const [name, tag] of Object.entries(STAT_NAME_TO_TAG)) {
       .join(" ");
   }
 }
-
-// WFM auction attribute IDs do not follow display-name normalization.
-// Source: https://api.warframe.market/v1/riven/attributes
-
-const TAG_TO_WFM_URL_NAME: Record<string, string> = {
-  WeaponCritChanceMod: "critical_chance",
-  WeaponCritDamageMod: "critical_damage",
-  WeaponFireIterationsMod: "multishot",
-  WeaponFireRateMod: "fire_rate_/_attack_speed",
-  WeaponDamageAmountMod: "base_damage_/_melee_damage",
-  WeaponReloadSpeedMod: "reload_speed",
-  WeaponStunChanceMod: "status_chance",
-  WeaponProcTimeMod: "status_duration",
-  WeaponPunctureDepthMod: "punch_through",
-  WeaponClipMaxMod: "magazine_capacity",
-  WeaponAmmoMaxMod: "ammo_maximum",
-  WeaponRecoilReductionMod: "recoil",
-  WeaponZoomFovMod: "zoom",
-  WeaponProjectileSpeedMod: "projectile_speed",
-  WeaponImpactDamageMod: "impact_damage",
-  WeaponArmorPiercingDamageMod: "puncture_damage",
-  WeaponSlashDamageMod: "slash_damage",
-  WeaponFreezeDamageMod: "cold_damage",
-  WeaponFireDamageMod: "heat_damage",
-  WeaponElectricityDamageMod: "electric_damage",
-  WeaponToxinDamageMod: "toxin_damage",
-  WeaponFactionDamageGrineer: "damage_vs_grineer",
-  WeaponFactionDamageCorpus: "damage_vs_corpus",
-  WeaponFactionDamageInfested: "damage_vs_infested",
-  WeaponMeleeDamageMod: "base_damage_/_melee_damage",
-  WeaponMeleeRangeIncMod: "range",
-  ComboDurationMod: "combo_duration",
-  SlideAttackCritChanceMod: "critical_chance_on_slide_attack",
-  WeaponMeleeFinisherDamageMod: "finisher_damage",
-  WeaponMeleeComboEfficiencyMod: "channeling_efficiency",
-  WeaponMeleeComboInitialBonusMod: "channeling_damage",
-  WeaponMeleeComboPointsOnHitMod: "chance_to_gain_combo_count",
-  WeaponMeleeComboBonusOnHitMod: "chance_to_gain_extra_combo_count",
-  WeaponMeleeFactionDamageGrineer: "damage_vs_grineer",
-  WeaponMeleeFactionDamageCorpus: "damage_vs_corpus",
-  WeaponMeleeFactionDamageInfested: "damage_vs_infested",
-};
 
 const RIFLE_RIVEN_KEY = "/Lotus/Upgrades/Mods/Randomized/LotusRifleRandomModRare";
 const PISTOL_RIVEN_KEY = "/Lotus/Upgrades/Mods/Randomized/LotusPistolRandomModRare";
@@ -389,11 +349,6 @@ export function getStatDisplayName(tag: string, melee = false): string {
   return _tagToDisplayName.get(tag) || TAG_TO_DISPLAY[tag] || tag;
 }
 
-/** Convert a game upgrade tag to the WFM riven auction attribute url_name. */
-export function tagToWfmUrlName(tag: string): string | null {
-  return TAG_TO_WFM_URL_NAME[tag] || null;
-}
-
 /** Finds an upgrade entry by tag within a riven type. */
 export function findUpgradeEntry(rivenTypeKey: string, tag: string): UpgradeEntry | null {
   const entries = getRivenTypeEntries(rivenTypeKey);
@@ -601,12 +556,6 @@ export function findWeaponByLabelLine(lines: string[]): WeaponLabelMatch | null 
   return best ? { name: best.name, exact: best.exact } : null;
 }
 
-/** Variant affixes to strip when deriving the riven weapon family name.
- *  Prisma and Dex are prefixes in Warframe, never suffixes. "Dex " is absent on
- *  purpose: WFM lists dex_nikana and dex_dakra as families of their own. */
-const VARIANT_SUFFIXES = [" Prime", " Wraith", " Vandal"];
-const VARIANT_PREFIXES = ["MK1-", "Mk1-", "Kuva ", "Tenet ", "Prisma "];
-
 /** Derives the WFM riven family slug, such as "Boar Prime" -> "boar". */
 export function getRivenFamilySlug(weaponName: string): string {
   ensureBuilt();
@@ -618,12 +567,12 @@ export function getRivenFamilySlug(weaponName: string): string {
 
   let name = weaponName.trim();
   for (const suffix of VARIANT_SUFFIXES) {
-    if (!name.endsWith(suffix)) continue;
+    if (!name.toLowerCase().endsWith(suffix.toLowerCase())) continue;
     name = baseIfKnown(name.slice(0, -suffix.length), name);
     break;
   }
   for (const prefix of VARIANT_PREFIXES) {
-    if (!name.startsWith(prefix)) continue;
+    if (!name.toLowerCase().startsWith(prefix.toLowerCase())) continue;
     name = baseIfKnown(name.slice(prefix.length), name);
     break;
   }

@@ -384,7 +384,9 @@ interface OwnedSets {
 const INCARNON_GENESIS_FEATURE = 512;
 
 /** Adapters fit every variant of their weapon (Prisma Skana, Dex Furis, Braton
- *  Vandal all take the base adapter), so installed detection folds variants. */
+ *  Vandal all take the base adapter), so installed detection folds variants.
+ *  Not config/shared/weaponVariants: that list is riven families, and folding
+ *  Kuva Karak to Karak here would read the base weapon's adapter as installed. */
 function incarnonBaseName(name: string): string {
   return name.replace(/^(MK1-|Prisma |Mara |Dex )/i, "").replace(/ (Prime|Vandal|Wraith)$/i, "");
 }
