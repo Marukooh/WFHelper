@@ -10,8 +10,8 @@ const { buildRealScreens } = require("./build-screens.cjs");
 
 const KNOWN_READERS = ["windows", "onnx", "both"];
 
-// A typo in REWARD_SCAN_READERS used to filter every screen down to no reader,
-// skip the whole suite and still exit 0, silently disarming the CI gate.
+// An unknown reader name has to fail loudly: filtering every screen down to no
+// reader would skip the suite and still exit 0, disarming the CI gate.
 function parseReaderFilter(raw) {
   if (raw == null || raw.trim() === "") return null;
   const names = raw
@@ -28,9 +28,9 @@ function parseReaderFilter(raw) {
   return new Set(names);
 }
 
-// The host dies partway through a long ONNX+sharp run, so one or two relaunches
-// are a survivable flake. More than that is the process defect this gate exists
-// to catch, so the budget is small and exceeding it fails the run.
+// The host dies partway through a long ONNX+sharp run, so up to three relaunches
+// are a survivable flake. Past the budget it is the process defect this gate
+// exists to catch, and the run fails.
 const MAX_RELAUNCHES = 3;
 const relaunches = [];
 
@@ -339,7 +339,7 @@ function parseImageArg(argv) {
             const scanner = process.mainModule.require(p.scannerPath);
             const image = nativeImage.createFromPath(p.imgPath);
             if (image.isEmpty()) return { error: "image failed to load" };
-            // same frame is scanned once per reader - the dedup cache would
+            // same frame is scanned once per reader, and the dedup cache would
             // otherwise return the first reader's result for the rest
             scanner.resetFrameDedup();
             return scanner.scanRewardsDetailed(
@@ -387,9 +387,9 @@ function parseImageArg(argv) {
           `[${path.basename(singleImage)}][${reader}] strategy=${result?.meta?.strategy ?? "none"}`,
         );
         for (const item of result?.items || []) {
-          console.log(
-            `  slot ${Number(item.slotIndex) + 1}: ${item.name} (confidence ${item.confidence})`,
-          );
+          // The text fallback matches a whole band, so its items carry no slot.
+          const where = Number.isInteger(item.slotIndex) ? `slot ${item.slotIndex + 1}` : "no slot";
+          console.log(`  ${where}: ${item.name} (confidence ${item.confidence})`);
         }
         if (!(result?.items || []).length) console.log("  no item cleared the match gate");
       }
