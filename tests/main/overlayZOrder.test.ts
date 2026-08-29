@@ -213,8 +213,9 @@ describe("applyOverlayZOrder on linux", () => {
     expect(win.setAlwaysOnTop).toHaveBeenCalledTimes(1);
   });
 
-  // Without this the drift path answers a self-inflicted drop on every tick,
-  // which is the restack that cost frames on linux in the first place.
+  // The drift path exists to answer a wm-reported burial. A wm that keeps
+  // dropping the band it was just given is flapping, so its answer stops
+  // counting once the budget is spent.
   it("stops trusting a wm that drops the band it just re-asserted", () => {
     const win = fakeFlappingWindow();
 
@@ -308,17 +309,34 @@ describe("applyOverlayZOrder on linux", () => {
     expect(win.moveTop).toHaveBeenCalledTimes(2);
   });
 
-  // A reporting wm answering false is the drop itself, so the remembered flag
-  // must not send a second setAlwaysOnTop(false) after the game exits.
-  it("leaves a window the wm already de-banded alone on unfocus", () => {
+  // A reporting wm answering false took the band away but left the workspace
+  // flag and the remembered raise, so the unfocus teardown still has work.
+  it("tears the raise down when the wm de-banded before the unfocus", () => {
     const win = fakeWindow();
 
     apply(win, true, "linux");
-    win.alwaysOnTop = false;
+    win.alwaysOnTop = false; // the wm dropped the band on its own
     win.setAlwaysOnTop.mockClear();
+    win.setVisibleOnAllWorkspaces.mockClear();
+    apply(win, false, "linux");
+
+    expect(win.setAlwaysOnTop).toHaveBeenCalledWith(false);
+    expect(win.setVisibleOnAllWorkspaces).toHaveBeenCalledWith(false);
+  });
+
+  // The teardown is what clears the remembered raise, so a second unfocus tick
+  // has nothing left to undo and must stay silent.
+  it("forgets the remembered raise once the unfocus teardown ran", () => {
+    const win = fakeWindowWithoutAboveSupport();
+
+    apply(win, true, "linux");
+    apply(win, false, "linux");
+    win.setAlwaysOnTop.mockClear();
+    win.setVisibleOnAllWorkspaces.mockClear();
     apply(win, false, "linux");
 
     expect(win.setAlwaysOnTop).not.toHaveBeenCalled();
+    expect(win.setVisibleOnAllWorkspaces).not.toHaveBeenCalled();
   });
 });
 
@@ -375,6 +393,24 @@ describe("syncOverlayWindowZOrder", () => {
     sync(controller, win, true, "linux");
 
     expect(win.moveTop).toHaveBeenCalledTimes(2);
+  });
+
+  // The drift budget is spent per show. A counter carried across a hide left the
+  // next show short of re-raises against the same flapping wm.
+  it("gives a re-shown overlay the full drift budget again", () => {
+    const win = fakeFlappingWindow();
+    const controller = fakeController(true);
+
+    for (let tick = 0; tick < 10; tick += 1) sync(controller, win, true, "linux");
+    const beforeHide = win.moveTop.mock.calls.length;
+
+    controller.setVisible(false);
+    sync(controller, win, true, "linux");
+    controller.setVisible(true);
+    for (let tick = 0; tick < 10; tick += 1) sync(controller, win, true, "linux");
+
+    expect(beforeHide).toBe(4);
+    expect(win.moveTop).toHaveBeenCalledTimes(8);
   });
 
   it("keeps the Windows poll re-asserting on every visible tick", () => {

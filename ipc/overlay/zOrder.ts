@@ -46,6 +46,14 @@ function isRaised(win: OverlayWindow, platform: NodeJS.Platform): boolean {
   return linuxWmReportsBand.has(win) ? false : linuxRaiseApplied.get(win) === true;
 }
 
+// The band can be gone while the raise is not: a reporting wm answering false
+// still leaves the workspace flag and the remembered raise behind, and both
+// belong to the game, so an unfocus has to undo them.
+function needsUnraise(win: OverlayWindow, platform: NodeJS.Platform): boolean {
+  if (win.isAlwaysOnTop()) return true;
+  return platform === "linux" && linuxRaiseApplied.get(win) === true;
+}
+
 /** Whether a raise the wm asked for by dropping the band is still worth sending. */
 function allowLinuxDriftRaise(win: OverlayWindow): boolean {
   if (linuxRaiseApplied.get(win) !== true || !linuxWmReportsBand.has(win)) return true;
@@ -86,7 +94,7 @@ export function applyOverlayZOrder(
     if (loggedLinuxRaise) return;
     loggedLinuxRaise = true;
     log.info("[ZOrder] linux raise applied; re-asserted on re-show and when the wm drops the band");
-  } else if (isRaised(win, platform)) {
+  } else if (needsUnraise(win, platform)) {
     win.setAlwaysOnTop(false);
     win.setVisibleOnAllWorkspaces(false);
     if (linux) linuxRaiseApplied.set(win, false);
@@ -107,9 +115,11 @@ export function syncOverlayWindowZOrder(
 ): void {
   if (!win || win.isDestroyed()) return;
   if (!controller.isOverlayWindowVisible()) {
-    // A hide costs the window its stacking, so the remembered raise must not
-    // outlive it or the next show would never be re-asserted on linux.
+    // A hide costs the window its stacking, so neither the remembered raise nor
+    // the drift budget may outlive it. The next show starts unstacked and needs
+    // both a fresh re-assert and its full re-raise allowance.
     linuxRaiseApplied.delete(win);
+    linuxDriftReraises.delete(win);
     return;
   }
   // A released hold-open schedules its hide 2.5s out, and re-stacking a window
