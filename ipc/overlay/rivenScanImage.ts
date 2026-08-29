@@ -91,8 +91,19 @@ export interface RivenFallbackCrop {
 
 // Fallback trim targets the stat-crop height the recognizer is calibrated for.
 const FALLBACK_TARGET_HEIGHT = 400;
+// Height the recognizer reads a stat band reliably at. Measured on saved crops:
+// the same 224x162 chat card loses its curse line at 1x and keeps it at 2x,
+// while the mod-screen card of the same riven reads at either scale.
+const RELIABLE_STAT_CROP_HEIGHT = 320;
 const FALLBACK_MAX_UPSCALE = 3;
 const FALLBACK_PAD_FRACTION = 0.06;
+
+/** Lanczos factor that lifts a short stat band to a height the recognizer
+ *  reads. Framing is left alone; re-trimming the band regressed the mod card. */
+export function statCropUpscaleFactor(height: number): number {
+  if (height <= 0) return 1;
+  return Math.min(3, Math.max(1, Math.ceil(RELIABLE_STAT_CROP_HEIGHT / height)));
+}
 
 /** Small-card fallback: the fixed stat band clips half-size cards, so re-trim
  *  around the detected text bounds. The caller upscales for OCR. */

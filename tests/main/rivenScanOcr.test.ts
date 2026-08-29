@@ -23,6 +23,7 @@ vi.mock("../../ipc/overlay/rivenScanImage", () => {
   return {
     cropRivenStatImage: () => ({ cardCrop: crop(), statCrop: crop() }),
     cropRivenStatAreaFallback: () => null,
+    statCropUpscaleFactor: (height: number) => Math.min(3, Math.max(1, Math.ceil(320 / height))),
   };
 });
 

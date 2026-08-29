@@ -14,6 +14,7 @@ import {
 import { userDataPath } from "../../services/userDataPath";
 import {
   cropRivenStatAreaFallback,
+  statCropUpscaleFactor,
   cropRivenStatImage,
   type RivenFallbackCrop,
   type RivenScanCropRect,
@@ -147,10 +148,13 @@ export async function recognizeRivenCardStats(
 
     try {
       // Rereading identical pixels cannot improve; retries switch to the
-      // upscaled text-bounds crop.
+      // upscaled text-bounds crop. The first read keeps that framing and only
+      // scales it, because a short band drops its curse line silently and so
+      // never reaches the retry gate.
       let scanImage = statCrop;
-      let upscaleFactor = 1;
+      let upscaleFactor = statCropUpscaleFactor(statCrop.getSize().height);
       if (attempt > 0) {
+        upscaleFactor = 1;
         if (fallbackCrop === undefined) fallbackCrop = cropRivenStatAreaFallback(cardCrop);
         if (fallbackCrop) {
           scanImage = fallbackCrop.image;
