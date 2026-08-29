@@ -42,6 +42,7 @@
     invalidateRivenContractsRefresh,
   } from "../lib/marketContractsSync.js";
   import { invalidateMarketOrdersRefresh, refreshMarketOrders } from "../lib/marketOrdersSync.js";
+  import { addToast } from "../stores/toasts.js";
   import { confirmWithDialog, invoke, on, send, tradeInvoke } from "../lib/ipc.js";
   import { startupPriceCacheReady } from "../lib/startupLoader.js";
   import { marketDensity } from "../stores/uiDensity.js";
@@ -64,7 +65,11 @@
   const ORDERS_POLL_MS = 30_000;
   const CONTRACTS_STALE_MS = 60_000;
   const CONTRACTS_PAGE_SIZE = 40;
+  const CONTRACTS_APPEND_ATTEMPTS = 3;
   const MARKET_METRIC_PREFETCH_LIMIT = 64;
+
+  /** Only a lost write reservation is worth sending the same request again. */
+  type ContractsFetchOutcome = "published" | "lostWrite" | "ended";
 
   let statusOptions: Array<[WfmStatus, string]>;
   $: statusOptions = [
@@ -424,9 +429,9 @@
     }
   }
 
-  async function fetchContracts(page = 1, append = false): Promise<void> {
+  async function fetchContracts(page = 1, append = false): Promise<ContractsFetchOutcome> {
     const session = $marketSession;
-    if (!session.loggedIn) return;
+    if (!session.loggedIn) return "ended";
 
     const requestGeneration = ++contractsRequestGeneration;
     // The Rivens tab pages the same store from its own loader, so the write is
@@ -446,7 +451,7 @@
 
     try {
       const result = await invoke("wfmGetContracts", { page, limit: CONTRACTS_PAGE_SIZE });
-      if (!isCurrent()) return;
+      if (!isCurrent()) return "ended";
 
       if (hasError(result)) {
         if (/not logged|expired/i.test(result.error)) {
@@ -456,7 +461,7 @@
         } else {
           contractsError = result.error;
         }
-        return;
+        return "ended";
       }
 
       const contracts = append
@@ -469,13 +474,14 @@
             ).values(),
           )
         : result.contracts;
-      if (commitContracts(writeToken, { ...result, contracts })) {
-        marketSelected.set(new Set());
-      }
+      if (!commitContracts(writeToken, { ...result, contracts })) return "lostWrite";
+      marketSelected.set(new Set());
+      return "published";
     } catch (error) {
       if (isCurrent()) {
         contractsError = error instanceof Error ? error.message : String(error);
       }
+      return "ended";
     } finally {
       if (requestGeneration === contractsRequestGeneration) contractsLoading = false;
     }
@@ -546,7 +552,13 @@
 
   async function loadMoreContracts(): Promise<void> {
     if (contractsLoading || !$marketContracts.hasMore) return;
-    await fetchContracts($marketContracts.page + 1, true);
+    // An invalidation retires the reservation, not the request, so a listing
+    // change while the page is out drops it. Resend against the list it left.
+    for (let attempt = 0; attempt < CONTRACTS_APPEND_ATTEMPTS; attempt += 1) {
+      const outcome = await fetchContracts($marketContracts.page + 1, true);
+      if (outcome !== "lostWrite" || !$marketContracts.hasMore) return;
+    }
+    addToast({ level: "warning", message: $tr("common.failedToLoadListingsTryAgain") });
   }
 
   async function refreshCurrentTab(): Promise<void> {
