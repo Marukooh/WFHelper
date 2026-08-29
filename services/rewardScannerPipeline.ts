@@ -148,7 +148,10 @@ function cacheFrameResult(
   _lastFrameHashTs = Date.now();
 }
 
-async function captureRewardScreen(preCapture: PreCaptureResult | null | undefined): Promise<{
+async function captureRewardScreen(
+  preCapture: PreCaptureResult | null | undefined,
+  uiScale: number,
+): Promise<{
   screenshot: Screenshot | null;
   captureCount: number;
   captureMs: number;
@@ -170,10 +173,15 @@ async function captureRewardScreen(preCapture: PreCaptureResult | null | undefin
       log.warn("[RewardScanner] Could not capture screen");
       return { screenshot: null, captureCount: 1, captureMs, failureReason: "capture-null" };
     }
+    // Frame size and UI scale decide every crop ratio, so a bug report without
+    // them cannot be reproduced. Log them beside the source, not somewhere else.
+    const frame = screenshot.image?.getSize?.();
     log.info(
       "[RewardScanner] Scan capture source -> " +
         `${screenshot.sourceType}: ${screenshot.sourceName || screenshot.sourceId || "unknown"} ` +
-        `(display:${screenshot.sourceDisplayId || "n/a"})`,
+        `(display:${screenshot.sourceDisplayId || "n/a"}) ` +
+        `frame=${frame ? `${frame.width}x${frame.height}` : "unknown"} ` +
+        `uiScale=${uiScale}`,
     );
     return { screenshot, captureCount: 1, captureMs, failureReason: null };
   } catch (err) {
@@ -257,7 +265,10 @@ export async function runRewardScanPipeline({
   const scanStartedAt = Date.now();
   const totalBudgetMs = computeRewardScanBudgetMs(settings);
 
-  const capture = await captureRewardScreen(preCapture);
+  const capture = await captureRewardScreen(
+    preCapture,
+    settings.warframeUiScale ?? REFERENCE_WARFRAME_UI_SCALE,
+  );
   const { screenshot, captureCount, captureMs } = capture;
   if (!screenshot) {
     _lastTriggerStats = {
