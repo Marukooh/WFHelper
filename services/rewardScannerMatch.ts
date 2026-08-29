@@ -276,6 +276,10 @@ function dropQuantityPrefixMismatches(
 const UNIQUE_STRUCTURAL_CONFIDENCE = 0.93;
 // Shortest a fuzzy candidate may be relative to the read it claims to be.
 const MIN_FUZZY_NAME_LENGTH_RATIO = 0.45;
+// Fewest of a name's words a fuzzy candidate may match to stay in the ranking.
+const MIN_FUZZY_WORD_RATIO = 0.45;
+// How much of a name a subsequence read must carry before it may win its tier.
+const MIN_SUBSEQUENCE_WORD_RATIO = 0.6;
 // Tight on purpose: only a read that is nearly the whole longer name may retarget.
 const CLIPPED_NAME_SIMILARITY = 0.95;
 
@@ -299,21 +303,27 @@ function isOrderedWordSubsequence(textWords: string[], nameWords: string[]): boo
 }
 
 // A tier holding both "<X>" and "<X> Blueprint" is not ambiguous: the longer name
-// is the specific one and the rest are its own prefixes. Without this, a blueprint
-// whose built item is also a reward floors at 0.88 and misses the slot gate.
-function resolveTierWinner(hits: Map<string, SingleItemMatchResult>): SingleItemMatchResult | null {
-  if (hits.size === 1) return hits.values().next().value as SingleItemMatchResult;
+// is the specific one and the rest are its own prefixes. INERT against today's
+// reward pool, where no name sits inside another once the quantity filter has
+// split "Forma Blueprint" from "2X Forma Blueprint"; it guards a future pool.
+function resolveTierWinner(
+  hits: Map<string, SingleItemMatchResult>,
+): { name: string; entry: SingleItemMatchResult } | null {
+  if (hits.size === 1) {
+    const [name, entry] = hits.entries().next().value as [string, SingleItemMatchResult];
+    return { name, entry };
+  }
   const names = [...hits.keys()].sort((a, b) => b.length - a.length);
   const longest = names[0];
   if (!longest) return null;
   const nested = names.every((name) => name === longest || containsRewardPhrase(longest, name));
-  return nested ? (hits.get(longest) as SingleItemMatchResult) : null;
+  return nested ? { name: longest, entry: hits.get(longest) as SingleItemMatchResult } : null;
 }
 
 // A read clipped mid-word ("Forma Blueprin") still contains the shorter sibling
 // whole, so containment alone hands the card to the built item. Exactly one
-// continuation retargets; several mean the tail is unresolved, so nothing is safe
-// to promote and the slot is better left as a gap.
+// continuation retargets; several mean the tail is unresolved. INERT against
+// today's pool for the same reason as resolveTierWinner: no name prefixes another.
 function resolveClippedContinuation(
   ranked: SingleItemMatchResult[],
   winner: SingleItemMatchResult,
@@ -347,6 +357,7 @@ function boostUniqueStructuralCandidate(
   const prefixHits = new Map<string, SingleItemMatchResult>();
   const containsHits = new Map<string, SingleItemMatchResult>();
   const subsequenceHits = new Map<string, SingleItemMatchResult>();
+  const thinSubsequence = new Set<string>();
   for (const entry of ranked) {
     if (!entry.item) continue;
     const normalizedName = normalizeRewardText(entry.item.name);
@@ -356,12 +367,14 @@ function boostUniqueStructuralCandidate(
       containsHits.set(normalizedName, entry);
     } else {
       const nameWords = normalizedName.split(" ").filter((word) => word.length > 1);
-      if (
-        nameWords.length > textWords.length &&
-        textWords.length / nameWords.length >= 0.6 &&
-        isOrderedWordSubsequence(textWords, nameWords)
-      ) {
-        subsequenceHits.set(normalizedName, entry);
+      if (nameWords.length <= textWords.length) continue;
+      if (!isOrderedWordSubsequence(textWords, nameWords)) continue;
+      // Thin evidence bars a name from winning, never from competing. Culling it
+      // first is what left the base blueprint alone in the tier on "Tltanla
+      // Prlme" and boosted it as "unique" while the real name was thrown away.
+      subsequenceHits.set(normalizedName, entry);
+      if (textWords.length / nameWords.length < MIN_SUBSEQUENCE_WORD_RATIO) {
+        thinSubsequence.add(normalizedName);
       }
     }
   }
@@ -371,13 +384,13 @@ function boostUniqueStructuralCandidate(
   if (!tier) return;
 
   const winner = resolveTierWinner(tier);
-  if (!winner || !winner.item) return;
+  if (!winner || !winner.entry.item || thinSubsequence.has(winner.name)) return;
 
-  const continuation = resolveClippedContinuation(ranked, winner, text);
+  const continuation = resolveClippedContinuation(ranked, winner.entry, text);
   if (continuation === "ambiguous") return;
-  const target = continuation || winner;
+  const target = continuation || winner.entry;
   if (!target.item) return;
-  if (target === winner && target.confidence >= UNIQUE_STRUCTURAL_CONFIDENCE) return;
+  if (target === winner.entry && target.confidence >= UNIQUE_STRUCTURAL_CONFIDENCE) return;
   target.confidence = Math.max(target.confidence, UNIQUE_STRUCTURAL_CONFIDENCE);
   target.item.confidence = target.confidence;
   const normalizedName = normalizeRewardText(target.item.name);
@@ -437,22 +450,26 @@ export function rankRewardCandidatesDetailed(
     if (itemWords.length === 0) continue;
 
     let matchedWords = 0;
+    const explainedTextWords = new Array<boolean>(textWords.length).fill(false);
     for (const itemWord of itemWords) {
       let wordMatched = false;
-      for (const textWord of textWords) {
-        if (
-          textWord === itemWord ||
-          similarityScore(textWord, itemWord) >= (itemWord.length >= 7 ? 0.7 : 0.78)
-        ) {
-          wordMatched = true;
-          break;
-        }
+      for (let index = 0; index < textWords.length; index += 1) {
+        if (!wordsEquivalent(textWords[index], itemWord)) continue;
+        wordMatched = true;
+        explainedTextWords[index] = true;
       }
       if (wordMatched) matchedWords += 1;
     }
 
     const wordRatio = matchedWords / itemWords.length;
-    if (wordRatio < 0.45) continue;
+    if (wordRatio < MIN_FUZZY_WORD_RATIO) continue;
+
+    // Scoring only the name's own words pays a candidate for the read words it
+    // ignores, which is how a destroyed component word ("Cha55i5") handed the
+    // card to the bare "<frame> Prime Blueprint". Take the weaker direction.
+    const explained = explainedTextWords.filter(Boolean).length;
+    const readRatio = textWords.length ? explained / textWords.length : 1;
+    const coverage = Math.min(wordRatio, readRatio);
 
     let bestSpanScore = similarityScore(text, normalizedName);
     if (textWords.length >= itemWords.length) {
@@ -462,7 +479,7 @@ export function rankRewardCandidatesDetailed(
       }
     }
 
-    const confidence = Math.min(0.97, wordRatio * 0.6 + bestSpanScore * 0.4);
+    const confidence = Math.min(0.97, coverage * 0.6 + bestSpanScore * 0.4);
     ranked.push({
       item: { ...item, confidence: Number(confidence.toFixed(3)) },
       confidence,

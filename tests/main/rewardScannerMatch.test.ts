@@ -249,6 +249,59 @@ describe("a short pool name against a long read", () => {
   });
 });
 
+describe("a read whose component word was destroyed", () => {
+  // The base "<frame> Prime Blueprint" explains every word it owns, so scoring
+  // one direction only made it the winner while the read plainly held a word it
+  // could not account for. Both reads are real OCR corruptions from the logs.
+  const WUKONG = [
+    { name: "Wukong Prime Blueprint" },
+    { name: "Wukong Prime Chassis Blueprint" },
+    { name: "Wukong Prime Neuroptics Blueprint" },
+    { name: "Wukong Prime Systems Blueprint" },
+  ];
+  const FROST = [
+    { name: "Frost Prime Blueprint" },
+    { name: "Frost Prime Chassis Blueprint" },
+    { name: "Frost Prime Neuroptics Blueprint" },
+    { name: "Frost Prime Systems Blueprint" },
+  ];
+
+  it("keeps the base blueprint below the slot gate on a garbled component word", () => {
+    const ranked = rankRewardCandidatesDetailed("Wukong Prime Cha55i5 Blueprint", WUKONG, 4);
+    const base = ranked.find((candidate) => candidate.item?.name === "Wukong Prime Blueprint");
+    expect(base?.confidence ?? 0).toBeLessThan(0.86);
+    expect(ranked[0].item?.name).toBe("Wukong Prime Chassis Blueprint");
+  });
+
+  it("keeps the base blueprint below the slot gate on a split component word", () => {
+    const ranked = rankRewardCandidatesDetailed("Frost Prime Neur optics Blueprint", FROST, 4);
+    const base = ranked.find((candidate) => candidate.item?.name === "Frost Prime Blueprint");
+    expect(base?.confidence ?? 0).toBeLessThan(0.86);
+    expect(ranked[0].item?.name).toBe("Frost Prime Neuroptics Blueprint");
+  });
+});
+
+describe("a misread that hides a candidate's competitors", () => {
+  // The clean first-line read is ambiguous across four names and must stay so.
+  // One bad character used to drop the four-word names out of the subsequence
+  // tier, leaving the three-word base alone in it and boosting it as unique.
+  const TITANIA = [
+    { name: "Titania Prime Blueprint" },
+    { name: "Titania Prime Chassis Blueprint" },
+    { name: "Titania Prime Neuroptics Blueprint" },
+    { name: "Titania Prime Systems Blueprint" },
+  ];
+
+  it("does not let one bad character make the matcher more confident", () => {
+    const clean = matchSingleRewardTextDetailed("Titania Prime", TITANIA);
+    expect(clean.confidence).toBeLessThan(0.92);
+
+    const corrupted = matchSingleRewardTextDetailed("Tltanla Prlme", TITANIA);
+    expect(corrupted.confidence).toBeLessThan(0.86);
+    expect(corrupted.confidence).toBeLessThan(clean.confidence);
+  });
+});
+
 describe("a pool pair that differs only by a leading quantity", () => {
   // Both are real reward names; "Forma" alone is not in the pool.
   const PAIR = [{ name: "Forma Blueprint" }, { name: "2X Forma Blueprint" }];
