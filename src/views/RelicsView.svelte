@@ -33,6 +33,7 @@
   import SearchBox from "../components/SearchBox.svelte";
   import SortControl from "../components/SortControl.svelte";
   import { defaultSortDirection } from "../lib/filters.js";
+  import { stripQuantityPrefix } from "../../config/shared/quantityPrefix.js";
   import type { ParsedItem } from "../types/inventory.js";
   import type { RelicGroup, RelicQuality, RelicReward } from "../types/relics.js";
   import type {
@@ -154,12 +155,9 @@
     return keys[keys.length - 1] ?? "";
   }
 
-  function stripRewardQuantityPrefix(value: string): string {
-    return value.replace(/^(?:x\s*\d+|\d+\s*x)\s*/i, "").trim();
-  }
-
+  // Relic rewards carry the count in the name ("2X Forma Blueprint", "1200X Kuva").
   function normalizeRewardLookupName(value: string): string {
-    const normalized = stripRewardQuantityPrefix(value)
+    const normalized = stripQuantityPrefix(value)
       .toLowerCase()
       .replace(/[’']/g, "")
       .replace(/[^a-z0-9]+/g, " ")
