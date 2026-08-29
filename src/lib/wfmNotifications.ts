@@ -10,7 +10,10 @@ import { invalidateMarketOrdersRefresh } from "./marketOrdersSync.js";
 
 export function handleWfmNotification(notification: WfmNotification, t: Translator): void {
   if (notification.type === "orders-changed") {
-    // MarketView refetches when it is mounted; this covers when it is not.
+    // MarketView refetches when it is mounted; this covers when it is not. A
+    // walk already in flight has to lose its write too, or it republishes the
+    // pre-change orders behind the refetch.
+    invalidateMarketOrdersRefresh();
     resetMarketFetchTimes();
     return;
   }

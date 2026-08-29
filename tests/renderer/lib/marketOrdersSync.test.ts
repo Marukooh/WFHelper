@@ -172,3 +172,20 @@ describe("market order refresh lifecycle", () => {
     expect(harness.didExpire()).toBe(true);
   });
 });
+
+describe("invalidateMarketOrdersRefresh", () => {
+  // An orders-changed push has to discard a walk that started before it, or the
+  // pre-change list lands after the refetch and looks fresh.
+  it("drops a walk that was already in flight", async () => {
+    const pending = deferred<WfmOrdersResult>();
+    const harness = controllerHarness([pending.promise]);
+
+    const inFlight = harness.controller.refresh();
+    harness.controller.invalidate();
+    pending.resolve(orders([order("stale")]));
+    await inFlight;
+
+    expect(harness.getWrites()).toEqual([]);
+    expect(harness.getCurrent().sell[0]?.id).toBe("old");
+  });
+});
