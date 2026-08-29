@@ -5,14 +5,23 @@ const mocks = vi.hoisted(() => ({ invoke: vi.fn() }));
 
 vi.mock("../../../src/lib/ipc.js", () => ({ invoke: mocks.invoke }));
 
-import { ensureRivenContractsLoaded } from "../../../src/lib/marketContractsSync.js";
+import {
+  beginContractsWrite,
+  commitContracts,
+  ensureRivenContractsLoaded,
+  invalidateRivenContractsRefresh,
+} from "../../../src/lib/marketContractsSync.js";
+import { handleWfmNotification } from "../../../src/lib/wfmNotifications.js";
 import {
   clearMarketAccountState,
   marketContracts,
   marketSession,
   marketViewState,
 } from "../../../src/stores/market.js";
+import type { Translator } from "../../../src/lib/i18n.js";
 import type { WfmContractsResult } from "../../../src/types/market.js";
+
+const translate = ((key: string) => key) as Translator;
 
 function contractPage(ids: string[], page: number, hasMore: boolean): WfmContractsResult {
   return {
@@ -118,6 +127,63 @@ describe("ensureRivenContractsLoaded", () => {
     const manual = ensureRivenContractsLoaded(true);
     await Promise.all([background, manual]);
     expect(mocks.invoke).toHaveBeenCalledTimes(2);
+  });
+
+  // A listing the user just created, edited or removed is announced this way,
+  // and the module cache used to outlive it by up to ten minutes.
+  it("refetches after the orders-changed handler resets the fetch times", async () => {
+    signIn();
+    mocks.invoke.mockResolvedValue(contractPage(["a"], 1, false));
+    await ensureRivenContractsLoaded();
+
+    handleWfmNotification({ type: "orders-changed" }, translate);
+    await ensureRivenContractsLoaded();
+
+    expect(mocks.invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it("refetches after a listing edit invalidates the cache", async () => {
+    signIn();
+    mocks.invoke.mockResolvedValue(contractPage(["a"], 1, false));
+    await ensureRivenContractsLoaded();
+
+    invalidateRivenContractsRefresh();
+    await ensureRivenContractsLoaded();
+
+    expect(mocks.invoke).toHaveBeenCalledTimes(2);
+  });
+
+  // The Market tab writes the same store one page at a time, so a page-one reply
+  // that lands late would shrink a list the Rivens tab already paged in full.
+  it("cannot regress a complete list to a stale page one", async () => {
+    signIn();
+    const stale = beginContractsWrite();
+    mocks.invoke.mockResolvedValue(contractPage(["a", "b"], 1, false));
+    await ensureRivenContractsLoaded(true);
+
+    expect(commitContracts(stale, contractPage(["a"], 1, true))).toBe(false);
+    expect(listedIds()).toEqual(["a", "b"]);
+    expect(get(marketContracts).hasMore).toBe(false);
+  });
+
+  it("drops a page walk that a listing removal overtook", async () => {
+    signIn();
+    marketContracts.set(contractPage(["a"], 1, false));
+    let releasePage: (result: WfmContractsResult) => void = () => {};
+    const pendingPage = new Promise<WfmContractsResult>((resolve) => {
+      releasePage = resolve;
+    });
+    mocks.invoke.mockImplementationOnce(() => pendingPage);
+
+    const walk = ensureRivenContractsLoaded(true);
+    await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledTimes(1));
+    // The user removes the auction while the walk is still out.
+    marketContracts.set(contractPage([], 1, false));
+    invalidateRivenContractsRefresh();
+    releasePage(contractPage(["a"], 1, false));
+
+    await expect(walk).resolves.toBe(true);
+    expect(listedIds()).toEqual([]);
   });
 
   it("does not serve one account's listings to the next", async () => {

@@ -8,7 +8,7 @@ import {
   marketViewState,
   setMarketViewState,
 } from "../stores/market.js";
-import type { WfmContract } from "../types/market.js";
+import type { WfmContract, WfmContractsResult } from "../types/market.js";
 
 const CONTRACTS_TTL_MS = 10 * 60 * 1000;
 const PAGE_SIZE = 40;
@@ -16,22 +16,53 @@ const PAGE_SIZE = 40;
 const MAX_PAGES = 10;
 
 let inFlight: Promise<boolean> | null = null;
-let lastFullFetch: { at: number; user: string | null } | null = null;
+// Only the newest reservation may publish, so a slow reply cannot land on top of
+// a newer list or resurrect an auction the user removed while it was running.
+let writeToken = 0;
+// The store stamp of the last list this module paged to the end. Read back from
+// the store, so any other writer moving the stamp retires the mark by itself.
+let completedAt: { at: number; user: string | null } | null = null;
 
-// The shared timestamp only proves page one is fresh, because the Market tab
-// pages lazily; a partial store would leave later rivens wrongly unmarked.
+/** Reserves the contracts store for a request that is about to start. */
+export function beginContractsWrite(): number {
+  writeToken += 1;
+  return writeToken;
+}
+
+/**
+ * Publishes a contracts result unless a newer reservation took over. Completeness
+ * is tracked apart from the token, which cannot tell page one from a whole list.
+ */
+export function commitContracts(token: number, next: WfmContractsResult): boolean {
+  if (token !== writeToken) return false;
+  marketContracts.set(next);
+  setMarketViewState({ contractsLastFetch: Date.now() });
+  return true;
+}
+
+/**
+ * Drops every in-flight write and the freshness mark, so the next read pages the
+ * list again. Call it after anything that creates, edits or removes a listing.
+ */
+export function invalidateRivenContractsRefresh(): void {
+  writeToken += 1;
+  completedAt = null;
+  setMarketViewState({ contractsLastFetch: 0 });
+}
+
+// Freshness alone proves only page one, because the Market tab pages lazily and
+// stamps the same timestamp; a partial store would leave later rivens unmarked.
+// The stamp is the shared invalidation point, so zeroing it anywhere retires
+// this mark too.
 function hasFreshFullList(user: string | null): boolean {
-  const now = Date.now();
-  if (lastFullFetch && lastFullFetch.user === user && now - lastFullFetch.at < CONTRACTS_TTL_MS) {
-    return true;
-  }
-  return (
-    now - get(marketViewState).contractsLastFetch < CONTRACTS_TTL_MS &&
-    !get(marketContracts).hasMore
-  );
+  const stamp = get(marketViewState).contractsLastFetch;
+  if (!stamp || Date.now() - stamp >= CONTRACTS_TTL_MS) return false;
+  if (completedAt && completedAt.user === user && completedAt.at === stamp) return true;
+  return !get(marketContracts).hasMore;
 }
 
 async function fetchAllContracts(user: string | null): Promise<boolean> {
+  const token = beginContractsWrite();
   const byId = new Map<string, WfmContract>();
   let page = 1;
   let lastPage = 1;
@@ -50,14 +81,17 @@ async function fetchAllContracts(user: string | null): Promise<boolean> {
     page += 1;
   }
 
-  marketContracts.set({
+  const published = commitContracts(token, {
     contracts: [...byId.values()],
     page: lastPage,
     totalPages: null,
     hasMore,
   });
-  lastFullFetch = { at: Date.now(), user };
-  setMarketViewState({ contractsLastFetch: Date.now() });
+  // Losing the store to a newer writer is not a request failure, but this list
+  // is no longer what the store holds, so it may not claim the list is complete.
+  if (published && !hasMore) {
+    completedAt = { at: get(marketViewState).contractsLastFetch, user };
+  }
   return true;
 }
 
@@ -75,7 +109,7 @@ export function ensureRivenContractsLoaded(force = false): Promise<boolean> {
       try {
         const session = await invoke("wfmGetSession");
         if (!session.loggedIn) {
-          lastFullFetch = null;
+          completedAt = null;
           return true;
         }
         marketSession.set(session);

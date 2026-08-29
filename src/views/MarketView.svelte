@@ -36,6 +36,11 @@
     orderInventoryMatch,
     ownedCountForMarketOrder,
   } from "../lib/marketOrderInventory.js";
+  import {
+    beginContractsWrite,
+    commitContracts,
+    invalidateRivenContractsRefresh,
+  } from "../lib/marketContractsSync.js";
   import { invalidateMarketOrdersRefresh, refreshMarketOrders } from "../lib/marketOrdersSync.js";
   import { confirmWithDialog, invoke, on, send, tradeInvoke } from "../lib/ipc.js";
   import { startupPriceCacheReady } from "../lib/startupLoader.js";
@@ -263,7 +268,11 @@
   onMount(async () => {
     hydration.resume();
     unsubscribeWfmNotification = on("wfm:notification", (notification) => {
-      if (notification.type === "orders-changed") void backgroundRefresh();
+      if (notification.type !== "orders-changed") return;
+      // The riven loader caches a whole-list read for ten minutes, so the Rivens
+      // tab keeps the pre-change listings unless the change retires that mark.
+      invalidateRivenContractsRefresh();
+      void backgroundRefresh();
     });
     if (!$overlaySettingsLoaded) {
       void invoke("getOverlaySettings").then(
@@ -372,6 +381,7 @@
 
   async function logout(): Promise<void> {
     invalidateMarketOrdersRefresh();
+    invalidateRivenContractsRefresh();
     clearMarketAccountState();
     ordersUiGeneration += 1;
     contractsRequestGeneration += 1;
@@ -419,6 +429,9 @@
     if (!session.loggedIn) return;
 
     const requestGeneration = ++contractsRequestGeneration;
+    // The Rivens tab pages the same store from its own loader, so the write is
+    // reserved up front and dropped if anything newer publishes meanwhile.
+    const writeToken = beginContractsWrite();
     contractsLoading = true;
     contractsError = "";
 
@@ -456,9 +469,9 @@
             ).values(),
           )
         : result.contracts;
-      marketContracts.set({ ...result, contracts });
-      marketSelected.set(new Set());
-      setMarketViewState({ contractsLastFetch: Date.now() });
+      if (commitContracts(writeToken, { ...result, contracts })) {
+        marketSelected.set(new Set());
+      }
     } catch (error) {
       if (isCurrent()) {
         contractsError = error instanceof Error ? error.message : String(error);
@@ -493,6 +506,9 @@
         ...state,
         contracts: state.contracts.filter((entry) => entry.id !== contract.id),
       }));
+      // An in-flight page still carries the removed auction, so retire it along
+      // with the whole-list cache the Rivens tab reads.
+      invalidateRivenContractsRefresh();
     } finally {
       contractBusyIds = contractBusyIds.filter((id) => id !== contract.id);
     }
@@ -522,6 +538,7 @@
           entry.id === contract.id ? { ...entry, visible: nextVisible } : entry,
         ),
       }));
+      invalidateRivenContractsRefresh();
     } finally {
       contractBusyIds = contractBusyIds.filter((id) => id !== contract.id);
     }
