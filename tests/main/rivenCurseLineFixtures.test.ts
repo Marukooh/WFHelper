@@ -7,7 +7,7 @@ import { statCropUpscaleFactor } from "../../ipc/overlay/rivenScanImage";
 
 // Both crops are the same Angstrum riven at 224x162, saved from a 1278x768 game
 // window. The chat-linked one lost "-90.9% Projectile Speed" at native scale and
-// kept every other line, which is what "the negative never shows" looked like.
+// kept every other line.
 const FIXTURES = join(__dirname, "..", "fixtures", "riven");
 const EXPECTED = ["+159 Multishot", "+276.2 Damage", "+93.2 Fire Rate", "-90.9 Projectile Speed"];
 

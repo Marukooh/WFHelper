@@ -94,8 +94,8 @@
   // entry remain non-clickable.
   $: nameIndex = buildItemNameIndex($itemDb);
 
-  // Bundled rows like "2X Orokin Cell" carry a quantity prefix the db lacks.
   function openItem(name: string): void {
+    // Bundled rows like "2X Orokin Cell" carry a quantity prefix the db lacks.
     const uniqueName = nameIndex.get(name) ?? nameIndex.get(stripQuantityPrefix(name));
     if (!uniqueName) return;
     const entry = $itemDb[uniqueName];

@@ -39,8 +39,8 @@ interface WarframeStatus {
 let lastStatus: WarframeStatus | null = null;
 let lastStatusAt = 0;
 let lastStatusHadBounds = false;
-// One slot per request shape. A shared slot let either completion free the
-// other's, so the next caller opened a third probe against a live one.
+// One slot per request shape: a shared slot lets either completion free the
+// other's, which opens a third probe against a live one.
 let inFlightWithBounds: Promise<WarframeStatus> | null = null;
 let inFlightWithoutBounds: Promise<WarframeStatus> | null = null;
 

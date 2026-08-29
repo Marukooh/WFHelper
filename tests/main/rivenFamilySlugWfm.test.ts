@@ -28,7 +28,6 @@ describe("getRivenFamilySlug against the warframe.market riven weapon list", () 
   });
 
   it("spells the ampersand the way WFM does", () => {
-    // Every one of these resolved to silva_aegis before, which WFM does not carry.
     expect(getRivenFamilySlug("Silva & Aegis")).toBe("silva_and_aegis");
     expect(getRivenFamilySlug("Silva & Aegis Prime")).toBe("silva_and_aegis");
     expect(getRivenFamilySlug("Ack & Brunt")).toBe("ack_and_brunt");

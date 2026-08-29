@@ -202,7 +202,7 @@ const RIVEN_READY_TIMEOUTS_MS = Object.freeze({
 const RIVEN_READY_POLL_MS = 40;
 const RIVEN_READY_REQUIRED_HITS = 3;
 // When the capture backend is down, polling it for the rest of the budget only
-// delays the empty result the caller gets anyway - vex's log burnt 45 samples.
+// delays the empty result the caller gets anyway.
 const RIVEN_READY_MAX_NULL_CAPTURES = 3;
 const RIVEN_READY_SCORE_THRESHOLD = 0.2;
 let _rivenScanAborted = false;

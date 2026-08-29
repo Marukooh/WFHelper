@@ -285,8 +285,8 @@ describe("rivenData", () => {
     });
 
     it("resolves companion weapons by the class they holster as", () => {
-      // SentinelWeapons has no pool of its own; vex's Verglas riven graded
-      // nothing at all because resolveRivenType returned null.
+      // SentinelWeapons has no pool of its own, so resolveRivenType returns null
+      // for a sentinel weapon and the riven grades to nothing at all.
       expect(rivenData.resolveRivenType("Verglas")).toContain("RifleRandomModRare");
       expect(rivenData.resolveRivenType("Verglas Prime")).toContain("RifleRandomModRare");
       expect(rivenData.resolveRivenType("Vulklok")).toContain("RifleRandomModRare");
@@ -701,7 +701,7 @@ describe("x-multiplier faction damage", () => {
   // 0.51 IS the displayed value. Scaling it to 51 counted the scale twice and
   // pinned every scanned faction roll to the end of its range.
   it("grades a real faction roll inside its range, not clamped", () => {
-    // Tatsu, from vex's log 2026-08-09 02:38:15.
+    // A real Tatsu roll off a live card.
     const result = gradeRiven("Tatsu", [
       { name: "Status Duration", positive: true, value: 111.6 },
       { name: "Damage to Corpus", positive: true, value: 1.51, multiplier: true },
@@ -725,9 +725,9 @@ describe("x-multiplier faction damage", () => {
 });
 
 describe("unranked cards", () => {
-  // Three chat-linked cards from vex's 2026-08-15 log. Each read one ninth of the
-  // max-rank values because the mod was unranked; browse.wf puts all four Wolf
-  // Sledge rolls inside range at Level 0. Graded at rank 8 they all scored F.
+  // Three real chat-linked cards. An unranked mod shows one ninth of its max-rank
+  // values, and browse.wf puts all four Wolf Sledge rolls inside range at Level 0,
+  // so grading them at rank 8 scores every one an F.
   const UNRANKED_WOLF_SLEDGE = [
     { name: "Range", positive: true, value: 0.2 },
     { name: "Critical Damage", positive: true, value: 12.3 },
@@ -769,7 +769,7 @@ describe("unranked cards", () => {
     expect(maxRank!.stats.map((s) => s.grade)).toEqual(unranked!.stats.map((s) => s.grade));
   });
 
-  it("grades vex's unranked Verglas, a sentinel weapon, on the rifle pool", () => {
+  it("grades an unranked Verglas, a sentinel weapon, on the rifle pool", () => {
     const result = gradeRiven("Verglas", [
       { name: "Critical Damage", positive: true, value: 16.4 },
       { name: "Damage", positive: true, value: 23.9 },

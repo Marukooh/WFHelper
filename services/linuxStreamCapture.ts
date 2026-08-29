@@ -11,8 +11,8 @@ const log = withScope("linuxStreamCapture");
 
 // After a decline, don't re-prompt on every scan retry.
 const DECLINE_COOLDOWN_MS = 60_000;
-// A failed source lookup is a hiccup, not a refusal. vex lost a full minute of
-// scanning to one "Failed to get sources." - there is no prompt to spare here.
+// A failed source lookup is a hiccup, not a refusal, and one of them can cost a
+// minute of scanning. There is no prompt to spare here, so retry sooner.
 const SOURCE_ERROR_COOLDOWN_MS = 5_000;
 // The portal picker is interactive; give the user time to answer.
 const STREAM_START_TIMEOUT_MS = 120_000;

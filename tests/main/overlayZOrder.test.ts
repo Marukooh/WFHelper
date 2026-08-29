@@ -199,7 +199,7 @@ describe("applyOverlayZOrder on Windows", () => {
 describe("applyOverlayZOrder on linux", () => {
   // niri via xwayland-satellite never reports _NET_WM_STATE_ABOVE back, so the
   // isAlwaysOnTop() gate never closed and the poll restacked the overlay over
-  // the fullscreen game every 2s. That is the frame drop and the focus churn.
+  // the fullscreen game every 2s. This asserts the restack stops regardless.
   it("stops re-raising even when the wm never reports always-on-top", () => {
     const win = fakeWindowWithoutAboveSupport();
 
@@ -395,8 +395,8 @@ describe("syncOverlayWindowZOrder", () => {
     expect(win.moveTop).toHaveBeenCalledTimes(2);
   });
 
-  // The drift budget is spent per show. A counter carried across a hide left the
-  // next show short of re-raises against the same flapping wm.
+  // The drift budget is spent per show. A hide resets the drift budget so the
+  // next show gets the full allowance against the same flapping wm.
   it("gives a re-shown overlay the full drift budget again", () => {
     const win = fakeFlappingWindow();
     const controller = fakeController(true);

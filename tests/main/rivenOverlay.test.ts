@@ -1143,10 +1143,10 @@ describe("findWeaponInText", () => {
     expect(findWeaponInText("Gotva Visi-critata\n+198.2% Multishot")).toBe("Gotva Prime");
   });
 
-  // Fezalion's log 2026-08-16: Haalvu was missing from the bundled export, so the
-  // matcher fell through to the generated suffix and graded the wrong gun
-  // ("Hera-decipha" as Hema, "Lexi-gelitron" as Lex). The export always lags a new
-  // weapon, so anchoring has to hold for the next one too - the 0.6.8 bump is not it.
+  // A weapon missing from the bundled export must not fall through to the
+  // generated suffix, which grades the wrong gun ("Hera-decipha" as Hema).
+  // The export always lags a new weapon, so anchoring carries this, not a
+  // version bump.
   it("never takes a weapon name out of the riven suffix", () => {
     expect(findWeaponInText("Grelvax Hera-decipha\n+50.3% Status Duration")).toBeNull();
     expect(findWeaponInText("Grelvax Lexi-gelitron\nx1.22 Damage to Corpus")).toBeNull();

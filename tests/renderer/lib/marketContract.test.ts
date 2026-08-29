@@ -492,8 +492,8 @@ describe("matchRivenListings", () => {
     expect(new Set(reversed.keys())).toEqual(new Set(forward.keys()));
   });
 
-  // Number(null) is 0, so an attribute WFM sent without a value used to demand a
-  // zero roll and threw away the pairing the polarity had already settled.
+  // Number(null) is 0, so an attribute WFM sent without a value must not demand a
+  // zero roll and throw away the pairing the polarity had already settled.
   it("ignores an auction attribute that carries no value", () => {
     const twins = [
       owned({ polarity: "AP_ATTACK" }),

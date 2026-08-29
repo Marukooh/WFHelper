@@ -17,8 +17,8 @@ const MIN_EELOG_TRIGGER_GAP_MS = 900;
 const ERA_DETECTION_TIMEOUT_MS = 1500;
 const ERA_DETECTION_RETRY_DELAY_MS = 700;
 // The picker is not painted when the EE.log trigger lands, and reading it early
-// costs a wasted 700ms+ OCR pass and then the retry delay on top. Waiting a
-// little first is cheaper than the miss it avoids.
+// costs a whole OCR pass that finds nothing plus the retry delay above. Waiting
+// a little first is cheaper than the miss it avoids.
 const ERA_DETECTION_START_DELAY_MS = 100;
 /** Suppress overlay reopen for this long after an explicit close to prevent flicker. */
 const REOPEN_SUPPRESS_AFTER_CLOSE_MS = 3_000;

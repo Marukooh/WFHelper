@@ -386,8 +386,7 @@ test.describe("Shared view layout", () => {
       return Object.keys(db?.byUniqueName ?? {});
     });
     expect(relicNames.length, "relic database is empty").toBeGreaterThan(0);
-    // Owned intact relics, so the cards measured here carry real rows rather
-    // than whatever the ownership "all" listing happens to render.
+    // Seeded so owned intact relic rows exist to measure.
     writeHarnessInventory(harness, {
       Suits: [],
       LevelKeys: relicNames
@@ -401,8 +400,7 @@ test.describe("Shared view layout", () => {
       const layout = await measureRelicCards(page);
       await page.screenshot({ path: test.info().outputPath(`relics-${width}.png`) });
       expectRelicHeadsIntact(layout, `${width}px`);
-      // Below this the relic name truncates to "Lith ..." on every card, which
-      // is what the name column losing its own width floor looks like.
+      // Below this the relic name truncates to "Lith ..." on every card.
       expect(layout.narrowestName, `name column not measured at ${width}px`).not.toBeNull();
       expect(layout.narrowestName!, `name column squeezed at ${width}px`).toBeGreaterThanOrEqual(
         80,
