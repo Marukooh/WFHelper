@@ -207,4 +207,24 @@ test.describe("Settings rows and relic cards degrade without colliding", () => {
       expect(layout.narrowestName, `name column squeezed at ${width}px`).toBeGreaterThanOrEqual(80);
     }
   });
+
+  test("the supporters panel keeps its gap to the card above it", async () => {
+    await openSettings(page, 1240);
+    const gap = await page.evaluate(() => {
+      const panel = document.querySelector<HTMLElement>("[data-supporters]");
+      if (!panel) return null;
+      const panelTop = panel.getBoundingClientRect().top;
+      let closest = -Infinity;
+      for (const card of Array.from(
+        document.querySelectorAll<HTMLElement>(".settings-masonry article"),
+      )) {
+        const bottom = card.getBoundingClientRect().bottom;
+        if (bottom <= panelTop + 1) closest = Math.max(closest, bottom);
+      }
+      return closest === -Infinity ? null : Math.round(panelTop - closest);
+    });
+    await page.screenshot({ path: `${SHOTS}/settings-supporters.png` });
+    expect(gap, "no card sits above the supporters panel").not.toBeNull();
+    expect(gap, "supporters panel touches the card above it").toBeGreaterThanOrEqual(8);
+  });
 });

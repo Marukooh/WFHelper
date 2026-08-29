@@ -80,6 +80,9 @@
 
 <style>
   .supporters-panel {
+    /* In flow the panel follows the masonry container, which ends flush against
+       its last card; the float case below replaces this with `top`. */
+    margin-top: 0.85rem;
     border: 1px solid var(--ui-panel-border);
     background: var(--ui-panel-bg);
     box-shadow: var(--ui-panel-shadow);
@@ -94,6 +97,7 @@
       position: absolute;
       left: 100%;
       top: 0.75rem;
+      margin-top: 0;
       width: 260px;
       margin-left: 0.85rem;
     }
