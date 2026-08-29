@@ -1905,3 +1905,53 @@ describe("foundry set readiness", () => {
     });
   });
 });
+
+describe("catalog-listed ranked items", () => {
+  const uskos = "/Lotus/Upgrades/CosmeticEnhancers/Antiques/HeatStatusProcOnUltimateKill";
+
+  it("prices an arcane the catalog lists but the item database has never seen", () => {
+    const items = parseInventory(
+      { Upgrades: [{ ItemType: uskos, UpgradeFingerprint: '{"lvl":0}' }] },
+      { [uskos]: { name: "Zid-an Uskos" } },
+      new Set([gameRefKey(uskos)]),
+    );
+
+    const arcane = items.find((item) => item.internalName === uskos);
+    expect(arcane?.inventoryGroup).toBe("arcanes");
+    expect(arcane?.tradable).toBe(true);
+  });
+
+  it("leaves the arcane untradable when the catalog does not list it", () => {
+    const items = parseInventory(
+      { Upgrades: [{ ItemType: uskos, UpgradeFingerprint: '{"lvl":0}' }] },
+      { [uskos]: { name: "Zid-an Uskos" } },
+      new Set(),
+    );
+
+    expect(items.find((item) => item.internalName === uskos)?.tradable).toBe(false);
+  });
+
+  // The bundled item data calls 158 catalog-listed mods untradable, so its flag
+  // cannot veto a listing. Veiled rivens stay out through the exclusion list.
+  it("prices a listed mod the item database wrongly calls untradable", () => {
+    const ghostwalk = "/Lotus/Upgrades/Mods/Antiques/Ghostwalk";
+    const items = parseInventory(
+      { RawUpgrades: [{ ItemType: ghostwalk, ItemCount: 1 }] },
+      { [ghostwalk]: { name: "Kaal-Zidi", tradable: false } },
+      new Set([gameRefKey(ghostwalk)]),
+    );
+
+    expect(items.find((item) => item.internalName === ghostwalk)?.tradable).toBe(true);
+  });
+
+  it("does not let a set listing make the assembled Warframe tradable", () => {
+    const frost = "/Lotus/Powersuits/Frost/FrostPrime";
+    const items = parseInventory(
+      { Suits: [{ ItemType: frost, XP: 0 }] },
+      { [frost]: { name: "Frost Prime", isPrime: true, tradable: false, masterable: true } },
+      new Set([gameRefKey(frost)]),
+    );
+
+    expect(items.find((item) => item.internalName === frost)?.tradable).toBe(false);
+  });
+});

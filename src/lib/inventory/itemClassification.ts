@@ -1,4 +1,5 @@
 import { isInfestedMechPart } from "../../../config/shared/componentNames.js";
+import { isRankedGroup } from "../../../config/shared/numeric.js";
 import {
   fallbackNameFromUniqueName,
   sanitizeDisplayName,
@@ -329,6 +330,17 @@ export function canonicalBuildPartName(internalName: string, name: string): stri
  *  tradable stock; the item database flags every Types/Keys path quest-only. */
 export function isMarketListedMissionKey(internalName: string, marketListed: boolean): boolean {
   return marketListed && /\/Types\/Keys\//i.test(internalName);
+}
+
+/** A mod or arcane the catalog lists under its own game reference is tradable.
+ *  The bundled item data has no entry at all for a freshly added one and calls
+ *  158 listed mods untradable outright, so the listing is the better authority.
+ *  Sets are never a ranked group, so an assembled Warframe stays out. */
+export function isCatalogListedRankedItem(
+  group: string | null | undefined,
+  marketListed: boolean,
+): boolean {
+  return marketListed && isRankedGroup(group);
 }
 
 export function shouldHide(

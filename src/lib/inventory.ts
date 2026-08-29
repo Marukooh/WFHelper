@@ -16,6 +16,7 @@ import {
   deriveGroup,
   inferCategory,
   isFocusUpgrade,
+  isCatalogListedRankedItem,
   isMarketListedMissionKey,
   canonicalBuildPartName,
   isResourceItem,
@@ -167,6 +168,7 @@ export function parseInventory(
         ? marketListed
         : (dbEntry.tradable ?? resolved.isPrime ?? false)
       : isMarketListedMissionKey(internalName, marketListed) ||
+        isCatalogListedRankedItem(group, marketListed) ||
         (dbEntry.tradable ?? resolved.isPrime ?? false);
 
     const rawXp = Number(entry.XP || 0);
