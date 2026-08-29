@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  detectRelicEraFromBandText,
   detectRelicEraFromFilterLabelText,
+  detectRelicEraFromTileLabelText,
   matchSingleRewardTextDetailed,
   rankRewardCandidatesDetailed,
 } from "../../services/rewardScannerMatch";
@@ -216,6 +218,62 @@ describe("a blueprint whose built item is also a reward", () => {
   });
 });
 
+describe("a short pool name against a long read", () => {
+  // "Khra" is a real Requiem mod in the reward pool and the fuzzy band scores
+  // per word, so it rode one 0.8 word to 0.920 on a 17-character read.
+  const POOL = [
+    { name: "Khra" },
+    { name: "Khora Prime Blueprint" },
+    { name: "Khora Prime Chassis Blueprint" },
+  ];
+
+  it("does not let a four-letter name win a seventeen-character read", () => {
+    const ranked = rankRewardCandidatesDetailed("Khora Prime Bluepr", POOL, 4);
+    expect(ranked[0].item?.name).toBe("Khora Prime Blueprint");
+    expect(ranked.some((candidate) => candidate.item?.name === "Khra")).toBe(false);
+  });
+
+  it("still matches a short reward name from a short read", () => {
+    for (const read of ["Khra", "KHRA", "Khra "]) {
+      const hit = matchSingleRewardTextDetailed(read, POOL);
+      expect(hit.item?.name, read).toBe("Khra");
+      expect(hit.mode, read).toBe("exact");
+    }
+    // fuzzy too: one bad character on a short read must still reach the name
+    const fuzzy = matchSingleRewardTextDetailed("Netro", [
+      { name: "Netra" },
+      { name: "Khora Prime Blueprint" },
+    ]);
+    expect(fuzzy.item?.name).toBe("Netra");
+    expect(fuzzy.mode).toBe("fuzzy");
+  });
+});
+
+describe("a pool pair that differs only by a leading quantity", () => {
+  // Both are real reward names; "Forma" alone is not in the pool.
+  const PAIR = [{ name: "Forma Blueprint" }, { name: "2X Forma Blueprint" }];
+
+  it("gives a read with no quantity token to the bare name", () => {
+    const hit = matchSingleRewardTextDetailed("Forma Blueprin", PAIR);
+    expect(hit.item?.name).toBe("Forma Blueprint");
+    expect(hit.confidence).toBeGreaterThanOrEqual(0.86);
+  });
+
+  it("gives a read carrying a quantity token to the counted name", () => {
+    for (const read of ["2X Forma Blueprint", "2 X Forma Blueprint", "2x forma blueprint"]) {
+      const hit = matchSingleRewardTextDetailed(read, PAIR);
+      expect(hit.item?.name, read).toBe("2X Forma Blueprint");
+      expect(hit.mode, read).toBe("exact");
+    }
+  });
+
+  it("keeps a counted name reachable when it has no bare sibling", () => {
+    const kuva = [{ name: "1200X Kuva" }, { name: "Forma Blueprint" }];
+    expect(matchSingleRewardTextDetailed("1200 X Kuva", kuva).item?.name).toBe("1200X Kuva");
+    expect(matchSingleRewardTextDetailed("1200X Kuv", kuva).item?.name).toBe("1200X Kuva");
+  });
+});
+
 describe("detectRelicEraFromFilterLabelText", () => {
   it("maps the ALL tab to omnia", () => {
     expect(detectRelicEraFromFilterLabelText("ALL")).toEqual({ era: "omnia", confidence: 1 });
@@ -240,5 +298,27 @@ describe("detectRelicEraFromFilterLabelText", () => {
   it("returns nothing on unrelated screen text", () => {
     expect(detectRelicEraFromFilterLabelText("").era).toBeNull();
     expect(detectRelicEraFromFilterLabelText("VOID RELICS REFINEMENT").era).toBeNull();
+  });
+});
+
+describe("era ambiguity counts the forms the detector accepts", () => {
+  it("treats a misread second era as a second era", () => {
+    // The detector reads LITK as Lith, so the guard has to see it too or the
+    // screen pins whichever era happened to survive OCR intact.
+    for (const text of [
+      "REQUIEM FISSURE GARUS LITK FISSURE KORO",
+      "REQUIEM RELICS MES RELICS",
+      "AXL RELIC REQUIEM RELIC",
+    ]) {
+      expect(detectRelicEraFromBandText(text).era, text).toBeNull();
+      expect(detectRelicEraFromTileLabelText(text).era, text).toBeNull();
+    }
+  });
+
+  it("still resolves a screen that mentions one era", () => {
+    expect(detectRelicEraFromBandText("LITK RELICS").era).toBe("lith");
+    expect(detectRelicEraFromBandText("REQUIEM FISSURE GARUS KUVA FORTRESS").era).toBe("requiem");
+    expect(detectRelicEraFromTileLabelText("Meso V6 Relic [Radiant]").era).toBe("meso");
+    expect(detectRelicEraFromTileLabelText("Axi A12 Relic").era).toBe("axi");
   });
 });

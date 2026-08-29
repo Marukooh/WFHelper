@@ -226,17 +226,56 @@ function normalizeRewardWord(word: string): string {
   return REWARD_TOKEN_ALIASES[normalized] || normalized;
 }
 
+// The card prints the bonus count as "2 X" while the pool name is "2X Forma
+// Blueprint", so the spacing is collapsed before anything compares the two.
+const QUANTITY_PREFIX_SPACING = /^(\d+)\s+x(?=\s|$)/;
+const QUANTITY_PREFIX = /^\d+\s*x\s+/;
+
 function normalizeRewardText(text: string): string {
   return String(text || "")
     .split(/\s+/)
     .map((word) => normalizeRewardWord(word))
     .filter(Boolean)
     .join(" ")
-    .trim();
+    .trim()
+    .replace(QUANTITY_PREFIX_SPACING, "$1x");
+}
+
+// "2X Forma Blueprint" and "Forma Blueprint" are both real rewards. A pair that
+// differs only by the leading count follows the read, so a text with no count
+// cannot be handed the counted name. A counted name with no bare sibling in the
+// pool is the only spelling there is, so it stays reachable either way.
+function dropQuantityPrefixMismatches(
+  ranked: SingleItemMatchResult[],
+  text: string,
+): SingleItemMatchResult[] {
+  const entryBare = new Map<SingleItemMatchResult, { bareName: string; counted: boolean }>();
+  const bareSeen = new Set<string>();
+  const countedSeen = new Set<string>();
+  for (const entry of ranked) {
+    if (!entry.item) continue;
+    const name = normalizeRewardText(entry.item.name);
+    const bareName = name.replace(QUANTITY_PREFIX, "");
+    if (!bareName) continue;
+    const counted = bareName !== name;
+    entryBare.set(entry, { bareName, counted });
+    (counted ? countedSeen : bareSeen).add(bareName);
+  }
+  if (countedSeen.size === 0) return ranked;
+
+  const textHasQuantity = QUANTITY_PREFIX.test(text);
+  return ranked.filter((entry) => {
+    const info = entryBare.get(entry);
+    if (!info) return true;
+    if (!bareSeen.has(info.bareName) || !countedSeen.has(info.bareName)) return true;
+    return textHasQuantity === info.counted;
+  });
 }
 
 // Lift a partial structural match only when it uniquely identifies one item.
 const UNIQUE_STRUCTURAL_CONFIDENCE = 0.93;
+// Shortest a fuzzy candidate may be relative to the read it claims to be.
+const MIN_FUZZY_NAME_LENGTH_RATIO = 0.45;
 // Tight on purpose: only a read that is nearly the whole longer name may retarget.
 const CLIPPED_NAME_SIMILARITY = 0.95;
 
@@ -388,6 +427,12 @@ export function rankRewardCandidatesDetailed(
       continue;
     }
 
+    // The fuzzy band scores per word, so a 4-letter name can ride one good word
+    // to 0.92 on a long read ("Khra" over "Khora Prime Blueprint" for "Khora
+    // Prime Bluepr"). Ratio, not an absolute floor: short rewards do exist and a
+    // short read must still reach them. Exact and substring already prove fit.
+    if (normalizedName.length < text.length * MIN_FUZZY_NAME_LENGTH_RATIO) continue;
+
     const itemWords = normalizedName.split(" ").filter((word) => word.length > 1);
     if (itemWords.length === 0) continue;
 
@@ -426,15 +471,16 @@ export function rankRewardCandidatesDetailed(
     });
   }
 
-  boostUniqueStructuralCandidate(ranked, text, textWords);
+  const survivors = dropQuantityPrefixMismatches(ranked, text);
+  boostUniqueStructuralCandidate(survivors, text, textWords);
 
-  ranked.sort(
+  survivors.sort(
     (a, b) =>
       b.score - a.score ||
       b.confidence - a.confidence ||
       (b.item?.name.length || 0) - (a.item?.name.length || 0),
   );
-  return ranked.slice(0, Math.max(1, limit));
+  return survivors.slice(0, Math.max(1, limit));
 }
 
 export function matchSingleRewardTextDetailed(
@@ -451,16 +497,39 @@ export function matchSingleRewardTextDetailed(
   );
 }
 
+/** The one acceptance rule for an era word: exact, either-way prefix, or one
+ *  edit. The detector and the ambiguity guard must share it, or an era the
+ *  detector reads through a misread ("LITK") stays invisible to the guard. */
+function matchEraToken(word: string): { token: string; confidence: number } | null {
+  for (const era of RELIC_ERA_TOKENS) {
+    if (word === era.text) return { token: era.token, confidence: 1 };
+  }
+  if (word.length < 3) return null;
+  for (const era of RELIC_ERA_TOKENS) {
+    if (era.text.startsWith(word) || word.startsWith(era.text)) {
+      return { token: era.token, confidence: 0.82 };
+    }
+  }
+  for (const era of RELIC_ERA_TOKENS) {
+    if (levenshteinDistance(word, era.text) <= 1) {
+      return { token: era.token, confidence: 0.76 };
+    }
+  }
+  return null;
+}
+
 /** Era words mentioned as whole words, so a screen listing several fissures
  *  reads as ambiguous instead of as whichever era happens to come first. */
 function distinctEraMentions(normalized: string): Set<string> {
   const found = new Set<string>();
   for (const raw of normalized.split(" ")) {
     const word = normalizeForOcr(raw);
-    if (word === "OMNIA") found.add("omnia");
-    for (const era of RELIC_ERA_TOKENS) {
-      if (word === era.text) found.add(era.token);
+    if (word === "OMNIA") {
+      found.add("omnia");
+      continue;
     }
+    const hit = matchEraToken(word);
+    if (hit) found.add(hit.token);
   }
   return found;
 }
@@ -484,23 +553,10 @@ function detectRelicEraFromText(text: string): { era: string | null; confidence:
   let best: { era: string | null; confidence: number } = { era: null, confidence: 0 };
 
   for (const word of words) {
-    for (const era of RELIC_ERA_TOKENS) {
-      const target = era.text;
-      if (word === target) {
-        return { era: era.token, confidence: 1 };
-      }
-
-      if (word.length >= 3 && (target.startsWith(word) || word.startsWith(target))) {
-        best = best.confidence < 0.82 ? { era: era.token, confidence: 0.82 } : best;
-      }
-
-      if (word.length >= 3) {
-        const distance = levenshteinDistance(word, target);
-        if (distance <= 1) {
-          best = best.confidence < 0.76 ? { era: era.token, confidence: 0.76 } : best;
-        }
-      }
-    }
+    const hit = matchEraToken(word);
+    if (!hit) continue;
+    if (hit.confidence >= 1) return { era: hit.token, confidence: 1 };
+    if (hit.confidence > best.confidence) best = { era: hit.token, confidence: hit.confidence };
   }
 
   return best;
