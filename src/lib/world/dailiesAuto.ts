@@ -120,13 +120,17 @@ function remainingPool(
   return task;
 }
 
-/** Simaris daily scan task; the active-task record resets with the daily target. */
+/** Simaris daily scan task. Reports what the Sanctuary widget shows: an accepted
+ *  task whose scans are full, whether or not it is today's offer. A finished task
+ *  survives the reset until it is handed in, and while it does there is nothing
+ *  left to scan, so matching it against the current offer only hides real progress. */
 function simarisDone(inv: RawInventoryData): boolean | null {
   const info = inv.LibraryActiveDailyTaskInfo;
   if (!info || typeof info !== "object") return null;
   const scans = toFiniteNumber((info as { Scans?: unknown }).Scans);
   const required = toFiniteNumber((info as { ScansRequired?: unknown }).ScansRequired);
   if (required === null || required <= 0) return null;
+
   return scans !== null && scans >= required;
 }
 
