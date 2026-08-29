@@ -53,7 +53,7 @@ function protonEeLogPath(steamLibrary: string): string {
   );
 }
 
-function discoverLinuxEeLog(): string | null {
+function discoverLinuxEeLog(): { path: string | null; verified: boolean } {
   const libraries = new Set<string>();
   for (const root of candidateSteamRoots()) {
     if (!fs.existsSync(root)) continue;
@@ -72,28 +72,29 @@ function discoverLinuxEeLog(): string | null {
 
   for (const lib of libraries) {
     const candidate = protonEeLogPath(lib);
-    if (fs.existsSync(candidate)) return candidate;
+    if (fs.existsSync(candidate)) return { path: candidate, verified: true };
   }
   // Return the expected path in a fresh prefix so a later watcher can attach.
   for (const lib of libraries) {
     const prefix = path.join(lib, "steamapps", "compatdata", WARFRAME_STEAM_APP_ID);
-    if (fs.existsSync(prefix)) return protonEeLogPath(lib);
+    if (fs.existsSync(prefix)) return { path: protonEeLogPath(lib), verified: false };
   }
-  return null;
+  return { path: null, verified: false };
 }
 
 const LINUX_REPROBE_MS = 60_000;
-let _linuxEeLog: { path: string | null; at: number } | null = null;
+let _linuxEeLog: { path: string | null; verified: boolean; at: number } | null = null;
 
 // discoverLinuxEeLog stats every Steam root and parses libraryfolders.vdf, and
-// resolveWarframeUiScale calls this once per scan attempt. A hit never moves
-// mid-session; a miss re-probes so a game installed later is still found.
+// resolveWarframeUiScale calls this once per scan attempt. Only a path that
+// exists is pinned; an empty-prefix guess is still returned but re-probed, so
+// the real file wins once the game writes it.
 function cachedLinuxEeLog(): string | null {
   const now = Date.now();
-  if (_linuxEeLog && (_linuxEeLog.path !== null || now - _linuxEeLog.at < LINUX_REPROBE_MS)) {
+  if (_linuxEeLog && (_linuxEeLog.verified || now - _linuxEeLog.at < LINUX_REPROBE_MS)) {
     return _linuxEeLog.path;
   }
-  _linuxEeLog = { path: discoverLinuxEeLog(), at: now };
+  _linuxEeLog = { ...discoverLinuxEeLog(), at: now };
   return _linuxEeLog.path;
 }
 
