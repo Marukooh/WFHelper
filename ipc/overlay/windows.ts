@@ -637,8 +637,14 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       keepOverlayAboveGame(existingWindow);
       if (shouldShow) {
         if (isKeepMappedActive()) {
+          // Keep-mapped windows stay OS-visible while logically hidden, so the
+          // visibility check below cannot gate this branch.
           showKeepMapped(existingWindow);
-        } else {
+        } else if (!existingWindow.isVisible()) {
+          // Two callers drive one trigger: the route creates the window so the
+          // interaction and theme pushes have a target, then the feature
+          // controller creates it again with the anchor it resolved. Restacking
+          // a window already up is a second moveTop the game sees.
           existingWindow.showInactive();
           // moveTop + alwaysOnTop confirmed AFTER showInactive so the window
           // is definitely in the visible stack before we raise it.

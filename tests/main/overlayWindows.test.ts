@@ -346,6 +346,8 @@ function createPresentationProbe(options: {
     overlayInteractiveMode: false,
   };
 
+  const logWarn = vi.fn();
+
   const controller = createOverlayWindowsController({
     app: { getAppPath: () => "D:\\app" } as unknown as typeof import("electron").app,
     BrowserWindow: FakePresentationWindow as unknown as typeof import("electron").BrowserWindow,
@@ -356,7 +358,7 @@ function createPresentationProbe(options: {
       getDisplayNearestPoint: () => display,
     } as unknown as typeof import("electron").screen,
     ctx,
-    log: { warn: () => {}, info: () => {} },
+    log: { warn: logWarn, info: () => {} },
     hardenBrowserWindowNavigation: () => {},
     overlayWindowFile: "D:\\app\\renderer\\overlay.html",
     transparent: options.transparent !== false,
@@ -368,7 +370,7 @@ function createPresentationProbe(options: {
   const contentEvents = (win: FakePresentationWindow) =>
     win.webContents.send.mock.calls.filter(([channel]) => channel === OVERLAY_CONTENT_VISIBLE);
 
-  return { controller, windows, ctx, contentEvents };
+  return { controller, windows, ctx, contentEvents, logWarn };
 }
 
 /** Fire a window event the controller subscribed to; the fake only records them. */
@@ -377,6 +379,40 @@ function fireWindowEvent(win: { on: Mock }, event: string): void {
     if (name === event) (handler as () => void)();
   }
 }
+
+const shownLines = (logWarn: Mock): number =>
+  logWarn.mock.calls.filter(([line]) => String(line).includes("shown existing window")).length;
+
+describe("re-entrant show", () => {
+  it("puts an overlay up once when one trigger creates it twice", () => {
+    const probe = createPresentationProbe({ platform: "win32", nativeWayland: false });
+    // The route creates the window, then the feature controller creates it
+    // again with the anchor it resolved. Both reach createOverlayWindow.
+    probe.controller.createOverlayWindow();
+    probe.controller.createOverlayWindow();
+
+    expect(probe.windows).toHaveLength(1);
+    expect(probe.windows[0].isVisible()).toBe(true);
+    expect(shownLines(probe.logWarn)).toBe(0);
+  });
+
+  it("still shows an overlay that was hidden since the last create", () => {
+    const probe = createPresentationProbe({ platform: "win32", nativeWayland: false });
+    probe.controller.createOverlayWindow();
+    probe.controller.markRendererReady(1);
+    probe.controller.hideOverlayWindow();
+    const win = probe.windows[0];
+    const showsWhileHidden = win.showInactive.mock.calls.length;
+
+    probe.controller.createOverlayWindow();
+
+    const shown = probe.windows[probe.windows.length - 1];
+    // Windows rebuilds a hidden transparent overlay, so the shown window can be
+    // a fresh one; either way something has to come back up.
+    expect(shown.isVisible()).toBe(true);
+    if (shown === win) expect(win.showInactive.mock.calls.length).toBeGreaterThan(showsWhileHidden);
+  });
+});
 
 describe("keep-mapped presentation mode (native Wayland)", () => {
   afterEach(() => {
