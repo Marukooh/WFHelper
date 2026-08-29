@@ -42,6 +42,37 @@ export function persistedString<T extends string>(
   };
 }
 
+/**
+ * Numeric twin of persistedString. A value outside the preset list, including a
+ * hand-edited one, falls back rather than filtering by a number no button shows.
+ */
+export function persistedPresetNumber(
+  key: string,
+  allowed: readonly number[],
+  fallback: number,
+): Writable<number> {
+  const normalize = (value: number): number => (allowed.includes(value) ? value : fallback);
+  const raw = readStorage(key);
+  const store = writable<number>(normalize(raw == null ? Number.NaN : Number(raw)));
+  const save = (value: number) => writeStorage(key, String(value));
+
+  return {
+    subscribe: store.subscribe,
+    set(value: number): void {
+      const next = normalize(value);
+      save(next);
+      store.set(next);
+    },
+    update(fn: (value: number) => number): void {
+      store.update((current) => {
+        const next = normalize(fn(current));
+        save(next);
+        return next;
+      });
+    },
+  };
+}
+
 export function persistedStringList(key: string, max = 20): Writable<string[]> {
   let initial: string[] = [];
   try {
