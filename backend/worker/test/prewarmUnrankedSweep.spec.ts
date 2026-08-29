@@ -2,7 +2,7 @@ import { createExecutionContext, env, waitOnExecutionContext } from 'cloudflare:
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Env } from '../src/types';
 import { prewarmBatch } from '../src/services/prewarm';
-import { fetchCatalogSlugs } from '../src/services/prewarmCatalog';
+import { fetchCatalogSlugs, resetRankedSlugCacheForTest } from '../src/services/prewarmCatalog';
 import { getOrHydratePrice } from '../src/services/readThrough';
 
 const CATALOG_SLUGS_KEY = 'catalog:slugs:v1';
@@ -17,6 +17,7 @@ interface StatsRow {
 
 beforeEach(() => {
 	(env as unknown as Record<string, string>).CATALOG_SLUG_GUARD_ENABLED = '0';
+	resetRankedSlugCacheForTest();
 });
 
 afterEach(() => {
@@ -324,6 +325,57 @@ describe('read-through price rank pinning', () => {
 
 		expect(result.status).toBe('unavailable');
 		expect(await env.PRICE_CACHE.get(`miss:price:v2:${slug}`)).toBeNull();
+	});
+
+	it('reads the ranked catalog once across back-to-back bare price hydrations', async () => {
+		const first = 'wf_test_read_cache_first_slug';
+		const second = 'wf_test_read_cache_second_slug';
+		await seedRankedCatalog([
+			{ slug: first, maxRank: 10 },
+			{ slug: second, maxRank: 10 },
+		]);
+		await env.PRICE_CACHE.delete(`price:${first}`);
+		await env.PRICE_CACHE.delete(`price:${second}`);
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input instanceof Request ? input.url : input);
+			if (!/\/v1\/items\/[a-z0-9_]+\/statistics$/.test(url)) throw new Error(`Unexpected url: ${url}`);
+			return jsonOk(
+				statsPayload([
+					{ rank: 0, median: 50, minutesAgo: 120 },
+					{ rank: 10, median: 123, minutesAgo: 10 },
+				]),
+			);
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		const metaGet = vi.spyOn(env.ITEM_META, 'get');
+
+		expect((await hydrate(first)).data).toMatchObject({ median: 50 });
+		expect((await hydrate(second)).data).toMatchObject({ median: 50 });
+
+		// Both slugs really hydrated, so the single catalog read is the cache, not a skipped fetch.
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(metaGet.mock.calls.filter(([key]) => key === RANKED_CATALOG_KEY)).toHaveLength(1);
+	});
+
+	it('re-reads the ranked catalog after the isolate cache window expires', async () => {
+		const slug = 'wf_test_read_cache_expiry_slug';
+		await seedRankedCatalog([]);
+		await env.PRICE_CACHE.delete(`price:${slug}`);
+		mockWfm(slug, () =>
+			statsPayload([
+				{ rank: 0, median: 50, minutesAgo: 120 },
+				{ rank: 10, median: 123, minutesAgo: 10 },
+			]),
+		);
+
+		// Authoritative empty catalog: the slug is unranked, so the latest median wins.
+		expect((await hydrate(slug)).data).toMatchObject({ median: 123 });
+
+		await seedRankedCatalog([{ slug, maxRank: 10 }]);
+		await env.PRICE_CACHE.delete(`price:${slug}`);
+		vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 6 * 60 * 1000);
+
+		expect((await hydrate(slug)).data).toMatchObject({ median: 50 });
 	});
 
 	it('negatively caches a permanent ranked read failure without the rank 0 drop', async () => {

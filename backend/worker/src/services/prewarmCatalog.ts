@@ -15,6 +15,12 @@ const ORDER_SUMMARY_HOTSET_MAX_ENTRIES = 96;
 // a WFM outage degrades to a stale catalog instead of an empty prewarm.
 const CATALOG_RETENTION_SEC = 7 * 24 * 60 * 60;
 
+// Same isolate-cache window as rank validation in routes/public.ts: the ranked slug set
+// changes only on a catalog refresh, and bare price hydration reads it per request.
+const RANKED_SLUG_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let rankedSlugCache: { expiresAt: number; slugs: ReadonlySet<string> } | null = null;
+
 export function cacheTtlSec(env: Env): number {
 	return getWorkerConfig(env).cacheTtlSec;
 }
@@ -342,8 +348,22 @@ export async function readRankedSummaryCatalogFromKv(env: Env): Promise<OrderSum
 }
 
 export async function readRankedSlugsFromKv(env: Env): Promise<ReadonlySet<string> | null> {
+	const now = Date.now();
+	if (rankedSlugCache && rankedSlugCache.expiresAt > now) return rankedSlugCache.slugs;
+
 	const entries = await readRankedCatalogEntries(env);
-	return entries ? new Set(entries.map((entry) => entry.slug)) : null;
+	// An unavailable catalog is never cached, so a KV blip cannot pin every bare price
+	// hydration on the rank-agnostic fallback for the whole window. An empty list is
+	// authoritative and is cached like any other answer.
+	if (!entries) return null;
+
+	const slugs: ReadonlySet<string> = new Set(entries.map((entry) => entry.slug));
+	rankedSlugCache = { expiresAt: now + RANKED_SLUG_CACHE_TTL_MS, slugs };
+	return slugs;
+}
+
+export function resetRankedSlugCacheForTest(): void {
+	rankedSlugCache = null;
 }
 
 // A bare-slug stats window mixes rank 0 and max-rank sales, so its median follows whichever

@@ -5,7 +5,7 @@ import { resetDailyBudgetTripStateForTest } from '../src/security/dailyBudget';
 import { resetRankedCatalogCacheForTest } from '../src/routes/public';
 import type { Env } from '../src/types';
 import { buildOrderSummaryPayload, prewarmBatch, prewarmOrderSummaryCatalog } from '../src/services/prewarm';
-import { fetchCatalogSlugs } from '../src/services/prewarmCatalog';
+import { fetchCatalogSlugs, resetRankedSlugCacheForTest } from '../src/services/prewarmCatalog';
 import { syncSupporters } from '../src/services/supporters';
 import { WFM_SNAPSHOT_CLIENT_CACHE_VERSION } from '../../../config/shared/wfmSnapshotValidation';
 
@@ -19,6 +19,7 @@ beforeEach(() => {
 	(env as unknown as Record<string, string>).PUBLIC_RATE_LIMIT_ENABLED = '0';
 	resetDailyBudgetTripStateForTest();
 	resetRankedCatalogCacheForTest();
+	resetRankedSlugCacheForTest();
 });
 
 afterEach(() => {
