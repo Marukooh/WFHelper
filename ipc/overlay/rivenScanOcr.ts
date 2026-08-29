@@ -62,6 +62,10 @@ interface RivenCardRecognitionOptions {
   isStale: (generation: number) => boolean;
 }
 
+function countNullValues(stats: RivenStat[]): number {
+  return stats.reduce((total, stat) => total + (stat.value === null ? 1 : 0), 0);
+}
+
 function logScanTiming(label: string, t: RivenScanTiming): void {
   log.info(
     `[RivenScan] timing ${label}: capture=${t.captureMs}ms crop=${t.cropRefineMs}ms ` +
@@ -181,7 +185,6 @@ export async function recognizeRivenCardStats(
       const diagnostics: RivenParseDiagnostics = { droppedLines: [] };
       const stats = parseRivenStats(ocrResult.text, diagnostics);
       parseMs += Date.now() - parseStart;
-      if (diagnostics.droppedLines.length > 0) droppedAnyLine = true;
 
       // Loud drops: a signed line that parsed to nothing is the signal that
       // turns a user's "misread" report into an actionable log.
@@ -202,10 +205,22 @@ export async function recognizeRivenCardStats(
         }
       }
 
-      if (stats.length > bestStats.length) {
+      // The retry loop runs to escape a low-confidence or null-valued read, so an
+      // attempt that ties on stat count and reads cleaner has to take over.
+      const nulls = countNullValues(stats);
+      const betterTie =
+        bestResult !== null &&
+        stats.length > 0 &&
+        stats.length === bestStats.length &&
+        (nulls < countNullValues(bestStats) ||
+          (nulls === countNullValues(bestStats) &&
+            ocrResult.minConfidence > bestResult.minConfidence));
+
+      if (stats.length > bestStats.length || betterTie) {
         bestResult = ocrResult;
         bestStats = stats;
         bestText = ocrResult.text;
+        droppedAnyLine = diagnostics.droppedLines.length > 0;
       }
 
       if (stats.length >= MIN_ACCEPTABLE_RIVEN_STATS) {
@@ -247,7 +262,8 @@ export async function recognizeRivenCardStats(
   if (bestStats.length === 0) outcome = "empty";
   else if (lowConfidenceResult || belowStatMinimum) outcome = "failed";
   // A dropped line means a stat was lost (a missed curse reads as "ok"), so it
-  // gets the deeper bucket instead of rotating out after four good scans.
+  // gets the deeper bucket. The ok bucket keeps 4 files and a scan writes two
+  // of them, so a clean scan rotates out after two more.
   else if (droppedAnyLine) outcome = "dropped";
   dumpScanCrops(label, outcome, cardCrop, statCrop);
 
