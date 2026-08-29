@@ -18,9 +18,7 @@ interface InventoryValueEntry {
 }
 
 export interface InventoryValueTotals {
-  /** Sum of quantity x snapshot median over the priced rows. */
   platinum: number;
-  /** Sum of quantity x ducat value over the priced prime rows. */
   ducats: number;
   /** Counted rows with no snapshot median, so the platinum total is a floor. */
   platinumUnpriced: number;
@@ -28,7 +26,6 @@ export interface InventoryValueTotals {
   ducatsUnpriced: number;
   /** Counted rows missing either price, so the strip can hint once instead of twice. */
   unpriced: number;
-  /** Rows that passed the sellable and scope gate. */
   counted: number;
 }
 
@@ -53,12 +50,13 @@ function isSellable(entry: InventoryValueEntry): boolean {
   return !isWfmExcludedSlug(slug);
 }
 
-/** A row with no amount is one copy; a broken or non-positive amount is none. */
 function stackSize(entry: InventoryValueEntry): number {
   if (entry.amount == null) return 1;
   const amount = toFiniteNumber(entry.amount);
   if (amount == null || amount <= 0) return 0;
-  return Math.floor(amount);
+  // Stock the payload reports as a fraction is still stock, so the floor below
+  // one copy must not drop the row out of the totals and out of the hint.
+  return Math.max(1, Math.floor(amount));
 }
 
 /**

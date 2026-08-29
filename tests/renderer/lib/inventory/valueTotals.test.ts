@@ -56,6 +56,23 @@ describe("computeInventoryValueTotals", () => {
     });
   });
 
+  it("counts a fractional amount as one copy instead of dropping the row", () => {
+    const totals = computeInventoryValueTotals([row({ amount: 0.5 })], "prime");
+    expect(totals.counted).toBe(1);
+    expect(totals.platinum).toBe(10);
+    expect(totals.ducats).toBe(45);
+  });
+
+  it("still reports an unpriced fractional row as a hole", () => {
+    const totals = computeInventoryValueTotals(
+      [row({ amount: 0.5, platinum: null, ducats: null })],
+      "prime",
+    );
+    expect(totals.counted).toBe(1);
+    expect(totals.platinumUnpriced).toBe(1);
+    expect(totals.unpriced).toBe(1);
+  });
+
   it("counts holes instead of guessing a price", () => {
     const totals = computeInventoryValueTotals(
       [
