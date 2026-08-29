@@ -4,13 +4,14 @@
   import { ELEMENT_ICON_URLS, NAV_ICON_URLS, RIVEN_TEMPLATE_URL } from "../lib/assetUrls.js";
   import { compareSharedFilterSort, matchesSharedFilters } from "../lib/filters.js";
   import { gradeColor } from "../lib/rivenGradeColors.js";
-  import { matchRivenListings } from "../lib/marketContract.js";
+  import { matchRivenListings, rivenNameSuffix } from "../lib/marketContract.js";
   import {
     ensureRivenContractsLoaded,
     invalidateRivenContractsRefresh,
   } from "../lib/marketContractsSync.js";
   import { rivenChatTag, rivenWtsLine } from "../lib/rivenChatTag.js";
   import type { DecodedRiven, VeiledRivenEntry, VeiledRivenGroup } from "../types/ipc.js";
+  import type { WfmContract } from "../types/market.js";
   import RivenDetailModal from "../modals/RivenDetailModal.svelte";
   import RivenFinder from "../components/RivenFinder.svelte";
   import HeaderTabs from "../components/HeaderTabs.svelte";
@@ -110,6 +111,12 @@
 
   const listingByRiven = $derived(matchRivenListings(rivens, $marketContracts.contracts));
 
+  // The buyout is what a buyer can take; only an auction without one advertises
+  // its opening bid instead.
+  function listingPlatinum(contract: WfmContract): number {
+    return contract.buyoutPlatinum ?? contract.platinum;
+  }
+
   // Right-click menus are placed by hand, so keep the box inside the viewport.
   const MENU_WIDTH = 224;
   const MENU_HEIGHT = 96;
@@ -184,11 +191,6 @@
       if (lower.includes(key)) return path;
     }
     return null;
-  }
-
-  function rivenSuffix(riven: DecodedRiven): string {
-    if (!riven.rivenName || riven.rivenName === riven.weaponName) return "";
-    return riven.rivenName.slice(riven.weaponName.length).trim();
   }
 
   onMount(() => {
@@ -296,6 +298,7 @@
       <div class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 justify-items-center">
         {#each filteredRivens as riven (riven.itemId)}
           {@const listing = listingByRiven.get(riven.itemId)}
+          {@const suffix = rivenNameSuffix(riven.rivenName, riven.weaponName)}
           <div
             class="relative mx-auto w-[min(100%,18rem)] max-[700px]:w-[min(100%,16rem)] aspect-[316/400] transition-transform duration-[0.18s] ease hover:-translate-y-1 hover:z-[2]"
           >
@@ -332,11 +335,11 @@
                     class="font-display text-xl max-[700px]:text-xl font-bold text-white leading-[1.1] [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,1),0_2px_12px_rgba(0,0,0,0.95),0_0_20px_rgba(80,40,160,0.3)]"
                     >{riven.weaponName}</span
                   >
-                  {#if rivenSuffix(riven)}
+                  {#if suffix}
                     <span
                       class="font-display text-sm font-semibold text-[rgba(200,180,255,0.9)] leading-[1.1] [text-shadow:0_0_4px_rgba(0,0,0,1),0_0_8px_rgba(0,0,0,0.95)]"
                     >
-                      {rivenSuffix(riven)}</span
+                      {suffix}</span
                     >
                   {/if}
                 </div>
@@ -414,7 +417,7 @@
                   class="inline-flex items-center justify-center rounded border border-border bg-black/60 px-1.5 py-1 font-display text-[0.625rem] font-bold leading-none text-text-secondary opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
                   title={$tr("rivens.copyWtsLine")}
                   aria-label={$tr("rivens.copyWtsLine")}
-                  onclick={() => copyToClipboard(rivenWtsLine(riven, listing.platinum))}
+                  onclick={() => copyToClipboard(rivenWtsLine(riven, listingPlatinum(listing)))}
                   data-riven-copy-wts
                 >
                   WTS
@@ -525,7 +528,7 @@
       <button
         class="block w-full px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-white/[0.06] hover:text-text-primary"
         role="menuitem"
-        onclick={() => copyToClipboard(rivenWtsLine(menuRiven, menuListing.platinum))}
+        onclick={() => copyToClipboard(rivenWtsLine(menuRiven, listingPlatinum(menuListing)))}
       >
         {$tr("rivens.copyWtsLine")}
       </button>
