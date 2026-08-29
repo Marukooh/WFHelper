@@ -226,10 +226,11 @@
   }
 
   // Rows without a parsed backing (generated set rows) have no detail modal.
-  // Modular gear is keyed per build, so its card id is the inventoryKey.
+  // Modular builds and ranked stacks carry their inventoryKey as the card id,
+  // so both keys have to be listed; a parts-less build has no other marker.
   $: detailKeys = new Set(
     $parsedItems.flatMap((entry) =>
-      entry.modularParts && typeof entry.inventoryKey === "string"
+      typeof entry.inventoryKey === "string" && entry.inventoryKey !== entry.internalName
         ? [entry.internalName, entry.inventoryKey]
         : [entry.internalName],
     ),
