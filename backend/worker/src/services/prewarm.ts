@@ -25,11 +25,13 @@ import {
 import { extractWfmOrderList, normalizeWfmOrderBookSide } from '../../../../config/shared/wfmOrders';
 import { WFM_SNAPSHOT_MAX_ENTRY_AGE_MS } from '../../../../config/shared/wfmSnapshotValidation';
 import {
+	barePriceFetchRank,
 	buildOrderSummaryPayload,
 	cacheTtlSec,
 	fetchCatalogSlugs,
 	fetchRankedSummaryCatalog,
 	orderSummaryCacheTtlSec,
+	readRankedSlugsFromKv,
 	sanitizeOrderSummaryHotsetEntries,
 } from './prewarmCatalog';
 import { workerOrderSummarySubtypeCacheKey, type OrderSubtype } from './orderSubtype';
@@ -48,6 +50,8 @@ interface FetchResult<T> {
 	/** true when the failure is transient (429/5xx) - do NOT negatively cache. */
 	transient: boolean;
 	inactive?: boolean;
+	/** Price only: upstream answered, but its stats window held no sale for the asked rank. */
+	noSales?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -170,7 +174,7 @@ export async function fetchPricePayload(
 
 	const payload = await response.json();
 	const latest = extractLatestMedianFromStatsPayload(payload, targetRank != null ? { rank: targetRank } : undefined);
-	if (!latest) return { data: null, transient: false };
+	if (!latest) return { data: null, transient: false, noSales: true };
 	if (isSnapshotEntryTooOld(latest.timestamp)) return { data: null, transient: false, inactive: true };
 
 	return {
@@ -640,6 +644,7 @@ export async function prewarmBatch(
 	const maxBatch = options.reason === 'manual' ? config.adminPrewarmMaxBatch : 1000;
 	const batchSize = clamp(options.batchSize, 1, maxBatch);
 	const slugs = await fetchCatalogSlugs(env, Boolean(options.refreshCatalog));
+	const rankedSlugs = await readRankedSlugsFromKv(env);
 
 	const now = Date.now();
 	const emptyResult: PrewarmResult = {
@@ -732,13 +737,18 @@ export async function prewarmBatch(
 				}
 			}
 
-			if (shouldRefreshPrice) {
-				const priceResult = await fetchPricePayload(slug);
+			// Without the catalog the rank rule cannot be applied, so leave the cached price for
+			// this sweep; the catalog refresh rebuilds the ranked key.
+			if (shouldRefreshPrice && rankedSlugs) {
+				const priceRank = barePriceFetchRank(slug, rankedSlugs);
+				const priceResult = await fetchPricePayload(slug, priceRank != null ? { rank: priceRank } : undefined);
 				if (priceResult.data) {
 					await putPricePayload(env, slug, priceResult.data);
 					result.priceUpdated += 1;
 					snapshotPrices[slug] = { status: 'ok', median: priceResult.data.median, timestamp: priceResult.data.timestamp };
-				} else if (priceResult.inactive) {
+				} else if (priceResult.inactive || (priceRank != null && priceResult.noSales)) {
+					// Only an answered request may drop the cached price. A failed one says nothing
+					// about the data, so a 403/404 or an outage keeps the last good median.
 					await markPriceNoData(env, slug);
 					snapshotPrices[slug] = inactivePriceSnapshotEntry();
 				}

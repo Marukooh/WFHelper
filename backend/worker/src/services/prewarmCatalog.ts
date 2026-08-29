@@ -271,16 +271,21 @@ export async function fetchCatalogSlugs(env: Env, forceRefresh: boolean): Promis
 		},
 	);
 
-	await env.ITEM_META.put(
-		ORDER_SUMMARY_CATALOG_KEY,
-		JSON.stringify({
-			updatedAt: Date.now(),
-			entries: rankedSummaryCatalog,
-		}),
-		{
-			expirationTtl: CATALOG_RETENTION_SEC,
-		},
-	);
+	// Same never-overwrite-with-empty rule as the slug catalog above: readers treat a stored
+	// empty ranked catalog as authoritative, so an upstream shape change that drops every
+	// maxRank would unrank every slug.
+	if (rankedSummaryCatalog.length > 0) {
+		await env.ITEM_META.put(
+			ORDER_SUMMARY_CATALOG_KEY,
+			JSON.stringify({
+				updatedAt: Date.now(),
+				entries: rankedSummaryCatalog,
+			}),
+			{
+				expirationTtl: CATALOG_RETENTION_SEC,
+			},
+		);
+	}
 
 	// Client-shaped catalog for /v1/wfm-items - written only on refresh, so the
 	// write rate is bounded by CATALOG_REFRESH_HOURS, never by user traffic.
@@ -319,7 +324,31 @@ export async function fetchRankedSummaryCatalog(env: Env, forceRefresh: boolean)
 	return sanitizeOrderSummaryCatalogEntries(refreshed?.entries);
 }
 
+// null means "ranked catalog unavailable" (KV miss, unparseable value, read failure);
+// an empty list is authoritative and means the catalog holds no ranked slugs.
+async function readRankedCatalogEntries(env: Env): Promise<OrderSummaryCatalogEntry[] | null> {
+	let cached: Record<string, unknown> | null;
+	try {
+		cached = await getJsonFromKv(env.ITEM_META, ORDER_SUMMARY_CATALOG_KEY);
+	} catch {
+		return null;
+	}
+	if (!cached || !Array.isArray(cached.entries)) return null;
+	return sanitizeOrderSummaryCatalogEntries(cached.entries);
+}
+
 export async function readRankedSummaryCatalogFromKv(env: Env): Promise<OrderSummaryCatalogEntry[]> {
-	const cached = await getJsonFromKv(env.ITEM_META, ORDER_SUMMARY_CATALOG_KEY);
-	return sanitizeOrderSummaryCatalogEntries(cached?.entries);
+	return (await readRankedCatalogEntries(env)) ?? [];
+}
+
+export async function readRankedSlugsFromKv(env: Env): Promise<ReadonlySet<string> | null> {
+	const entries = await readRankedCatalogEntries(env);
+	return entries ? new Set(entries.map((entry) => entry.slug)) : null;
+}
+
+// A bare-slug stats window mixes rank 0 and max-rank sales, so its median follows whichever
+// rank traded last. Ranked slugs therefore price from rank 0. A null catalog cannot tell
+// ranked from unranked, and each caller decides how to fail open on that.
+export function barePriceFetchRank(slug: string, rankedSlugs: ReadonlySet<string> | null): number | null {
+	return rankedSlugs?.has(slug) ? 0 : null;
 }

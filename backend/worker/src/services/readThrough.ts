@@ -15,7 +15,7 @@ import {
 	putPricePayload,
 } from './prewarm';
 import { workerMissOrderSummarySubtypeKey, workerOrderSummarySubtypeCacheKey, type OrderSubtype } from './orderSubtype';
-import { fetchCatalogSlugs } from './prewarmCatalog';
+import { barePriceFetchRank, fetchCatalogSlugs, readRankedSlugsFromKv } from './prewarmCatalog';
 import { normalizeRankFilter } from '../../../../config/shared/numeric';
 import { isExcludedRankedMarketItem, isWfmExcludedSlug } from '../../../../config/shared/wfmExclusions';
 import { workerMissCacheKey, workerOrderSummaryCacheKey, workerPriceCacheKey } from '../../../../config/shared/wfmCacheKeys';
@@ -172,11 +172,16 @@ async function hydratePrice(env: Env, slug: string, markNoData: boolean, rank: n
 	if (inFlight) return inFlight;
 
 	const task = (async () => {
-		const result = await fetchPricePayload(slug, rank != null ? { rank } : undefined);
+		// The bare key follows the same rank rule as the prewarm sweep. Without it a live read
+		// would overwrite a ranked slug's rank 0 median with a mixed-rank one every 21 hours.
+		const barePinnedRank = rank == null ? barePriceFetchRank(slug, await readRankedSlugsFromKv(env)) : null;
+		const fetchRank = rank ?? barePinnedRank;
+		const result = await fetchPricePayload(slug, fetchRank != null ? { rank: fetchRank } : undefined);
 		if (!result.data) {
 			// Only negatively cache confirmed "no data" - never cache transient errors (429/5xx).
+			// A pinned slug with no rank 0 sale drops its mixed-rank entry, as the sweep does.
 			if (markNoData && !result.transient) {
-				if (result.inactive) {
+				if (result.inactive || (barePinnedRank != null && result.noSales)) {
 					await markPriceNoData(env, slug, rank);
 				} else {
 					await setNegativeMarker(env.PRICE_CACHE, missKey, env);

@@ -143,6 +143,14 @@ Confirmed misses use `miss:price:*`, `miss:meta:*`, `miss:orders:*`, and
 `miss:orders-summary:*`. Transient upstream errors must not create negative markers.
 `skip:untradable:*` prevents repeated metadata requests for excluded items.
 
+The bare `price:{slug}` key is rank-pinned. A rank-agnostic stats window mixes rank 0 and
+max-rank sales, so a slug listed in the ranked order-summary catalog prices from its rank 0
+sales. Prewarm and the `/v1/prices/{slug}` read-through share `barePriceFetchRank()`, so a live
+read cannot overwrite a rank 0 median with a mixed-rank one. An unavailable ranked catalog
+(`null`, as opposed to an authoritative empty one) fails open: prewarm skips the price half of
+the sweep and the read-through keeps the rank-agnostic median. Only an answered upstream request
+may drop a cached price; a transient failure or an HTTP error leaves the last good median.
+
 Prewarm cron runs every 15 minutes; the separate daily `0 4 * * *` trigger runs only the
 supporter sync. Current production defaults are:
 
