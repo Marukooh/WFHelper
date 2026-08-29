@@ -1344,6 +1344,7 @@
   "inventory.value.wholeInventory": "Gesamter Bestand",
   "inventory.value.scopePrime": "Nur Prime-Teile",
   "inventory.value.scopePrimeHint": "Zählt nur Prime-Teile. Set-Zeilen werden übersprungen, da ihre Teile bereits gezählt sind.",
+  "inventory.value.atLeast": "≥ {value}",
   "inventory.value.allTradablesHint": "Zählt jede handelbare Zeile inklusive Mods und Arkana, multipliziert mit der Stapelgröße.",
   "inventory.value.minPlatHint": "Überspringt Gegenstände, deren warframe.market-Median unter diesem Preis liegt. Gegenstände ohne Preis werden weiterhin gezählt.",
   "inventory.value.minPlatOff": "Aus",

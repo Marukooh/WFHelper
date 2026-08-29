@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PLATINUM_ICON_URL, STAT_ICON_URLS } from "../../lib/assetUrls.js";
-  import { locale, tr } from "../../lib/i18n.js";
+  import { locale, tr, type Translator } from "../../lib/i18n.js";
   import {
     VALUE_MIN_PLATINUM_PRESETS,
     selectValueStripRows,
@@ -34,9 +34,11 @@
     })),
   );
 
-  // A hole means the real total is higher, so the figure reads as a floor.
-  function figure(value: number, unpriced: number, code: string): string {
-    return `${unpriced > 0 ? "≥ " : ""}${value.toLocaleString(code)}`;
+  // A hole means the real total is higher, so the figure reads as a floor. The
+  // translator is a parameter because Svelte only tracks $tr where it is textual.
+  function figure(value: number, unpriced: number, code: string, t: Translator): string {
+    const amount = value.toLocaleString(code);
+    return unpriced > 0 ? t("inventory.value.atLeast", { value: amount }) : amount;
   }
 
   function hasDucats(totals: InventoryValueTotals): boolean {
@@ -68,7 +70,7 @@
           data-value-platinum
         >
           <img src={PLAT_ICON} alt="" class="h-3.5 w-3.5 shrink-0 self-center object-contain" />
-          {figure(row.totals.platinum, row.totals.platinumUnpriced, $locale)}
+          {figure(row.totals.platinum, row.totals.platinumUnpriced, $locale, $tr)}
         </span>
         {#if hasDucats(row.totals)}
           <span
@@ -78,7 +80,7 @@
             data-value-ducats
           >
             <img src={DUCAT_ICON} alt="" class="h-3.5 w-3.5 shrink-0 self-center object-contain" />
-            {figure(row.totals.ducats, row.totals.ducatsUnpriced, $locale)}
+            {figure(row.totals.ducats, row.totals.ducatsUnpriced, $locale, $tr)}
           </span>
         {/if}
         {#if index === 0 && row.totals.unpriced > 0}
