@@ -313,14 +313,14 @@
               >
                 {#if listing}
                   <span
-                    class="absolute top-[9%] left-[13%] z-[2] inline-flex items-center justify-center rounded-full border border-border bg-black/50 p-1"
+                    class="absolute top-[9%] left-[13%] z-[2] inline-flex items-center justify-center rounded-full border border-accent bg-black/85 p-1.5 shadow-[0_0_6px_rgba(0,0,0,0.9)]"
                     title={$tr("rivens.listedPrice", { plat: listing.platinum })}
                     data-riven-listed
                   >
                     <img
                       src={NAV_ICON_URLS.market}
                       alt={$tr("rivens.listedPrice", { plat: listing.platinum })}
-                      class="h-3 w-3"
+                      class="h-4 w-4"
                     />
                   </span>
                 {/if}
