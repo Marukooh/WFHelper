@@ -213,6 +213,10 @@ export interface SlotScanStats {
   layoutCount: number;
 }
 
+// Just under the substring gate, so a floored 0.88 containment match counts as
+// a near miss while padding-slot junk does not.
+const NEAR_GATE_CONFIDENCE = 0.85;
+
 function isUsableSlotCandidate(candidate: SlotCandidate): boolean {
   if (!candidate?.item?.name) return false;
   const normalizedName = String(candidate.item.name || "").trim();
@@ -292,6 +296,12 @@ export async function scanRewardSlotsFallback(
   let bestRun: LayoutRun | null = null;
   let bestDebugSlots: ScanDebugSlot[] = [];
   let fallbackDebugSlots: ScanDebugSlot[] = [];
+  // Widest layout tried, so a scan that ships fewer cards than the screen showed
+  // can dump the crops that were rejected instead of the ones that won.
+  let widestCount = 0;
+  let widestDebugSlots: ScanDebugSlot[] = [];
+  let widestNearMisses = 0;
+  let widestMatched = 0;
   const runs: LayoutRun[] = [];
 
   for (const layout of layouts) {
@@ -405,6 +415,17 @@ export async function scanRewardSlotsFallback(
       }))
       .filter((entry): entry is CollectedSlot => !!entry.candidate);
 
+    if (layout.count > widestCount) {
+      widestCount = layout.count;
+      widestDebugSlots = toScanDebugSlots(slotResults);
+      widestMatched = collected.length;
+      // A padding slot echoing noise off a neighbouring card is not a near miss
+      // worth a bundle; only a candidate that nearly cleared the gate is.
+      widestNearMisses = slotResults.filter(
+        (entry) => entry?.nearMiss && entry.nearMiss.confidence >= NEAR_GATE_CONFIDENCE,
+      ).length;
+    }
+
     if (!collected.length) {
       // layouts are confidence-sorted - the first zero-hit one best shows a no-match scan
       if (fallbackDebugSlots.length === 0) fallbackDebugSlots = toScanDebugSlots(slotResults);
@@ -495,10 +516,17 @@ export async function scanRewardSlotsFallback(
 
   if (bestResult) {
     const anyDiverge = bestDebugSlots.some((slot) => slot.diverged);
-    if (bestResult.emptySlots > 0 || anyDiverge) {
+    // The silent wrong answer: a wider layout resolved FEWER cards than the narrow
+    // winner while throwing away a near-gate read. Both halves are needed, or a
+    // healthy 2-card scan sitting inside a spurious 4-slot layout spends a bundle.
+    const shrunk =
+      bestResult.slotCount < widestCount &&
+      widestMatched < bestResult.matchedSlots &&
+      widestNearMisses > 0;
+    if (bestResult.emptySlots > 0 || anyDiverge || shrunk) {
       dumpRewardScanDebug(
-        bestResult.emptySlots > 0 ? "empty-slots" : "reader-diverge",
-        bestDebugSlots,
+        shrunk ? "smaller-layout" : bestResult.emptySlots > 0 ? "empty-slots" : "reader-diverge",
+        shrunk && widestDebugSlots.length > 0 ? widestDebugSlots : bestDebugSlots,
         {
           reader: options.reader || "both",
           layoutCount: bestResult.slotCount,

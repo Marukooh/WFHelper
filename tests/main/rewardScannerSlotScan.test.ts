@@ -10,7 +10,8 @@ const h = vi.hoisted(() => ({
 vi.mock("../../services/logger", () => ({
   withScope: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
-vi.mock("../../services/rewardScanDebug", () => ({ dumpRewardScanDebug: vi.fn() }));
+const dumpRewardScanDebug = vi.hoisted(() => vi.fn());
+vi.mock("../../services/rewardScanDebug", () => ({ dumpRewardScanDebug }));
 vi.mock("../../services/rewardScannerSupport", () => ({ hasConfidentSlotLayout: () => true }));
 vi.mock("../../services/rewardOcrOnnx", () => ({
   rewardOcrOnnxAvailable: () => false,
@@ -129,6 +130,56 @@ describe("scanRewardSlotsFallback layout merge", () => {
       "Mesa Prime Blueprint",
       "Odonata Prime Blueprint",
     ]);
+  });
+
+  // The reported 1.3.3 failure: four cards on screen, the wide layout rejected
+  // every read, and a two-card subset shipped as the whole answer.
+  it("dumps the rejected wide crops when a narrower layout wins", async () => {
+    dumpRewardScanDebug.mockClear();
+    h.layouts = [
+      { count: 4, confidence: 0.9, slots: [slot(0), slot(100), slot(200), slot(300)] },
+      { count: 2, confidence: 0.9, slots: [slot(110), slot(210)] },
+    ];
+    h.matches = {
+      "kavasa near": match("Kavasa Prime Kubrow Collar Blueprint", 480, "substring", 0.88),
+      "forma near": match("Forma Blueprint", 300, "fuzzy", 0.68),
+      "forma blueprint": match("Forma Blueprint", 1100),
+    };
+    const result = await scan({
+      "crop:0": "forma near",
+      "crop:100": "forma near",
+      "crop:200": "kavasa near",
+      "crop:110": "forma blueprint",
+      "crop:210": "forma blueprint",
+    });
+
+    expect(result?.matchedSlots).toBe(2);
+    const reasons = dumpRewardScanDebug.mock.calls.map((call) => call[0]);
+    expect(reasons).toContain("smaller-layout");
+  });
+
+  // Every choice count shares one 0.127W pitch, so a real 2-card screen sits on
+  // the middle two slots of a spurious 4-slot layout. Junk off a padding slot
+  // must not spend a debug bundle; the cap is 25 and pruning evicts real ones.
+  it("stays quiet when a healthy two-card scan sits inside a wider layout", async () => {
+    dumpRewardScanDebug.mockClear();
+    h.layouts = [
+      { count: 4, confidence: 0.9, slots: [slot(0), slot(100), slot(200), slot(300)] },
+      { count: 2, confidence: 0.9, slots: [slot(100), slot(200)] },
+    ];
+    h.matches = {
+      "mesa prime blueprint": match("Mesa Prime Blueprint", 1100),
+      "odonata prime blueprint": match("Odonata Prime Blueprint", 1100),
+      "padding noise": match("Forma Blueprint", 120, "fuzzy", 0.5),
+    };
+    const result = await scan({
+      "crop:0": "padding noise",
+      "crop:100": "mesa prime blueprint",
+      "crop:200": "odonata prime blueprint",
+    });
+
+    expect(result?.matchedSlots).toBe(2);
+    expect(dumpRewardScanDebug.mock.calls.map((call) => call[0])).not.toContain("smaller-layout");
   });
 
   it("keeps a solo single-reward read", async () => {
