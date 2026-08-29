@@ -127,6 +127,13 @@ jobs:
       - name: DBWIN worker regression (Electron host)
         run: pnpm run test:dbwin
 
+      # Windows Server runners ship no OCR language pack, so the native reader
+      # cannot start there. ONNX is bundled and covers the same screens.
+      - name: Reward scan regression (Electron host)
+        run: pnpm run test:reward-scan
+        env:
+          REWARD_SCAN_READERS: onnx
+
       # A retry that goes green still hides a broken test. Flaky fails the job.
       - name: E2E smoke tests (Windows)
         run: pnpm exec playwright test --config playwright.config.ts --fail-on-flaky-tests

@@ -5,6 +5,14 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { _electron } = require("@playwright/test");
+
+const READER_FILTER = process.env.REWARD_SCAN_READERS
+  ? new Set(
+      process.env.REWARD_SCAN_READERS.split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    )
+  : null;
 const { buildRealScreens } = require("./build-screens.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -317,7 +325,14 @@ async function buildAspectPadSims(screenDir) {
       if (screen.synthetic && !syntheticOk) continue;
       // gating screens must pass through every reader in isolation and combined
       // unless the screen pins its readers (windows band-OCR known-weak cases)
-      const readers = screen.readers || (screen.info ? ["both"] : ["windows", "onnx", "both"]);
+      const declared = screen.readers || (screen.info ? ["both"] : ["windows", "onnx", "both"]);
+      // CI runners are Windows Server with no OCR language pack, so the windows
+      // reader dies there. REWARD_SCAN_READERS narrows the run to what can work.
+      const readers = READER_FILTER ? declared.filter((r) => READER_FILTER.has(r)) : declared;
+      if (readers.length === 0) {
+        console.log(`SKIP: ${screen.file} - no reader in REWARD_SCAN_READERS`);
+        continue;
+      }
       const screenPath = screen.fixture
         ? path.join(FIXTURE_SCREEN_DIR, screen.file)
         : path.join(screenDir, screen.file);
