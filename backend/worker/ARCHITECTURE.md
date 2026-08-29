@@ -146,10 +146,24 @@ Confirmed misses use `miss:price:*`, `miss:meta:*`, `miss:orders:*`, and
 The bare `price:{slug}` key is rank-pinned. A rank-agnostic stats window mixes rank 0 and
 max-rank sales, so a slug listed in the ranked order-summary catalog prices from its rank 0
 sales. Prewarm and the `/v1/prices/{slug}` read-through share `barePriceFetchRank()`, so a live
-read cannot overwrite a rank 0 median with a mixed-rank one. An unavailable ranked catalog
-(`null`, as opposed to an authoritative empty one) fails open: prewarm skips the price half of
-the sweep and the read-through keeps the rank-agnostic median. Only an answered upstream request
-may drop a cached price; a transient failure or an HTTP error leaves the last good median.
+read cannot overwrite a rank 0 median with a mixed-rank one while the catalog is readable.
+`readRankedSlugsFromKv()` resolves `order-summary:catalog:v1` from `ITEM_META` through the same
+five-minute isolate cache as rank validation. Only an available catalog is cached, so a KV blip
+cannot pin hydration on the fallback below for the whole window, and a catalog refresh reaches
+an isolate at most five minutes late.
+
+An unavailable ranked catalog (`null`, as opposed to an authoritative empty one) fails open, and
+the two sides fail open differently. Prewarm skips the price half of the sweep and leaves the
+stored median alone. The read-through still hydrates: it fetches rank-agnostically and writes
+that mixed-rank median to `price:{slug}`, so a rank 0 value can be replaced while the catalog is
+unavailable. Both cases store `rank: null`, so the overwrite is invisible in the stored value;
+the next sweep after the catalog returns re-pins the slug. Serving a mixed-rank median beats
+serving no price, which is why the read-through does not skip the write.
+
+Only an answered upstream request may drop a cached price; a transient failure or an HTTP error
+leaves the last good median. Prices and their negative markers live in `PRICE_CACHE`; both
+catalogs live in `ITEM_META`. Successful price, meta, and order-summary responses carry
+`public, max-age=60`, so a PoP can serve a hydrated value for up to a minute after KV changes.
 
 Prewarm cron runs every 15 minutes; the separate daily `0 4 * * *` trigger runs only the
 supporter sync. Current production defaults are:
