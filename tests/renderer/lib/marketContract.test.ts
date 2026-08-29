@@ -386,7 +386,19 @@ describe("matchRivenListings", () => {
     expect(matched.get("riven-2")?.id).toBe("auction-1");
   });
 
-  it("separates twins by a polarity only the shared table knows", () => {
+  // Only three schools ever land on a riven, so anything else is a bad read and
+  // must not be trusted to tell two otherwise identical rolls apart.
+  it("does not separate twins by a polarity no riven can roll", () => {
+    const twins = [
+      owned({ polarity: "AP_POWER" }),
+      owned({ itemId: "riven-2", polarity: "AP_WARD" }),
+    ];
+    expect(matchRivenListings(twins, [auction({ polarity: "zenurik" })]).size).toBe(0);
+  });
+
+  // With one auction per twin both are listed whichever way they pair up, so an
+  // unrollable school must not be what decides the pairing.
+  it("pairs twins with two auctions without letting an unrollable school swap them", () => {
     const twins = [
       owned({ polarity: "AP_POWER" }),
       owned({ itemId: "riven-2", polarity: "AP_WARD" }),
@@ -396,8 +408,8 @@ describe("matchRivenListings", () => {
       auction({ id: "auction-2", polarity: "zenurik" }),
     ];
     const matched = matchRivenListings(twins, listings);
-    expect(matched.get("riven-1")?.id).toBe("auction-2");
-    expect(matched.get("riven-2")?.id).toBe("auction-1");
+    expect(matched.get("riven-1")?.id).toBe("auction-1");
+    expect(matched.get("riven-2")?.id).toBe("auction-2");
   });
 
   it("gives each twin the auction carrying its own stat rolls", () => {

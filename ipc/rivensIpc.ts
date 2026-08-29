@@ -149,7 +149,7 @@ function register(): void {
 
       // WFM rejects an unknown polarity, and every riven carries one, so an
       // absent value is the default polarity rather than an error.
-      const wfmPolarity = polarityToWfm(toNonEmptyString(polarity, 32)) || "madurai";
+      const wfmPolarity = polarityToWfm(toNonEmptyString(polarity, 32)) ?? "madurai";
 
       // WFM expects only the generated suffix portion of the riven name in lowercase
       // (e.g. "croni-visican"), NOT the full "Angstrum Croni-visican".

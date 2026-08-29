@@ -48,18 +48,20 @@ export function tagToWfmUrlName(tag: string): string | null {
 }
 
 // The game spells polarity AP_ATTACK where WFM names it after the focus school.
+// A riven only ever rolls AP_ATTACK, AP_DEFENSE or AP_TACTIC, so those three and
+// the names WFM hands back are the whole vocabulary. Any other school is one the
+// auction form rejects, so it must never reach a payload or a match.
 const POLARITY_TO_WFM: Record<string, string> = {
   ap_attack: "madurai",
-  ap_tactic: "naramon",
+  madurai: "madurai",
   ap_defense: "vazarin",
-  ap_power: "zenurik",
-  ap_ward: "unairu",
-  ap_precept: "penjaga",
-  ap_umbra: "umbra",
+  vazarin: "vazarin",
+  ap_tactic: "naramon",
+  naramon: "naramon",
 };
 
-/** Folds a polarity to the WFM vocabulary; an unknown name passes through. */
-export function polarityToWfm(value: string | null | undefined): string {
+/** Folds a polarity to the WFM vocabulary; null for one WFM would reject. */
+export function polarityToWfm(value: string | null | undefined): string | null {
   const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return POLARITY_TO_WFM[raw] ?? raw;
+  return POLARITY_TO_WFM[raw] ?? null;
 }
