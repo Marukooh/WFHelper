@@ -928,6 +928,7 @@
   "rivens.copyChatTag": "Copy chat tag",
   "rivens.copyWtsLine": "Copy WTS line",
   "rivens.listedPrice": "Listed on warframe.market for {plat} platinum",
+  "rivens.rerollCount": "⟳ {count}",
   "rivens.listingsRefreshFailed": "Could not refresh your warframe.market riven listings.",
   "rivens.loading": "Loading rivens...",
   "rivens.mr": "MR {level}",

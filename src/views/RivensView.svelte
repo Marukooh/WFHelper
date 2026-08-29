@@ -397,7 +397,9 @@
                     size={14}
                     className="inline-flex min-w-3.5 -translate-y-0.5 object-contain"
                   />
-                  <span class="text-[#f06dff] font-bold">⟳ {riven.rerolls}</span>
+                  <span class="text-[#f06dff] font-bold"
+                    >{$tr("rivens.rerollCount", { count: riven.rerolls })}</span
+                  >
                 </div>
               </div>
             </button>
