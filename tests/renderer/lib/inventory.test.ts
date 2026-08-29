@@ -1705,10 +1705,9 @@ describe("chainBuildableBlueprints", () => {
   });
 });
 
-// K.'s report: "Can build (full set)" listed three primes that every card in the
-// list labelled "Missing parts" with 0/1 on each part. DE names a recipe
-// ingredient ...Component but the inventory only ever holds the ...Blueprint it
-// is built from, so the row status and the filter must read the same predicate.
+// DE names a recipe ingredient ...Component but the inventory only ever holds
+// the ...Blueprint it is built from, so the card status and the "Can build
+// (full set)" filter have to read the same predicate or they disagree.
 describe("foundry set readiness", () => {
   const FRAME = "/Lotus/Powersuits/Test/TestPrime";
   const FRAME_BP = "/Lotus/Types/Recipes/WarframeRecipes/TestPrimeBlueprint";
