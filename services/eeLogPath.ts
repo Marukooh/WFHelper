@@ -128,23 +128,38 @@ export function parseWarframeUiScaleFromEeCfg(text: string): number | null {
   return Math.min(1, Math.max(0.5, Number(value.toFixed(2))));
 }
 
-let _lastLoggedUiScale: number | null | undefined;
+let _lastUiScaleNote = "";
+
+function noteUiScaleSource(message: string): void {
+  if (message === _lastUiScaleNote) return;
+  _lastUiScaleNote = message;
+  log.info(`[EECfg] ${message}`);
+}
 
 /** Interface scale read fresh from EE.cfg on every call, so mid-session
  *  changes in the game's settings apply to the next scan. Null when the file
  *  is missing, unreadable, or the slider was never moved off default. */
 export function resolveWarframeUiScale(): number | null {
   const eeLogPath = resolveEeLogPath();
-  if (!eeLogPath) return null;
-  try {
-    const cfgPath = path.join(path.dirname(eeLogPath), "EE.cfg");
-    const scale = parseWarframeUiScaleFromEeCfg(fs.readFileSync(cfgPath, "utf8"));
-    if (scale !== _lastLoggedUiScale) {
-      _lastLoggedUiScale = scale;
-      log.info(`[EECfg] Warframe interface scale from EE.cfg: ${scale ?? "not set"}`);
-    }
-    return scale;
-  } catch {
+  // Every miss falls back to the manual slider, and a reader cannot tell which
+  // miss happened from the resulting scale alone, so each one names itself.
+  if (!eeLogPath) {
+    noteUiScaleSource("no EE.log path, using the manual interface scale");
     return null;
   }
+  const cfgPath = path.join(path.dirname(eeLogPath), "EE.cfg");
+  let text: string;
+  try {
+    text = fs.readFileSync(cfgPath, "utf8");
+  } catch {
+    noteUiScaleSource(`EE.cfg unreadable at ${cfgPath}, using the manual interface scale`);
+    return null;
+  }
+  const scale = parseWarframeUiScaleFromEeCfg(text);
+  noteUiScaleSource(
+    scale === null
+      ? "EE.cfg has no custom interface scale, using the manual slider"
+      : `Warframe interface scale from EE.cfg: ${scale}`,
+  );
+  return scale;
 }
