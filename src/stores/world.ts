@@ -7,8 +7,6 @@ export const worldLastFetch = writable<number>(0);
 export const worldLoading = writable<boolean>(false);
 export type FissureMode = "all" | "normal" | "steel" | "railjack";
 
-// persistedString rejects anything outside this list, so a value written by a
-// newer build (or a corrupted key) degrades to "normal" on a downgrade.
 const FISSURE_MODES: readonly FissureMode[] = ["all", "normal", "steel", "railjack"];
 
 export const worldFissureMode = persistedString<FissureMode>(

@@ -66,7 +66,8 @@ export function classifyForFoundry(
 
   const joinedPath = `${productUn ?? ""} ${parentUn ?? ""} ${blueprintUn}`.toLowerCase();
 
-  // Moa and Hound parts sit under /Pets/ too, so modular has to answer first.
+  // Moa parts sit under /Pets/ as well and belong to Modular, so this answers
+  // before the pet path. Hound parts match only the pet path and stay Companion.
   if (MODULAR_PART_PATH.test(joinedPath)) return "Modular";
 
   // Pet parts (Infested critter mutagens etc.) carry PEP productCategory
@@ -108,8 +109,7 @@ export function classifyForFoundry(
     category === "companion" ||
     category === "sentinels" ||
     category === "pets" ||
-    parentCategory === "companion" ||
-    /\/(sentinels|kubrowpets|catbrowpets)\//.test(joinedPath)
+    parentCategory === "companion"
   )
     return "Companion";
 
