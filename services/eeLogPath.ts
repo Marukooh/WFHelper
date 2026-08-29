@@ -82,6 +82,21 @@ function discoverLinuxEeLog(): string | null {
   return null;
 }
 
+const LINUX_REPROBE_MS = 60_000;
+let _linuxEeLog: { path: string | null; at: number } | null = null;
+
+// discoverLinuxEeLog stats every Steam root and parses libraryfolders.vdf, and
+// resolveWarframeUiScale calls this once per scan attempt. A hit never moves
+// mid-session; a miss re-probes so a game installed later is still found.
+function cachedLinuxEeLog(): string | null {
+  const now = Date.now();
+  if (_linuxEeLog && (_linuxEeLog.path !== null || now - _linuxEeLog.at < LINUX_REPROBE_MS)) {
+    return _linuxEeLog.path;
+  }
+  _linuxEeLog = { path: discoverLinuxEeLog(), at: now };
+  return _linuxEeLog.path;
+}
+
 /** Best-known EE.log path for this machine, or null when undiscoverable. */
 export function resolveEeLogPath(): string | null {
   const override = process.env.WFHELPER_EE_LOG?.trim();
@@ -93,7 +108,7 @@ export function resolveEeLogPath(): string | null {
       : null;
   }
   if (process.platform === "linux") {
-    return discoverLinuxEeLog();
+    return cachedLinuxEeLog();
   }
   return null;
 }

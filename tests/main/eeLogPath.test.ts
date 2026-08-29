@@ -169,4 +169,25 @@ describe("resolveWarframeUiScale", () => {
       fs.rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("reads EE.cfg out of a Proton prefix layout", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "wfh-proton-"));
+    try {
+      const wfDir = path.join(
+        root,
+        "steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe",
+      );
+      fs.mkdirSync(wfDir, { recursive: true });
+      fs.writeFileSync(path.join(wfDir, "EE.log"), "");
+      fs.writeFileSync(
+        path.join(wfDir, "EE.cfg"),
+        "Flash.FlashDrawScale=0.72\nFlash.FlashDrawScaleMode=DSM_CUSTOM\n",
+      );
+
+      process.env.WFHELPER_EE_LOG = path.join(wfDir, "EE.log");
+      expect(resolveWarframeUiScale()).toBe(0.72);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
