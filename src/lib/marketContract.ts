@@ -92,8 +92,8 @@ export function contractInventoryMatch(
   return { state: "rank-mismatch", ownedRank: candidates[0].currentRank };
 }
 
-type ListedRiven = OwnedRiven & Pick<DecodedRiven, "itemId" | "stats">;
-type ListedContract = ContractIdentity & Pick<WfmContract, "stats">;
+type ListedRiven = OwnedRiven & Pick<DecodedRiven, "itemId" | "polarity" | "stats">;
+type ListedContract = ContractIdentity & Pick<WfmContract, "polarity" | "stats">;
 
 // WFM names an attribute by slug and by label, and neither is guaranteed to be
 // the wording the game shows, so both spellings are folded through the same
@@ -131,9 +131,103 @@ function sameRiven(contract: ListedContract, riven: ListedRiven): boolean {
   return sameStatSet(contract.stats, riven.stats);
 }
 
+// The game spells polarity AP_ATTACK where WFM spells it madurai, so both sides
+// fold to one vocabulary before they can be compared.
+const POLARITY_ALIASES: Record<string, string> = {
+  ap_attack: "madurai",
+  ap_tactic: "naramon",
+  ap_defense: "vazarin",
+  ap_power: "zenurik",
+  ap_ward: "unairu",
+  ap_precept: "penjaga",
+  ap_umbra: "umbra",
+};
+
+// WFM rounds the roll it was sent, so the two sides differ in the last digit.
+const STAT_VALUE_EPSILON = 0.1;
+
+function polarityKey(value: string | null | undefined): string {
+  const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return POLARITY_ALIASES[raw] ?? raw;
+}
+
+function samePolarity(contract: ListedContract, riven: ListedRiven): boolean {
+  const listed = polarityKey(contract.polarity);
+  const own = polarityKey(riven.polarity);
+  // An unknown polarity on either side separates nobody.
+  return !listed || !own || listed === own;
+}
+
+function attributeValue(attribute: WfmContractAttribute): number | null {
+  // Number(null) and Number("") are 0, which would demand a zero roll instead of
+  // reading as the absent value it is.
+  if (attribute.value == null || attribute.value === "") return null;
+  const value = Number(attribute.value);
+  // Signs travel differently on the two sides, and one stat name never appears
+  // twice on a riven, so magnitude is the part worth comparing.
+  return Number.isFinite(value) ? Math.abs(value) : null;
+}
+
+/** The numeric rolls, which separate twins the shared suffix cannot. */
+function sameStatValues(contract: ListedContract, riven: ListedRiven): boolean {
+  const pool = (riven.stats ?? []).map((stat) => ({
+    key: canonicalRivenStatName(stat.name),
+    // Listing an unranked riven at max rank is a feature of the riven modal, so
+    // the listed roll is either the copy's own value or that value at rank 8.
+    values: [Math.abs(stat.displayValue), Math.abs(stat.maxRankValue)],
+    used: false,
+  }));
+
+  for (const attribute of contract.stats ?? []) {
+    const value = attributeValue(attribute);
+    const keys = contractStatKeys(attribute);
+    if (value == null || keys.length === 0) continue;
+    const hit = pool.find(
+      (stat) =>
+        !stat.used &&
+        keys.includes(stat.key) &&
+        stat.values.some((own) => Math.abs(own - value) <= STAT_VALUE_EPSILON),
+    );
+    if (!hit) return false;
+    hit.used = true;
+  }
+  return true;
+}
+
+const NARROWING_HINTS: ReadonlyArray<(contract: ListedContract, riven: ListedRiven) => boolean> = [
+  (contract, riven) => contract.rerolls == null || riven.rerolls === contract.rerolls,
+  (contract, riven) => contract.masteryLevel == null || riven.masteryReq === contract.masteryLevel,
+  (contract, riven) =>
+    contract.modRank == null ||
+    riven.currentRank === contract.modRank ||
+    riven.maxRank === contract.modRank,
+  samePolarity,
+  sameStatValues,
+];
+
+function candidateRivens(
+  contract: ListedContract,
+  rivens: readonly ListedRiven[],
+): readonly ListedRiven[] {
+  const slug = normalizeWfmSlugKey(contract.weaponUrlName);
+  if (!slug) return [];
+
+  let pool = rivens.filter(
+    (riven) => sameWeapon(slug, riven.weaponName ?? "") && sameRiven(contract, riven),
+  );
+  for (const hint of NARROWING_HINTS) {
+    if (pool.length <= 1) break;
+    const next = pool.filter((riven) => hint(contract, riven));
+    // A hint nobody answers is stale, not disqualifying: a riven rerolled or
+    // levelled after it was listed still carries its own auction.
+    if (next.length > 0) pool = next;
+  }
+  return pool;
+}
+
 /**
- * Maps each owned riven to the live auction listing it. Rerolls and mastery only
- * separate same-named twins, so a numeric mismatch never cancels a name match.
+ * Maps each owned riven to the auction listing it, taking only forced pairs. An
+ * unmarked riven costs a badge; a wrong mark can remove the wrong listing.
  */
 export function matchRivenListings<C extends ListedContract>(
   rivens: readonly ListedRiven[],
@@ -141,30 +235,52 @@ export function matchRivenListings<C extends ListedContract>(
 ): Map<string, C> {
   const matched = new Map<string, C>();
   const claimed = new Set<string>();
+  const open = contracts
+    .map((contract) => ({ contract, candidates: candidateRivens(contract, rivens), done: false }))
+    .filter((entry) => entry.candidates.length > 0);
 
-  for (const contract of contracts) {
-    const slug = normalizeWfmSlugKey(contract.weaponUrlName);
-    if (!slug) continue;
+  const claim = (riven: ListedRiven, contract: C): void => {
+    claimed.add(riven.itemId);
+    matched.set(riven.itemId, contract);
+  };
+  const free = (entry: (typeof open)[number]): readonly ListedRiven[] =>
+    entry.candidates.filter((riven) => !claimed.has(riven.itemId));
 
-    const named = rivens.filter(
-      (riven) =>
-        !claimed.has(riven.itemId) &&
-        sameWeapon(slug, riven.weaponName ?? "") &&
-        sameRiven(contract, riven),
-    );
-    if (named.length === 0) continue;
+  // Claiming in one pass would let the first auction take a riven a later
+  // auction can prove is its own, so repeat until no new pair is forced.
+  let settled = true;
+  while (settled) {
+    settled = false;
+    for (const entry of open) {
+      if (entry.done) continue;
+      const rest = free(entry);
+      if (rest.length > 1) continue;
+      entry.done = true;
+      if (rest.length === 1) {
+        claim(rest[0], entry.contract);
+        settled = true;
+      }
+    }
+  }
 
-    const narrowed = named.filter(
-      (riven) =>
-        (contract.rerolls == null || riven.rerolls === contract.rerolls) &&
-        (contract.masteryLevel == null || riven.masteryReq === contract.masteryLevel) &&
-        (contract.modRank == null ||
-          riven.currentRank === contract.modRank ||
-          riven.maxRank === contract.modRank),
-    );
-    const winner = (narrowed.length > 0 ? narrowed : named)[0];
-    claimed.add(winner.itemId);
-    matched.set(winner.itemId, contract);
+  // Auctions that cannot tell the same N rivens apart still prove all N are
+  // listed when there are exactly N of them, so their pairing is arbitrary but
+  // never wrong about listedness. Fewer auctions than twins proves nothing.
+  const groups = new Map<string, Array<(typeof open)[number]>>();
+  for (const entry of open) {
+    if (entry.done) continue;
+    const signature = free(entry)
+      .map((riven) => riven.itemId)
+      .sort()
+      .join(" ");
+    const group = groups.get(signature);
+    if (group) group.push(entry);
+    else groups.set(signature, [entry]);
+  }
+  for (const group of groups.values()) {
+    const rest = free(group[0]);
+    if (group.length !== rest.length) continue;
+    group.forEach((entry, index) => claim(rest[index], entry.contract));
   }
 
   return matched;

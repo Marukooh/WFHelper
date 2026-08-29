@@ -124,16 +124,16 @@ describe("contractInventoryMatch", () => {
 type Auction = Parameters<typeof matchRivenListings>[1][number] & { id: string };
 type OwnedRiven = Parameters<typeof matchRivenListings>[0][number];
 
-function statAttr(urlName: string, label = "") {
-  return { urlName, label, value: 100, positive: true };
+function statAttr(urlName: string, label = "", value = 100) {
+  return { urlName, label, value, positive: true };
 }
 
-function ownedStat(name: string) {
+function ownedStat(name: string, displayValue = 100, maxRankValue = displayValue) {
   return {
     tag: name,
     name,
-    displayValue: 100,
-    maxRankValue: 100,
+    displayValue,
+    maxRankValue,
     rollFloat: 1,
     grade: "A",
     positive: true,
@@ -149,6 +149,7 @@ function auction(overrides: Partial<Auction> = {}): Auction {
     modRank: 8,
     rerolls: null,
     masteryLevel: null,
+    polarity: null,
     stats: [statAttr("critical_chance"), statAttr("damage_vs_corpus")],
     ...overrides,
   } as Auction;
@@ -163,6 +164,7 @@ function owned(overrides: Partial<OwnedRiven> = {}): OwnedRiven {
     maxRank: 8,
     rerolls: 0,
     masteryReq: 16,
+    polarity: "",
     stats: [ownedStat("Critical Chance"), ownedStat("Damage vs Corpus")],
     ...overrides,
   } as OwnedRiven;
@@ -276,5 +278,94 @@ describe("matchRivenListings", () => {
 
   it("skips an auction with no weapon slug", () => {
     expect(matchRivenListings([owned()], [auction({ weaponUrlName: null })]).size).toBe(0);
+  });
+
+  // The suffix comes from the buff tags alone, so two rolls of the same stats
+  // share a name and only the polarity or the numbers can separate them.
+  it("gives each twin the auction carrying its own polarity", () => {
+    const twins = [
+      owned({ polarity: "AP_ATTACK" }),
+      owned({ itemId: "riven-2", polarity: "AP_TACTIC" }),
+    ];
+    const listings = [
+      auction({ polarity: "naramon" }),
+      auction({ id: "auction-2", polarity: "madurai" }),
+    ];
+    const matched = matchRivenListings(twins, listings);
+    expect(matched.get("riven-1")?.id).toBe("auction-2");
+    expect(matched.get("riven-2")?.id).toBe("auction-1");
+  });
+
+  it("gives each twin the auction carrying its own stat rolls", () => {
+    const twins = [
+      owned({ stats: [ownedStat("Critical Chance", 120), ownedStat("Damage vs Corpus", 90)] }),
+      owned({
+        itemId: "riven-2",
+        stats: [ownedStat("Critical Chance", 150), ownedStat("Damage vs Corpus", 90)],
+      }),
+    ];
+    const listings = [
+      auction({
+        stats: [statAttr("critical_chance", "", 150), statAttr("damage_vs_corpus", "", 90)],
+      }),
+      auction({
+        id: "auction-2",
+        stats: [statAttr("critical_chance", "", 120), statAttr("damage_vs_corpus", "", 90)],
+      }),
+    ];
+    const matched = matchRivenListings(twins, listings);
+    expect(matched.get("riven-1")?.id).toBe("auction-2");
+    expect(matched.get("riven-2")?.id).toBe("auction-1");
+  });
+
+  // The riven modal offers listing an unranked riven at max rank, so the auction
+  // carries the rank-8 roll while the copy still shows its own.
+  it("separates twins by the max-rank roll the auction was listed with", () => {
+    const twins = [
+      owned({ currentRank: 0, stats: [ownedStat("Critical Chance", 40, 120)] }),
+      owned({ itemId: "riven-2", currentRank: 0, stats: [ownedStat("Critical Chance", 50, 150)] }),
+    ];
+    const listing = auction({ stats: [statAttr("critical_chance", "", 150)] });
+    const matched = matchRivenListings(twins, [listing]);
+    expect(matched.get("riven-2")?.id).toBe("auction-1");
+    expect(matched.has("riven-1")).toBe(false);
+  });
+
+  // A riven left unmarked costs a badge, while marking the wrong twin can send
+  // the user to remove the listing of the riven they meant to keep.
+  it("marks neither twin when one auction cannot tell them apart", () => {
+    const twins = [owned(), owned({ itemId: "riven-2" })];
+    expect(matchRivenListings(twins, [auction()]).size).toBe(0);
+  });
+
+  it("marks neither twin when only the polarity is unknown on both sides", () => {
+    const twins = [
+      owned({ stats: [ownedStat("Critical Chance", 120)] }),
+      owned({ itemId: "riven-2", stats: [ownedStat("Critical Chance", 120)] }),
+    ];
+    const listing = auction({ stats: [statAttr("critical_chance", "", 120)] });
+    expect(matchRivenListings(twins, [listing]).size).toBe(0);
+  });
+
+  // Number(null) is 0, so an attribute WFM sent without a value used to demand a
+  // zero roll and threw away the pairing the polarity had already settled.
+  it("ignores an auction attribute that carries no value", () => {
+    const twins = [
+      owned({ polarity: "AP_ATTACK" }),
+      owned({ itemId: "riven-2", polarity: "AP_TACTIC" }),
+    ];
+    const listing = auction({
+      polarity: "madurai",
+      stats: [{ urlName: "critical_chance", label: "", value: null, positive: true }],
+    });
+    expect(matchRivenListings(twins, [listing]).get("riven-1")?.id).toBe("auction-1");
+  });
+
+  // A single candidate is never rejected by a hint, the same way a stale reroll
+  // count does not cancel a name match.
+  it("keeps a lone name match the auction polarity disagrees with", () => {
+    const mine = owned({ polarity: "AP_ATTACK" });
+    const matched = matchRivenListings([mine], [auction({ polarity: "naramon" })]);
+    expect(matched.get("riven-1")?.id).toBe("auction-1");
   });
 });
