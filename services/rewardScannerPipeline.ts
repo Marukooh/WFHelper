@@ -174,7 +174,7 @@ async function captureRewardScreen(
       return { screenshot: null, captureCount: 1, captureMs, failureReason: "capture-null" };
     }
     // Frame size and UI scale decide every crop ratio, so a bug report without
-    // them cannot be reproduced. Log them beside the source, not somewhere else.
+    // them cannot be reproduced.
     const frame = screenshot.image?.getSize?.();
     log.info(
       "[RewardScanner] Scan capture source -> " +

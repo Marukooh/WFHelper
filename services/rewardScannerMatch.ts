@@ -281,8 +281,10 @@ const MIN_FUZZY_NAME_LENGTH_RATIO = 0.45;
 const MIN_FUZZY_WORD_RATIO = 0.45;
 // How much of a name a subsequence read must carry before it may win its tier.
 const MIN_SUBSEQUENCE_WORD_RATIO = 0.6;
-// Tight on purpose: only a read that is nearly the whole longer name may retarget.
-const CLIPPED_NAME_SIMILARITY = 0.95;
+// Shortest read word that carries evidence; below this it is OCR noise.
+const MIN_MEANINGFUL_READ_WORD_LENGTH = 3;
+// Every containment match is clamped up to this, so its score is not a measurement.
+export const SUBSTRING_SCORE_FLOOR = 0.88;
 
 // Word-level tolerance mirrors the fuzzy pass: OCR corruptions the alias table
 // doesn't know ("lueorint" for "Blueprint") must not break structural matching.
@@ -301,49 +303,6 @@ function isOrderedWordSubsequence(textWords: string[], nameWords: string[]): boo
     nameIndex += 1;
   }
   return true;
-}
-
-// A tier holding both "<X>" and "<X> Blueprint" is not ambiguous: the longer name
-// is the specific one and the rest are its own prefixes. INERT against today's
-// reward pool, where no name sits inside another once the quantity filter has
-// split "Forma Blueprint" from "2X Forma Blueprint"; it guards a future pool.
-function resolveTierWinner(
-  hits: Map<string, SingleItemMatchResult>,
-): { name: string; entry: SingleItemMatchResult } | null {
-  if (hits.size === 1) {
-    const [name, entry] = hits.entries().next().value as [string, SingleItemMatchResult];
-    return { name, entry };
-  }
-  const names = [...hits.keys()].sort((a, b) => b.length - a.length);
-  const longest = names[0];
-  if (!longest) return null;
-  const nested = names.every((name) => name === longest || containsRewardPhrase(longest, name));
-  return nested ? { name: longest, entry: hits.get(longest) as SingleItemMatchResult } : null;
-}
-
-// A read clipped mid-word ("Forma Blueprin") still contains the shorter sibling
-// whole, so containment alone hands the card to the built item. Exactly one
-// continuation retargets; several mean the tail is unresolved. INERT against
-// today's pool for the same reason as resolveTierWinner: no name prefixes another.
-function resolveClippedContinuation(
-  ranked: SingleItemMatchResult[],
-  winner: SingleItemMatchResult,
-  text: string,
-): SingleItemMatchResult | "ambiguous" | null {
-  const winnerName = normalizeRewardText(winner.item?.name || "");
-  if (!winnerName || text.length <= winnerName.length) return null;
-  let found: SingleItemMatchResult | null = null;
-  for (const entry of ranked) {
-    if (entry === winner || !entry.item) continue;
-    const name = normalizeRewardText(entry.item.name);
-    if (!name.startsWith(`${winnerName} `)) continue;
-    // Edit distance is length biased, so one lost character sinks a short name.
-    // A literal prefix is the direct evidence that the read is that name, clipped.
-    if (!name.startsWith(text) && similarityScore(text, name) < CLIPPED_NAME_SIMILARITY) continue;
-    if (found) return "ambiguous";
-    found = entry;
-  }
-  return found;
 }
 
 function boostUniqueStructuralCandidate(
@@ -370,9 +329,8 @@ function boostUniqueStructuralCandidate(
       const nameWords = normalizedName.split(" ").filter((word) => word.length > 1);
       if (nameWords.length <= textWords.length) continue;
       if (!isOrderedWordSubsequence(textWords, nameWords)) continue;
-      // Thin evidence bars a name from winning, never from competing. Culling it
-      // first is what left the base blueprint alone in the tier on "Tltanla
-      // Prlme" and boosted it as "unique" while the real name was thrown away.
+      // Thin evidence bars a name from winning, never from competing: culling it
+      // here would leave a rival alone in the tier and make it look unique.
       subsequenceHits.set(normalizedName, entry);
       if (textWords.length / nameWords.length < MIN_SUBSEQUENCE_WORD_RATIO) {
         thinSubsequence.add(normalizedName);
@@ -380,22 +338,17 @@ function boostUniqueStructuralCandidate(
     }
   }
 
-  // Strongest available signal decides; an ambiguous tier blocks the boost.
+  // Strongest available signal decides; a tier holding more than one name is
+  // ambiguous and blocks the boost.
   const tier = [prefixHits, containsHits, subsequenceHits].find((hits) => hits.size > 0);
-  if (!tier) return;
+  if (!tier || tier.size !== 1) return;
 
-  const winner = resolveTierWinner(tier);
-  if (!winner || !winner.entry.item || thinSubsequence.has(winner.name)) return;
-
-  const continuation = resolveClippedContinuation(ranked, winner.entry, text);
-  if (continuation === "ambiguous") return;
-  const target = continuation || winner.entry;
-  if (!target.item) return;
-  if (target === winner.entry && target.confidence >= UNIQUE_STRUCTURAL_CONFIDENCE) return;
-  target.confidence = Math.max(target.confidence, UNIQUE_STRUCTURAL_CONFIDENCE);
+  const [name, target] = tier.entries().next().value as [string, SingleItemMatchResult];
+  if (!target.item || thinSubsequence.has(name)) return;
+  if (target.confidence >= UNIQUE_STRUCTURAL_CONFIDENCE) return;
+  target.confidence = UNIQUE_STRUCTURAL_CONFIDENCE;
   target.item.confidence = target.confidence;
-  const normalizedName = normalizeRewardText(target.item.name);
-  target.score = 400 + target.confidence * 92 + Math.min(8, normalizedName.length / 4);
+  target.score = 400 + target.confidence * 92 + Math.min(8, name.length / 4);
 }
 
 export function rankRewardCandidatesDetailed(
@@ -431,7 +384,7 @@ export function rankRewardCandidatesDetailed(
       containsRewardPhrase(text, normalizedName) ||
       (isUsefulPartialRewardText(text) && containsRewardPhrase(normalizedName, text))
     ) {
-      const confidence = Math.max(0.88, similarityScore(text, normalizedName));
+      const confidence = Math.max(SUBSTRING_SCORE_FLOOR, similarityScore(text, normalizedName));
       ranked.push({
         item: { ...item, confidence: Number(confidence.toFixed(3)) },
         confidence,
@@ -441,10 +394,10 @@ export function rankRewardCandidatesDetailed(
       continue;
     }
 
-    // The fuzzy band scores per word, so a 4-letter name can ride one good word
-    // to 0.92 on a long read ("Khra" over "Khora Prime Blueprint" for "Khora
-    // Prime Bluepr"). Ratio, not an absolute floor: short rewards do exist and a
-    // short read must still reach them. Exact and substring already prove fit.
+    // The fuzzy band scores per word, so a name much shorter than the read can
+    // ride one good word over the gate. Ratio, not an absolute floor: short
+    // rewards exist and a short read must still reach them. Exact and substring
+    // already prove fit.
     if (normalizedName.length < text.length * MIN_FUZZY_NAME_LENGTH_RATIO) continue;
 
     const itemWords = normalizedName.split(" ").filter((word) => word.length > 1);
@@ -465,11 +418,15 @@ export function rankRewardCandidatesDetailed(
     const wordRatio = matchedWords / itemWords.length;
     if (wordRatio < MIN_FUZZY_WORD_RATIO) continue;
 
-    // Scoring only the name's own words pays a candidate for the read words it
-    // ignores, which is how a destroyed component word ("Cha55i5") handed the
-    // card to the bare "<frame> Prime Blueprint". Take the weaker direction.
+    // Take the weaker direction: scoring only the name's own words would pay a
+    // candidate for the read words it ignores, so a corrupted component word
+    // could hand the card to a shorter name. A one or two character token is
+    // OCR noise, not a word, and counts for neither side.
     const explained = explainedTextWords.filter(Boolean).length;
-    const readRatio = textWords.length ? explained / textWords.length : 1;
+    const unexplained = textWords.filter(
+      (word, index) => !explainedTextWords[index] && word.length >= MIN_MEANINGFUL_READ_WORD_LENGTH,
+    ).length;
+    const readRatio = explained + unexplained > 0 ? explained / (explained + unexplained) : 1;
     const coverage = Math.min(wordRatio, readRatio);
 
     let bestSpanScore = similarityScore(text, normalizedName);

@@ -19,6 +19,7 @@ vi.mock("../../services/rewardOcrOnnx", () => ({
 }));
 vi.mock("../../services/rewardScannerMatch", () => ({
   MAX_REWARD_SLOTS: 4,
+  SUBSTRING_SCORE_FLOOR: 0.88,
   rankRewardCandidatesDetailed: (text: string) => h.matches[text] || [],
 }));
 vi.mock("../../services/rewardScannerImage", () => ({
@@ -132,8 +133,8 @@ describe("scanRewardSlotsFallback layout merge", () => {
     ]);
   });
 
-  // The reported 1.3.3 failure: four cards on screen, the wide layout rejected
-  // every read, and a two-card subset shipped as the whole answer.
+  // Four cards on screen, the wide layout rejects every read and a two-card
+  // subset ships as the answer, so the rejected wide crops are what to keep.
   it("dumps the rejected wide crops when a narrower layout wins", async () => {
     dumpRewardScanDebug.mockClear();
     h.layouts = [

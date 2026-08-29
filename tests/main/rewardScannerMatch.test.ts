@@ -171,47 +171,8 @@ describe("matchSingleRewardTextDetailed", () => {
   });
 });
 
-describe("a blueprint whose built item is also a reward", () => {
-  // Both names sit in the reward pool, so a read holding the blueprint holds the
-  // collar too. Before the tier collapse both floored at 0.88 and the slot gate
-  // (0.92 for substring) dropped the whole card.
-  const PAIR = [
-    { name: "Kavasa Prime Kubrow Collar Blueprint" },
-    { name: "Kavasa Prime Kubrow Collar" },
-  ];
-
-  it("keeps the blueprint above the slot gate when the read carries a quantity", () => {
-    const hit = matchSingleRewardTextDetailed("2 X Kavasa Prime Kubrow Collar Blueprint", PAIR);
-    expect(hit.item?.name).toBe("Kavasa Prime Kubrow Collar Blueprint");
-    expect(hit.confidence).toBeGreaterThanOrEqual(0.92);
-  });
-
-  it("reads a clipped tail as the longer name, not its shorter sibling", () => {
-    const pool = [{ name: "Forma" }, { name: "Forma Blueprint" }];
-    for (const read of ["Forma Blueprin", "Forma Bluepri", "Forma Blue"]) {
-      const hit = matchSingleRewardTextDetailed(read, pool);
-      expect(hit.item?.name, read).toBe("Forma Blueprint");
-      expect(hit.confidence, read).toBeGreaterThanOrEqual(0.92);
-    }
-  });
-
-  it("keeps the short name when nothing continues the read", () => {
-    const pool = [{ name: "Forma" }, { name: "Forma Blueprint" }];
-    expect(matchSingleRewardTextDetailed("Forma", pool).item?.name).toBe("Forma");
-  });
-
-  it("stays ambiguous when two longer names continue the read", () => {
-    const pool = [
-      { name: "Braton Prime" },
-      { name: "Braton Prime Blueprint" },
-      { name: "Braton Prime Barrel" },
-    ];
-    // "b" continues into both Blueprint and Barrel, so neither may be promoted.
-    const hit = matchSingleRewardTextDetailed("Braton Prime B", pool);
-    expect(hit.confidence).toBeLessThan(0.92);
-  });
-
-  it("still refuses to guess when the two contained names are unrelated", () => {
+describe("a read that holds more than one whole item name", () => {
+  it("refuses to guess between two contained names", () => {
     const pool = [{ name: "Forma Blueprint" }, { name: "Braton Prime Stock" }];
     const hit = matchSingleRewardTextDetailed("Forma Blueprint Braton Prime Stock", pool);
     expect(hit.confidence).toBeLessThan(0.92);
@@ -228,9 +189,14 @@ describe("a short pool name against a long read", () => {
   ];
 
   it("does not let a four-letter name win a seventeen-character read", () => {
-    const ranked = rankRewardCandidatesDetailed("Khora Prime Bluepr", POOL, 4);
-    expect(ranked[0].item?.name).toBe("Khora Prime Blueprint");
-    expect(ranked.some((candidate) => candidate.item?.name === "Khra")).toBe(false);
+    for (const read of ["Khora Prime Bluepr", "Khora Prime Bluepr ll"]) {
+      const ranked = rankRewardCandidatesDetailed(read, POOL, 4);
+      expect(ranked[0].item?.name, read).toBe("Khora Prime Blueprint");
+      expect(
+        ranked.map((candidate) => candidate.item?.name),
+        read,
+      ).not.toContain("Khra");
+    }
   });
 
   it("still matches a short reward name from a short read", () => {
@@ -250,9 +216,9 @@ describe("a short pool name against a long read", () => {
 });
 
 describe("a read whose component word was destroyed", () => {
-  // The base "<frame> Prime Blueprint" explains every word it owns, so scoring
-  // one direction only made it the winner while the read plainly held a word it
-  // could not account for. Both reads are real OCR corruptions from the logs.
+  // The base "<frame> Prime Blueprint" explains every word it owns, so it must
+  // still lose to the name that accounts for the corrupted component word.
+  // Both reads are real OCR corruptions from the logs.
   const WUKONG = [
     { name: "Wukong Prime Blueprint" },
     { name: "Wukong Prime Chassis Blueprint" },
@@ -279,12 +245,42 @@ describe("a read whose component word was destroyed", () => {
     expect(base?.confidence ?? 0).toBeLessThan(0.86);
     expect(ranked[0].item?.name).toBe("Frost Prime Neuroptics Blueprint");
   });
+
+  it("still rejects the base blueprint when the garbled read also carries noise", () => {
+    const ranked = rankRewardCandidatesDetailed("Wukong Prime Cha55i5 Blueprint ll", WUKONG, 4);
+    const base = ranked.find((candidate) => candidate.item?.name === "Wukong Prime Blueprint");
+    expect(base?.confidence ?? 0).toBeLessThan(0.86);
+    expect(ranked[0].item?.name).toBe("Wukong Prime Chassis Blueprint");
+  });
+});
+
+describe("a correct read that carries OCR noise", () => {
+  // Crops pick up stray marks off the card art, and the slot cleaner keeps any
+  // token with two alphanumerics ("ll", "vv"). Noise is not a word the name
+  // failed to explain, so it must not cost the read its confidence.
+  const WUKONG = [
+    { name: "Wukong Prime Blueprint" },
+    { name: "Wukong Prime Chassis Blueprint" },
+    { name: "Wukong Prime Neuroptics Blueprint" },
+    { name: "Wukong Prime Systems Blueprint" },
+  ];
+
+  it("keeps a clipped read above the slot gate as noise tokens pile up", () => {
+    for (const read of [
+      "Wukong Prime Systems Blueprin",
+      "Wukong Prime Systems Blueprin ll",
+      "Wukong Prime Systems Blueprin ll vv",
+    ]) {
+      const hit = matchSingleRewardTextDetailed(read, WUKONG);
+      expect(hit.item?.name, read).toBe("Wukong Prime Systems Blueprint");
+      expect(hit.confidence, read).toBeGreaterThanOrEqual(0.92);
+    }
+  });
 });
 
 describe("a misread that hides a candidate's competitors", () => {
-  // The clean first-line read is ambiguous across four names and must stay so.
-  // One bad character used to drop the four-word names out of the subsequence
-  // tier, leaving the three-word base alone in it and boosting it as unique.
+  // The clean first-line read is ambiguous across four names and must stay so:
+  // one bad character must not leave the shorter base alone in the tier.
   const TITANIA = [
     { name: "Titania Prime Blueprint" },
     { name: "Titania Prime Chassis Blueprint" },

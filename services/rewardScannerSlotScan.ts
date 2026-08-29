@@ -9,6 +9,7 @@ import { recognizeRewardStripOnnx, rewardOcrOnnxAvailable } from "./rewardOcrOnn
 import {
   MAX_REWARD_SLOTS,
   rankRewardCandidatesDetailed,
+  SUBSTRING_SCORE_FLOOR,
   type SortedItem,
 } from "./rewardScannerMatch";
 import { hasConfidentSlotLayout } from "./rewardScannerSupport";
@@ -100,13 +101,10 @@ interface LayoutRun {
 // Margin below the candidate's own tier gate, so substring/exact rescues stay
 // as strict relative to their tier as fuzzy ones.
 const NEAR_MISS_RESCUE_MARGIN = 0.06;
-// rewardScannerMatch clamps every substring score up to this, so a candidate
-// sitting on it was not measured at all. The margin would carry it to 0.94 and
-// past the 0.92 substring gate, which is how a read of "lueprint" once filled a
-// slot with the only long name that happens to end in Blueprint.
-const SUBSTRING_SCORE_FLOOR = 0.88;
 
 function isNearMissCandidate(candidate: SlotCandidate): boolean {
+  // A substring score sitting on the clamp was never measured, so the rescue
+  // margin must not carry it over the 0.92 substring gate.
   if (candidate.mode === "substring" && candidate.confidence <= SUBSTRING_SCORE_FLOOR + 1e-6) {
     return false;
   }
@@ -221,8 +219,8 @@ export interface SlotScanStats {
   layoutCount: number;
 }
 
-// Just under the substring gate, so a floored 0.88 containment match counts as
-// a near miss while padding-slot junk does not.
+// Just under the 0.86 fuzzy gate, so a read that nearly cleared it counts as a
+// near miss while padding-slot junk does not.
 const NEAR_GATE_CONFIDENCE = 0.85;
 
 function isUsableSlotCandidate(candidate: SlotCandidate): boolean {
@@ -524,9 +522,9 @@ export async function scanRewardSlotsFallback(
 
   if (bestResult) {
     const anyDiverge = bestDebugSlots.some((slot) => slot.diverged);
-    // The silent wrong answer: a wider layout resolved FEWER cards than the narrow
-    // winner while throwing away a near-gate read. Both halves are needed, or a
-    // healthy 2-card scan sitting inside a spurious 4-slot layout spends a bundle.
+    // Dump the wider crops only when that layout resolved fewer cards than the
+    // narrow winner and threw away a near-gate read; without both, a healthy
+    // 2-card scan inside a spurious 4-slot layout spends a bundle.
     const shrunk =
       bestResult.slotCount < widestCount &&
       widestMatched < bestResult.matchedSlots &&
