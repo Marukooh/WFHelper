@@ -12,8 +12,8 @@ import type { NotificationKind } from "../config/shared/notifications";
 
 const log = withScope("notificationLogIpc");
 
-/** Appends one entry and pushes it to the renderer if the window is up.
- *  Every caller is on a notification path, so a failure costs the entry only. */
+// Every caller is already on a notification path, so a failed write costs the
+// history entry only and must never take the notification down with it.
 export function recordNotification(kind: NotificationKind, title: string, body: string): void {
   try {
     const entry = notificationLog.record(kind, title, body);

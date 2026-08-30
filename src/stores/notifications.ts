@@ -2,10 +2,9 @@ import { derived, writable } from "svelte/store";
 
 import { invoke } from "../lib/ipc.js";
 import { log } from "../lib/log.js";
+import { NOTIFICATION_LOG_MAX_ENTRIES } from "../../config/shared/notifications.js";
 import type { NotificationEntry } from "../../config/shared/notifications.js";
 
-// Mirrors the main-process cap so a long session cannot outgrow the stored log.
-const MAX_ENTRIES = 200;
 const SEEN_STORAGE_KEY = "wf_notifications_seen_at";
 
 function readSeenAt(): string {
@@ -48,7 +47,9 @@ export async function loadNotificationHistory(): Promise<void> {
 }
 
 export function addNotificationEntry(entry: NotificationEntry): void {
-  notificationHistory.update((entries) => [entry, ...entries].slice(0, MAX_ENTRIES));
+  notificationHistory.update((entries) =>
+    [entry, ...entries].slice(0, NOTIFICATION_LOG_MAX_ENTRIES),
+  );
 }
 
 export async function clearNotificationHistory(): Promise<void> {

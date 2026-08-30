@@ -44,7 +44,8 @@ export interface OverlaySettings {
   wfmStatusHoldMinutes: number;
   tradeRepHotkeyEnabled: boolean;
   tradeRepHotkey: string;
-  /** Seconds the trade toast stays on screen before it fades. */
+  /** Seconds the trade toast holds. A +rep offer overrides anything shorter,
+   *  so the user can still reach the keybind. */
   tradeNotificationSeconds: number;
   /** Also raise an OS notification on a trade; the in-game toast shows either way. */
   tradeDesktopNotificationsEnabled: boolean;

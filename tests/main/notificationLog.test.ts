@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { NOTIFICATION_KINDS } from "../../config/shared/notifications";
 import type { NotificationEntry } from "../../config/shared/notifications";
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "wfh-notification-log-"));
@@ -75,6 +76,22 @@ describe("notification log", () => {
     expect(reloaded.getAll()).toEqual([
       expect.objectContaining({ kind: "message", title: "Persisted", body: "from Tenno" }),
     ]);
+  });
+
+  // A hand-written kind guard would drop every entry of a kind added to the
+  // union, and the loss only shows up after a restart.
+  it("reloads an entry of every declared kind", async () => {
+    const first = await importLog();
+    for (const kind of NOTIFICATION_KINDS) first.record(kind, `title-${kind}`, "");
+
+    const reloaded = await importLog();
+
+    expect(
+      reloaded
+        .getAll()
+        .map((entry: NotificationEntry) => entry.kind)
+        .sort(),
+    ).toEqual([...NOTIFICATION_KINDS].sort());
   });
 
   it("clears the stored history", async () => {

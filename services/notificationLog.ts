@@ -1,11 +1,11 @@
 import { createJsonCache } from "./jsonCache";
+import { NOTIFICATION_KINDS, NOTIFICATION_LOG_MAX_ENTRIES } from "../config/shared/notifications";
 import type { NotificationEntry, NotificationKind } from "../config/shared/notifications";
 
-const MAX_ENTRIES = 200;
 const MAX_TITLE_CHARS = 200;
 const MAX_BODY_CHARS = 500;
 
-const KINDS: ReadonlySet<string> = new Set<NotificationKind>(["trade", "message", "world", "app"]);
+const KINDS: ReadonlySet<string> = new Set<string>(NOTIFICATION_KINDS);
 
 function reviveEntry(raw: unknown): NotificationEntry | null {
   if (!raw || typeof raw !== "object") return null;
@@ -25,7 +25,7 @@ const cache = createJsonCache<NotificationEntry[]>("notification-log.json", (par
     const entry = reviveEntry(raw);
     if (entry) entries.push(entry);
   }
-  return entries.slice(-MAX_ENTRIES);
+  return entries.slice(-NOTIFICATION_LOG_MAX_ENTRIES);
 });
 
 let entries: NotificationEntry[] | null = null;
@@ -52,7 +52,9 @@ export function record(kind: NotificationKind, title: string, body: string): Not
   };
   const current = load();
   current.push(entry);
-  if (current.length > MAX_ENTRIES) current.splice(0, current.length - MAX_ENTRIES);
+  if (current.length > NOTIFICATION_LOG_MAX_ENTRIES) {
+    current.splice(0, current.length - NOTIFICATION_LOG_MAX_ENTRIES);
+  }
   cache.write(current);
   return entry;
 }
