@@ -269,6 +269,17 @@ describe("rivenData", () => {
       for (const v of variants) expect(v.disposition).toBeGreaterThan(0);
     });
 
+    // Every kitgun grip in the export carries omegaAttenuation 1, so a grip is no
+    // evidence of the primary form's disposition and no variant may be synthesized.
+    it("lists a kitgun chamber under its own name only", () => {
+      expect(rivenData.getFamilyVariants("Tombfinger")).toEqual([
+        { name: "Tombfinger", disposition: 0.85 },
+      ]);
+      expect(rivenData.getFamilyVariants("Rattleguts")).toEqual([
+        { name: "Rattleguts", disposition: 1 },
+      ]);
+    });
+
     it("resolves shotguns via holsterCategory (export dropped the SHOTGUN tag)", () => {
       // Current export: no shotgun carries the SHOTGUN compat tag any more and
       // Boar/Sobek/Kohm variants have no tags at all - all fell back to rifle.
@@ -537,6 +548,27 @@ describe("gradeRiven", () => {
     expect(result!.stats[0].grade).toBeTruthy();
     expect(result!.stats[0].rollFloat).toBeGreaterThanOrEqual(0);
     expect(result!.stats[0].rollFloat).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("kitgun rolls", () => {
+  // A chamber names the card and carries the disposition, so a 4-stat roll that
+  // fits at 0.85 grades mid-range with nothing clamped to S or F.
+  it("grades a chamber roll against the chamber's own disposition", () => {
+    expect(rivenData.getWeaponDisposition("Tombfinger")).toBe(0.85);
+    const result = gradeRiven("Tombfinger", [
+      { name: "Critical Damage", positive: true, value: 66.4 },
+      { name: "Multishot", positive: true, value: 86.4 },
+      { name: "Critical Chance", positive: true, value: 115.6 },
+      { name: "Zoom", positive: false, value: 51.1 },
+    ]);
+    const grades = Object.fromEntries((result?.stats ?? []).map((s) => [s.name, s.grade]));
+    expect(grades).toEqual({
+      "Critical Damage": "C",
+      Multishot: "C-",
+      "Critical Chance": "B-",
+      Zoom: "B",
+    });
   });
 });
 
