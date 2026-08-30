@@ -504,7 +504,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
 
   // X11 never hands input back after click-through: setIgnoreMouseEvents(false)
   // leaves the empty input shape, so the window must be rebuilt to take clicks.
-  // Wayland either honours the change or never applied the shape in the first place.
+  // That stuck shape has not been seen on Wayland, and on tiling compositors
+  // click-through never takes effect at all - see ipc/overlay/keepMapped.ts.
   function needsRebuildForInteractive(): boolean {
     return platform === "linux" && clickThroughApplied && !isNativeWayland();
   }

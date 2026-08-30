@@ -112,9 +112,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # typecheck:main is in the ubuntu job and cannot differ by platform, so only
-      # the main-process tests run here, for the path and koffi behaviour ubuntu
-      # never exercises.
+      # typecheck:main is in the ubuntu job and cannot differ by platform, so this
+      # step repeats only what can: the ONNX asset check, the main-process tests
+      # for the path and koffi behaviour ubuntu never exercises, and the build.
       - name: Verify Windows main process
         run: |
           pnpm run verify:onnx-models

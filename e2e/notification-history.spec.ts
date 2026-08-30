@@ -28,7 +28,8 @@ const SEEDED = [
 let harness: ElectronTestHarness;
 
 test.beforeAll(async () => {
-  // Stored oldest-first, the order main persists them in.
+  // Stored oldest-first, the order main persists them in; the history renders
+  // the reverse.
   harness = await launchElectronTestHarness("wfhelper-notifications-", {
     userDataFiles: { "notification-log.json": SEEDED },
   });
@@ -72,7 +73,6 @@ test("the status bar bell opens the stored notification history", async () => {
 
   const entries = page.locator("[data-notification-entry]");
   await expect(entries).toHaveCount(2);
-  // Newest first.
   await expect(entries.first()).toContainText("Listing Closed");
   await expect(entries.first()).toHaveAttribute("data-notification-kind", "trade");
   await expect(entries.last()).toContainText("Cetus");

@@ -35,9 +35,10 @@ export function createKeepMappedMode(options: KeepMappedOptions) {
   } = options;
   let logged = false;
 
-  // Tiling compositors are excluded: they do not honour setIgnoreMouseEvents, so
-  // a blanked window stays on screen as a floating window that still takes the
-  // clicks meant for the game. Unmapping for real is the lesser evil there.
+  // Tiling compositors are excluded: click-through does not take effect there, so
+  // a blanked window stays on screen and still takes the clicks meant for the game.
+  // Whether the empty input region is never applied or applied and then ignored is
+  // unknown. Unmapping for real is the lesser evil either way.
   function isActive(): boolean {
     return platform === "linux" && transparent && isNativeWayland() && !isTilingCompositor();
   }
