@@ -132,8 +132,8 @@ export function initialize(
       writeState({ ...state, hintShown: true });
     }
   } else {
-    // Wayland with nothing to join, so overlays get neither placement nor a
-    // stack above the game. Say so once: starting an X server fixes all of it.
+    // Wayland with nothing to join, so the compositor owns overlay placement and
+    // stacking and the app cannot override either. Say so once.
     _noXServer = true;
     if (!state.noXServerHintShown) {
       _noXServerHint = true;

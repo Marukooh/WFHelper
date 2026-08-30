@@ -606,9 +606,7 @@ void app.whenReady().then(async () => {
       "[Display] native Wayland fallback active - overlays may misbehave; pin XWayland in Settings to retry",
     );
   } else if (linuxDisplay.info().noXServer) {
-    log.warn(
-      "[Display] no X server to join - overlays cannot be placed or stacked over the game; start XWayland",
-    );
+    log.warn("[Display] no X server to join - the compositor owns overlay placement and stacking");
   }
 
   const sessionRestoreStart = Date.now();
