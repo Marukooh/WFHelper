@@ -1,6 +1,14 @@
 import type { BrowserWindow } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("node:child_process", () => ({
+  execFile: vi.fn(),
+  spawn: vi.fn(() => ({ unref: vi.fn() })),
+}));
+
+import { execFile, spawn } from "node:child_process";
+import fs from "node:fs";
+
 import {
   OVERLAY_SETTINGS_DEFAULTS,
   type OverlaySettings,
@@ -45,6 +53,12 @@ function registerWorldStateHandler(): IpcHandler {
   const handler = handlers.get(DB_GET_WORLD_STATE);
   expect(handler).toBeTypeOf("function");
   return handler as IpcHandler;
+}
+
+const ORIGINAL_PLATFORM = process.platform;
+
+function setPlatform(platform: string): void {
+  Object.defineProperty(process, "platform", { value: platform, configurable: true });
 }
 
 describe("world state desktop notifications", () => {
@@ -164,5 +178,121 @@ describe("world state desktop notifications", () => {
       { fissures: [] },
       { fissures: [] },
     ]);
+  });
+});
+
+describe("windows toast audio and lifetime", () => {
+  let written: Array<{ path: string; data: string }> = [];
+
+  function registerWithQuitHook(): () => void {
+    let listener: (() => void) | null = null;
+    worldStateIpc.register({
+      ipcMain: { handle: () => {} },
+      Notification: MockNotification,
+      app: {
+        on: (event: string, fn: () => void) => {
+          if (event === "before-quit") listener = fn;
+        },
+      },
+    });
+    expect(listener).toBeTypeOf("function");
+    return listener as unknown as () => void;
+  }
+
+  function toastXml(index = 0): string {
+    const entry = written.filter((w) => w.path.endsWith(".xml"))[index];
+    expect(entry).toBeDefined();
+    return entry?.data ?? "";
+  }
+
+  function execFileArgs(): string[][] {
+    return vi.mocked(execFile).mock.calls.map((call) => (call[1] as unknown as string[]) ?? []);
+  }
+
+  function spawnArgs(): string[][] {
+    return vi.mocked(spawn).mock.calls.map((call) => (call[1] as unknown as string[]) ?? []);
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    setPlatform("win32");
+    written = [];
+    ctx.mainWindow = null;
+    ctx.overlaySettings = { ...OVERLAY_SETTINGS_DEFAULTS } as OverlaySettings;
+    // register() arms a 3s startup seed; advancing timers here must not hit the network.
+    vi.spyOn(worldStateParser, "fetchAndParse").mockResolvedValue({ fissures: [] });
+    vi.mocked(execFile).mockClear();
+    vi.mocked(spawn).mockClear();
+    vi.spyOn(fs, "writeFileSync").mockImplementation(((filePath: string, data: string) => {
+      written.push({ path: String(filePath), data: String(data) });
+    }) as unknown as typeof fs.writeFileSync);
+  });
+
+  afterEach(() => {
+    worldStateIpc.__test__.reset();
+    setPlatform(ORIGINAL_PLATFORM);
+    ctx.overlaySettings = { ...OVERLAY_SETTINGS_DEFAULTS } as OverlaySettings;
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("lets the toast play the system notification sound", () => {
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    const xml = toastXml();
+    expect(xml).toContain('scenario="incomingCall"');
+    expect(xml).toContain('<audio src="ms-winsoundevent:Notification.Default" loop="false"/>');
+    expect(xml).not.toContain('silent="true"');
+    expect(execFileArgs().some((args) => args.join(" ").includes("SoundPlayer"))).toBe(false);
+  });
+
+  it("keeps the toast silent when the notification sound is disabled", () => {
+    ctx.overlaySettings = {
+      ...OVERLAY_SETTINGS_DEFAULTS,
+      notificationSoundEnabled: false,
+    } as OverlaySettings;
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    const xml = toastXml();
+    expect(xml).toContain('<audio silent="true"/>');
+    expect(xml).not.toContain("ms-winsoundevent");
+  });
+
+  it("sounds once per burst of toasts", () => {
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "First", "app");
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Second", "app");
+
+    expect(toastXml(0)).toContain("ms-winsoundevent:Notification.Default");
+    expect(toastXml(1)).toContain('<audio silent="true"/>');
+  });
+
+  it("pulls an outstanding toast when the app quits", () => {
+    const onQuit = registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    onQuit();
+
+    expect(spawnArgs()).toHaveLength(1);
+    expect(spawnArgs()[0]?.join(" ")).toContain("History.RemoveGroup('wfc', 'com.wfhelper.app')");
+  });
+
+  it("does not shell out on quit when no toast is outstanding", () => {
+    const onQuit = registerWithQuitHook();
+    onQuit();
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it("stops tracking a toast its dismiss timer already pulled", () => {
+    const onQuit = registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    vi.advanceTimersByTime(5_000);
+    expect(written.some((w) => w.path.includes("wfc-toast-remove-"))).toBe(true);
+
+    onQuit();
+    expect(spawn).not.toHaveBeenCalled();
   });
 });

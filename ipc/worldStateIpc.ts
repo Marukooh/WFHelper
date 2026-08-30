@@ -5,7 +5,6 @@ import { recordNotification } from "./notificationLogIpc";
 import type { NotificationKind } from "../config/shared/notifications";
 import { withScope } from "../services/logger";
 import * as worldStateParser from "../services/worldStateParser";
-import { resolveRuntimeResourcePath } from "../services/runtimeResources";
 import { normalizeErrorMessage } from "../config/shared/errors";
 import { durationMsFromSeconds } from "../config/shared/numeric";
 import {
@@ -13,7 +12,7 @@ import {
   NOTIFICATION_TEST,
   WORLD_STATE_FETCH_ERROR,
 } from "../config/shared/ipcChannels";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
@@ -197,13 +196,22 @@ function ensureStartMenuShortcut(): void {
 /** Auto-incrementing tag counter so each toast gets a unique tag for History.Remove(). */
 let _toastTagCounter = 0;
 
+/** Every toast shares one group so quit can pull them all in a single call. */
+const TOAST_GROUP = "wfc";
+
+/** Tags already shown and not yet pulled by their dismiss timer. */
+const _outstandingToastTags = new Set<string>();
+
 /** Fallback for the configured dismiss delay; an incomingCall toast holds on
  *  screen until it is pulled, so this is what the user actually sees. */
 const TOAST_DISMISS_MS = 5_000;
 
+const TOAST_MANAGER_TYPE_LOAD =
+  "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null";
+
 const SHOW_TOAST_SCRIPT = [
   "param([string]$XmlPath, [string]$Tag, [string]$Group, [string]$AppId)",
-  "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null",
+  TOAST_MANAGER_TYPE_LOAD,
   "[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] > $null",
   "$x = New-Object Windows.Data.Xml.Dom.XmlDocument",
   "$x.LoadXml((Get-Content -LiteralPath $XmlPath -Raw))",
@@ -216,7 +224,7 @@ const SHOW_TOAST_SCRIPT = [
 
 const REMOVE_TOAST_SCRIPT = [
   "param([string]$Tag, [string]$Group, [string]$AppId)",
-  "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null",
+  TOAST_MANAGER_TYPE_LOAD,
   "[Windows.UI.Notifications.ToastNotificationManager]::History.Remove($Tag, $Group, $AppId)",
   "",
 ].join("\n");
@@ -235,26 +243,32 @@ function writeToastScript(kind: "show" | "remove", tag: string): string | null {
   }
 }
 
-// incomingCall reaches games reliably; keep it silent to avoid its looping ringtone.
-// A separate sound plays, and the toast auto-dismisses to avoid stale alerts.
 function notificationSoundEnabled(): boolean {
   return ctx.overlaySettings.notificationSoundEnabled !== false;
 }
 
-// Unpackaged Win32 toasts cannot embed custom audio, so play the bundled sound separately.
-const NOTIFICATION_SOUND_FILE = resolveRuntimeResourcePath("notification.wav");
-
-// One sound per toast burst - overlapping SoundPlayers stack into a blare.
+// One sound per toast burst - a batch of fissure alerts would otherwise ring per toast.
 const SOUND_MIN_GAP_MS = 3_000;
 let _lastSoundAt = 0;
 
-function playNotificationSound(): void {
-  if (process.platform !== "win32" || !notificationSoundEnabled()) return;
-  if (Date.now() - _lastSoundAt < SOUND_MIN_GAP_MS) return;
-  if (!fs.existsSync(NOTIFICATION_SOUND_FILE)) return;
-  _lastSoundAt = Date.now();
+// Letting the toast name the sound is what keeps it under the user's System Sounds
+// volume and notification settings. incomingCall defaults to a looping ringtone, so
+// loop has to be turned off explicitly.
+function toastAudioXml(): string {
+  if (!notificationSoundEnabled()) return '<audio silent="true"/>';
+  const now = Date.now();
+  if (now - _lastSoundAt < SOUND_MIN_GAP_MS) return '<audio silent="true"/>';
+  _lastSoundAt = now;
+  return '<audio src="ms-winsoundevent:Notification.Default" loop="false"/>';
+}
+
+// A shown toast lives in Windows, not in this process, so an exit before the
+// dismiss timer would strand it on screen. The child outlives us on purpose.
+function removeOutstandingToasts(): void {
+  if (_outstandingToastTags.size === 0) return;
+  _outstandingToastTags.clear();
   try {
-    execFile(
+    const child = spawn(
       "powershell.exe",
       [
         "-ExecutionPolicy",
@@ -262,25 +276,47 @@ function playNotificationSound(): void {
         "-NoProfile",
         "-NonInteractive",
         "-Command",
-        "& { param([string]$soundPath) (New-Object Media.SoundPlayer $soundPath).PlaySync() }",
-        NOTIFICATION_SOUND_FILE,
+        `${TOAST_MANAGER_TYPE_LOAD}; [Windows.UI.Notifications.ToastNotificationManager]::History.RemoveGroup('${TOAST_GROUP}', '${APP_USER_MODEL_ID}')`,
       ],
-      { windowsHide: true, timeout: 8000 },
-      (err) => {
-        if (err) log.warn("[WorldState] notification sound error:", normalizeErrorMessage(err));
-      },
+      { windowsHide: true, detached: true, stdio: "ignore" },
     );
+    child.unref();
   } catch (err) {
-    log.warn("[WorldState] notification sound spawn failed:", normalizeErrorMessage(err));
+    log.warn("[WorldState] toast quit cleanup failed:", normalizeErrorMessage(err));
   }
 }
 
+function removeToast(tag: string): void {
+  if (!_outstandingToastTags.delete(tag)) return;
+  const removeScriptPath = writeToastScript("remove", tag);
+  if (!removeScriptPath) return;
+  execFile(
+    "powershell.exe",
+    [
+      "-ExecutionPolicy",
+      "Bypass",
+      "-NoProfile",
+      "-NonInteractive",
+      "-File",
+      removeScriptPath,
+      tag,
+      TOAST_GROUP,
+      APP_USER_MODEL_ID,
+    ],
+    { windowsHide: true, timeout: 5000 },
+    () => {
+      fs.unlink(removeScriptPath, () => {});
+    },
+  );
+}
+
+// incomingCall is what gets a toast past Focus Assist while a game runs fullscreen,
+// so the scenario stays and the dismiss timer below is what ends the toast.
 function sendWindowsToast(title: string, body: string): void {
   const tag = `wfc-${++_toastTagCounter}`;
-  const group = "wfc";
   const xml = `<toast scenario="incomingCall"><visual><binding template="ToastGeneric"><text>${escapeXml(
     title,
-  )}</text><text>${escapeXml(body)}</text></binding></visual><audio silent="true"/></toast>`;
+  )}</text><text>${escapeXml(body)}</text></binding></visual>${toastAudioXml()}</toast>`;
   const xmlPath = path.join(os.tmpdir(), `wfc-toast-${process.pid}-${Date.now()}-${tag}.xml`);
   try {
     fs.writeFileSync(xmlPath, xml, "utf8");
@@ -294,6 +330,7 @@ function sendWindowsToast(title: string, body: string): void {
     fs.unlink(xmlPath, () => {});
     return;
   }
+  _outstandingToastTags.add(tag);
   execFile(
     "powershell.exe",
     [
@@ -305,7 +342,7 @@ function sendWindowsToast(title: string, body: string): void {
       showScriptPath,
       xmlPath,
       tag,
-      group,
+      TOAST_GROUP,
       APP_USER_MODEL_ID,
     ],
     { windowsHide: true, timeout: 8000 },
@@ -316,9 +353,6 @@ function sendWindowsToast(title: string, body: string): void {
     },
   );
 
-  // The toast is silent (incomingCall would otherwise ring); play the sound here.
-  playNotificationSound();
-
   const dismissMs = durationMsFromSeconds(
     ctx.overlaySettings?.windowsNotificationSeconds,
     TOAST_DISMISS_MS,
@@ -326,28 +360,7 @@ function sendWindowsToast(title: string, body: string): void {
 
   // Auto-dismiss: remove the toast from the notification center after the
   // banner display time so it doesn't stick around like a phone call.
-  setTimeout(() => {
-    const removeScriptPath = writeToastScript("remove", tag);
-    if (!removeScriptPath) return;
-    execFile(
-      "powershell.exe",
-      [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-NoProfile",
-        "-NonInteractive",
-        "-File",
-        removeScriptPath,
-        tag,
-        group,
-        APP_USER_MODEL_ID,
-      ],
-      { windowsHide: true, timeout: 5000 },
-      () => {
-        fs.unlink(removeScriptPath, () => {});
-      },
-    );
-  }, dismissMs);
+  setTimeout(() => removeToast(tag), dismissMs);
 }
 
 // Keep references to active notifications to prevent GC before display.
@@ -651,6 +664,8 @@ function resetForTest(): void {
   _worldStateFetch = null;
   _worldNotificationSnapshot = null;
   _cyclePreNotified.clear();
+  _outstandingToastTags.clear();
+  _lastSoundAt = 0;
   notificationCtor = electronModule.Notification;
   desktopNotificationSender = null;
 }
@@ -665,10 +680,13 @@ function expireWorldStateCacheForTest(): void {
   _worldStateCacheTime = 0;
 }
 
+type QuitEmitter = { on?: (event: string, listener: () => void) => void };
+
 function register(
   options: {
     ipcMain?: { handle?: (channel: string, handler: (event: unknown) => Promise<unknown>) => void };
     Notification?: unknown;
+    app?: QuitEmitter;
   } = {},
 ): void {
   if (Object.prototype.hasOwnProperty.call(options, "Notification")) {
@@ -715,6 +733,14 @@ function register(
     }
   });
   _registered = true;
+
+  const quitEmitter = options.app ?? (electronModule.app as QuitEmitter | undefined);
+  // Not once: quit is deferred and re-fired while the DBWIN worker stops, and a
+  // toast raised in that window would otherwise never be pulled. Removing an
+  // empty set is a no-op, so the extra call costs nothing.
+  if (typeof quitEmitter?.on === "function") {
+    quitEmitter.on("before-quit", removeOutstandingToasts);
+  }
 
   // Ensure we have a Start Menu shortcut so Windows recognises us for
   // toast notifications under Focus Assist "Priority only" mode.
