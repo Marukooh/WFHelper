@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
@@ -104,6 +105,14 @@ test("the settings test button records a notification", async () => {
 
   await clearHistory(page);
 
+  // The sound is a bundled asset played from a file:// page, so a CSP that has
+  // no media-src would refuse it and leave notifications silent.
+  const blocked: string[] = [];
+  page.on("console", (message) => {
+    const text = message.text();
+    if (/Content Security Policy|Refused to load/i.test(text)) blocked.push(text);
+  });
+
   await page.locator('#sidebar [data-view="settings"]').click();
   // Dev-only button; the sandbox runs unpackaged, so it appears once the runtime
   // info resolves.
@@ -117,6 +126,44 @@ test("the settings test button records a notification", async () => {
   await expect(page.locator("[data-notification-entry]").first()).toContainText(
     "Test notification",
   );
+  expect(blocked).toEqual([]);
+
+  // Not vacuous: play the clip to its end, since a console check alone would also
+  // pass if nothing had loaded it, and decoding alone would not catch a cut-off.
+  const soundFile = fs
+    .readdirSync(path.join("renderer", "dist", "assets"))
+    .find((name) => /^notification-.*\.wav$/.test(name));
+  expect(soundFile).toBeTruthy();
+  const played = await page.evaluate(
+    (name) =>
+      new Promise<string>((resolve) => {
+        const audio = new Audio(`assets/${name}`);
+        const timer = setTimeout(
+          () => resolve(`stalled at ${audio.currentTime} of ${audio.duration}`),
+          15000,
+        );
+        const settle = (result: string): void => {
+          clearTimeout(timer);
+          resolve(result);
+        };
+        audio.addEventListener(
+          "ended",
+          () =>
+            settle(
+              audio.duration > 1 && audio.currentTime >= audio.duration - 0.1
+                ? "ok"
+                : `short ${audio.currentTime} of ${audio.duration}`,
+            ),
+          { once: true },
+        );
+        audio.addEventListener("error", () => settle(`error ${audio.error?.code ?? "?"}`), {
+          once: true,
+        });
+        audio.play().catch((err: unknown) => settle(`blocked ${(err as Error)?.name}`));
+      }),
+    soundFile,
+  );
+  expect(played).toBe("ok");
 
   await closeHistory(page);
 });
