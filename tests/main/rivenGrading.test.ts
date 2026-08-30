@@ -828,7 +828,7 @@ describe("unranked cards", () => {
     const result = gradeRiven(weapon, stats);
 
     expect(result).not.toBeNull();
-    // The whole bug: pinned at rank 8 every roll clamps to the bottom of its range.
+    // Grading an unranked card at rank 8 clamps every roll to the bottom of its range.
     expect(result!.stats.some((s) => s.rollFloat > 0 && s.rollFloat < 1)).toBe(true);
     expect(result!.overallGrade).not.toBe("F");
   });

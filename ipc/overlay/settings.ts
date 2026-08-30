@@ -210,7 +210,7 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
       hotkeyEnabled: booleanSetting("hotkeyEnabled"),
       hotkey: normalizeHotkey(candidate.hotkey ?? defaults.hotkey, String(defaults.hotkey)),
       interactionHotkeyEnabled: booleanSetting("interactionHotkeyEnabled"),
-      // Migrate the retired Control+Tab default (global grab that stole the
+      // Migrate the retired Control+Tab default (global grab that steals the
       // browser tab-switch key) onto the current default.
       interactionHotkey: normalizeHotkey(
         candidate.interactionHotkey === LEGACY_INTERACTION_HOTKEY

@@ -46,7 +46,7 @@ describe("recognizePaddleCrops", () => {
 
   // Real riven captures produce text crops up to 59:1 while solid panel rules sit
   // at 27-37:1, so no aspect threshold can tell them apart. Wide text has to
-  // survive intact; an earlier fix that squeezed it to a fixed ratio did not.
+  // survive intact, which rules out squeezing every crop to a fixed ratio.
   it("reads a wide text crop the same beside a wider blank one", async () => {
     const wide = await wordCrop("Kuva Sobek Boar Prime Paris Prime Latron", 1740, 30);
     expect(wide.width / wide.height).toBeGreaterThan(55);

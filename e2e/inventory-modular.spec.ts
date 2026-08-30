@@ -6,7 +6,7 @@ import {
   type ElectronTestHarness,
 } from "./electronTestHarness";
 
-// Real uniqueNames from a live account: DE stores a build under a generic
+// Real uniqueNames from a live inventory: DE stores a build under a generic
 // ItemType the export does not carry, so every name comes from ModularParts.
 const KITGUN_BASE = "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryShotgun";
 const KITGUN_CHAMBER =

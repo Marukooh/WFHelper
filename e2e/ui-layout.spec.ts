@@ -234,7 +234,7 @@ test.describe("Shared view layout", () => {
   });
 
   // A rotated monitor lands the inventory header in the band where the tabs no
-  // longer fit beside the search box. They used to wrap mid-row and strand the
+  // longer fit beside the search box. They must not wrap mid-row and strand the
   // controls next to a strip of empty header.
   test("Inventory tabs keep one row when the search box has to drop below", async () => {
     for (const viewport of [
@@ -282,9 +282,9 @@ test.describe("Shared view layout", () => {
     }
   });
 
-  // The narrow-width rule used to pad #content on all four sides, and a sticky
-  // row pins to the padding box: the pinned filters sat a gutter below the top
-  // and the grid scrolled visibly through the strip above them.
+  // A sticky row pins to the padding box, so a narrow-width rule that pads
+  // #content on all four sides drops the pinned filters a gutter below the top
+  // and lets the grid scroll visibly through the strip above them.
   test("pinned filters sit flush with the scroll area on a narrow window", async () => {
     await page.setViewportSize({ width: 1280, height: 820 });
     await openView(page, "inventory");

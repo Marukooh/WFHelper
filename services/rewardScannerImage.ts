@@ -96,7 +96,7 @@ export function detectGameContentRect(nativeImage: NativeImage): GameContentRect
 }
 
 // Menus sit on a centred 16:9 canvas, so a barless non-16:9 render needs the
-// crop base clamped to it. The x half is 98e22b5, shipped since v1.1.0.
+// crop base clamped to it on both axes.
 export function canvasContentRect(nativeImage: NativeImage): GameContentRect {
   return centerGameCanvas(detectGameContentRect(nativeImage));
 }

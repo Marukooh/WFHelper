@@ -10,7 +10,7 @@ import { detectRelicEraFromBandText } from "../../services/rewardScannerMatch";
 
 const tempDirs: string[] = [];
 
-// Verbatim OCR previews from a user's main.log (2026-08-29). The first is the
+// Verbatim OCR previews from a real main.log (2026-08-29). The first is the
 // star chart fissure list; the second is WFHelper's own planner overlay read
 // back off the screen, with "profits" and "VAULTED" mangled by the scan.
 const STAR_CHART_FISSURE_LIST =

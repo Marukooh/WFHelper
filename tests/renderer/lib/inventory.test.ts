@@ -215,8 +215,8 @@ describe("inventory parsing", () => {
     expect(setItem?.amount).toBe(2);
   });
 
-  // Regression: warframe parts are owned as ...Blueprint but the set lists them
-  // as the crafted ...Component, so a complete set was counted as zero.
+  // Warframe parts are owned as ...Blueprint but the set lists them as the
+  // crafted ...Component, so matching on the set's own names alone counts zero.
   it("counts warframe sets from blueprint ownership despite the component-name split", () => {
     const root = "/Lotus/Powersuits/Mag/MagPrime";
     const itemDb: Record<string, ItemDbEntry> = {

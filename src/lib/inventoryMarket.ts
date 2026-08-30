@@ -558,8 +558,8 @@ export function buildInventoryViewItems<T extends InventoryBaseItem>(
         : null;
 
     const iconFromMeta = formatWfmAssetUrl(metric?.thumb || metric?.icon || null);
-    // Mods and arcanes used to prefer the WFM thumb because DE's flat icon was
-    // worse. The framed wiki card is better than both, so it wins when we have it.
+    // For mods and arcanes the WFM thumb beats DE's flat icon, but the framed
+    // wiki card beats both, so cardArt wins wherever it exists.
     const displayImageUrl =
       isRankedListingItem && !item.cardArt
         ? item.marketThumb || iconFromMeta || item.imageUrl || null

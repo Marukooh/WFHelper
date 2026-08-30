@@ -223,8 +223,8 @@ describe("scanRewardSlotsFallback layout merge", () => {
     expect(result?.emptySlots).toBe(1);
   });
 
-  // The Sevagoth field case: both engines kept resolving the right name but the
-  // fuzzy score sat just under the gate, leaving the slot empty on every retry.
+  // Both engines can resolve the right name while the fuzzy score sits just under
+  // the gate, which leaves the slot empty on every retry.
   it("rescues an empty slot from its own near-gate read", async () => {
     h.layouts = [{ count: 4, confidence: 0.9, slots: [slot(0), slot(100), slot(200), slot(300)] }];
     h.matches = {

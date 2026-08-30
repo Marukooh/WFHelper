@@ -356,7 +356,7 @@ describe("findInventoryFile", () => {
   });
 
   // Those sources ARE a file, and only the pickers can produce one. Persisting
-  // the switch on its own froze the helper's last output as a hand-picked import
+  // the switch on its own freezes the helper's last output as a hand-picked import
   // that nothing refreshes, since auto sync is off for everything but the helper.
   it("refuses a switch to a file source before a file has been picked", async () => {
     const inventoryIpc = await loadModule();

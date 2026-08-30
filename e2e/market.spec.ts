@@ -44,8 +44,8 @@ test.describe("Market tab (fixture mode)", () => {
     const fixturePath = path.join(sandboxDir, "wfm-orders.json");
     fs.writeFileSync(fixturePath, JSON.stringify(fixtureOrders()));
 
-    // Seed sandbox inventory so reload stays out of setup. Local runs previously
-    // passed only because they discovered inventory in the real profile.
+    // Seed sandbox inventory so reload stays out of setup. Without it a local run
+    // only passes by discovering inventory in the real profile.
     const helperDir = path.join(sandboxDir, "user-data", "api-helper");
     fs.mkdirSync(helperDir, { recursive: true });
     fs.writeFileSync(path.join(helperDir, "inventory.json"), JSON.stringify({ Suits: [] }));

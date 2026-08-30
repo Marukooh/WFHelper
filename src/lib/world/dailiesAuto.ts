@@ -134,10 +134,10 @@ function simarisDone(inv: RawInventoryData): boolean | null {
   return scans !== null && scans >= required;
 }
 
-// SeasonChallengeHistory looks like a completion record but is not one: a live
-// account showed 25 current-season entries against 1,000 season standing (one
-// act), with ChallengeProgress 0 on history-listed acts. DE logs instantiated
-// acts there, so it must never tick a checkbox; acts stay manual.
+// SeasonChallengeHistory looks like a completion record but is not one: live
+// inventory carries 25 current-season entries against 1,000 season standing
+// (one act), with ChallengeProgress 0 on history-listed acts. DE logs
+// instantiated acts there, so it must never tick a checkbox; acts stay manual.
 function nightwaveTasks(inv: RawInventoryData, wd: WorldState, out: AutoState): void {
   const acts = wd.nightwave?.challenges ?? [];
   if (acts.length === 0) return;
@@ -172,7 +172,7 @@ function nightwaveTasks(inv: RawInventoryData, wd: WorldState, out: AutoState): 
 }
 
 /** Season standing straight from the syndicate entry; the only number DE
- *  reports about Nightwave completion that a live account confirms. */
+ *  reports about Nightwave completion that live inventory confirms. */
 export function nightwaveSeasonStanding(
   inv: RawInventoryData | null,
   affiliationTag: string | undefined,

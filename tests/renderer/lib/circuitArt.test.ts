@@ -38,8 +38,8 @@ describe("circuit choice art", () => {
     expect(torid.uniqueName).toBe(TORID);
   });
 
-  // The circuit row used to hand the view a single name field, so a localized
-  // database still drew the English one here.
+  // One name field cannot serve both the English join key and the label the view
+  // draws, so the circuit row has to carry each separately.
   it("carries the localized name without losing the English one", () => {
     const localized: Record<string, ItemDbEntry> = {
       ...DB,

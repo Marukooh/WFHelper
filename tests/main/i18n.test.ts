@@ -44,7 +44,7 @@ function sourceFiles(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-// {plat} vs {platinum} hid two copies of one sentence, so names are erased first.
+// {plat} vs {platinum} hides two copies of one sentence, so names are erased first.
 const normalise = (value: string): string => value.trim().replace(/\{\w+\}/g, "{}");
 
 const placeholders = (value: string): string[] =>

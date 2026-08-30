@@ -1083,7 +1083,7 @@ describe("parseRivenStats", () => {
 
   it("strips the '(x2 for Bows)' qualifier instead of parsing a phantom stat", () => {
     // Exact OCR lines from a real Boar Satidra scan: the qualifier wraps and
-    // clips to "(x2 fol" + "Bows)", which used to fuzzy-match "fol" -> Cold.
+    // clips to "(x2 fol" + "Bows)", and "fol" is close enough to fuzzy-match Cold.
     const text = [
       "Boar Satidra",
       "+211,9% Multishot",
@@ -1304,7 +1304,7 @@ describe("riven session reopen and close timing", () => {
     process(closeLine);
     expect(closes).toHaveBeenCalledTimes(1);
 
-    // The field repro: reroll again ~3s later used to be eaten by a 15s cooldown.
+    // A reroll ~3s after the close must still open; no post-close cooldown may eat it.
     vi.advanceTimersByTime(3_000);
     process(openLine);
     expect(opens).toHaveBeenCalledTimes(2);
@@ -1327,7 +1327,7 @@ describe("riven session reopen and close timing", () => {
     process(dioramaLine);
     vi.advanceTimersByTime(650);
     process(closeLine);
-    // 1.5s after the previous open - the old open cooldown ate this.
+    // 650 + 650 + 200 lands 1.5s after the previous open, inside any open cooldown.
     vi.advanceTimersByTime(200);
     process(openLine);
     expect(opens).toHaveBeenCalledTimes(2);

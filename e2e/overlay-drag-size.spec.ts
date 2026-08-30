@@ -158,8 +158,8 @@ test("a resized riven overlay reopens at the size it was left at", async () => {
       )
       .toBeGreaterThan(1);
 
-    // Reopening recomputes the bounds from the saved settings, which is exactly
-    // where the resized size used to be thrown away.
+    // Reopening recomputes the bounds from the saved settings, which is the one
+    // path that can throw the resized size away.
     await evaluateInMain(harness.app, ({ app }) => {
       const main = process.mainModule as unknown as {
         require: (id: string) => Record<string, () => void>;

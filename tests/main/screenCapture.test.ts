@@ -278,8 +278,8 @@ describe("captureScreenFast on win32 (GDI)", () => {
     setPlatform("win32");
     const client = { x: 80, y: 60, width: 800, height: 500 };
     const dipClient = { x: 40, y: 30, width: 400, height: 250 };
-    // A real Electron Display.id, not a hand-picked small integer. Small ids
-    // hid the bug where this was passed to GetMonitorInfoW as an HMONITOR.
+    // A real Electron Display.id, not a hand-picked small integer: a small id
+    // still looks plausible when handed to GetMonitorInfoW as an HMONITOR.
     const display = { id: 2528732444, bounds: { x: -1920, y: 0, width: 1000, height: 650 } };
     mocks.getGameWindowClientRect.mockReturnValue(client);
     mocks.screenToDipRect.mockReturnValue(dipClient);

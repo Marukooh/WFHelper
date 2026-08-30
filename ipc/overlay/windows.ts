@@ -18,7 +18,7 @@ import type {
 } from "../../config/runtime/overlaySettings";
 
 // Shared with the z-order poll: re-stacking a window in its last seconds before a
-// queued hide is what crashed under injected hooks. Lives here to keep zOrder.ts
+// queued hide crashes under injected hooks. Lives here to keep zOrder.ts
 // out of this module's electron-free import graph.
 export const HIDE_IMMINENT_MS = 3_000;
 

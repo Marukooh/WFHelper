@@ -9,7 +9,6 @@ async function main() {
   const w = info.width;
   const h = info.height;
 
-  // --- Row-by-row alpha analysis (every 5 rows for precision) ---
   console.log("\n=== ROW ALPHA ANALYSIS (every 5 rows) ===");
   for (let y = 0; y < h; y += 5) {
     let leftOpaque = -1, rightOpaque = -1;
@@ -26,7 +25,6 @@ async function main() {
     console.log(`y=${y} (${pct}%): opaque=${opaqueCount}/${w} left=${leftOpaque} right=${rightOpaque}`);
   }
 
-  // --- Center column brightness (x=158) ---
   console.log("\n=== CENTER COLUMN BRIGHTNESS (x=158, every 5 rows) ===");
   for (let y = 0; y < h; y += 5) {
     const idx = (y * w + 158) * 4;

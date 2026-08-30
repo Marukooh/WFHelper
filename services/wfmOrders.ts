@@ -247,7 +247,6 @@ export async function updateOrder(
   if (subtype != null) body.subtype = String(subtype);
   if (Object.keys(body).length === 0) throw new Error("updateOrder: no fields to update.");
 
-  // v2: PATCH /order/{id}
   const data = await requestV2("PATCH", `/order/${encodeURIComponent(orderId)}`, { json: body });
   const unwrapped = unwrapWfmResponse<WfmOrderMutationData>(data);
   const raw = (unwrapped?.order || unwrapped || data) as WfmRawOrder;
@@ -256,7 +255,6 @@ export async function updateOrder(
 
 export async function deleteOrder(orderId: string): Promise<{ deleted: boolean; id: string }> {
   if (!orderId) throw new Error("deleteOrder: orderId is required.");
-  // v2: DELETE /order/{id}
   await requestV2("DELETE", `/order/${encodeURIComponent(orderId)}`);
   return { deleted: true, id: orderId };
 }

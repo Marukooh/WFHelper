@@ -6,7 +6,7 @@ import {
   detectRelicEraFromTileLabelText,
 } from "../../services/rewardScannerMatch";
 
-// Verbatim OCR preview from a user's main.log. The player picked the Omnia
+// Verbatim OCR preview from a real main.log. The player picked the Omnia
 // fissure, but two Requiem fissures are listed above it in the star chart.
 const STAR_CHART_LIST =
   "Requiem Fissure Garus (Kuva Fortres: CIII 14m ASSAULT (160-17 Requiem Fissure Koro " +

@@ -76,8 +76,8 @@ function logScanTiming(label: string, t: RivenScanTiming): void {
 }
 
 // OCR text cannot reveal crop alignment, so the crop is kept alongside it.
-// Rotated per outcome: a rolling session's successful scans used to push the
-// empty ones - the only crops worth having - out of a shared window of 10.
+// Rotated per outcome: a shared window lets a rolling session's successful
+// scans evict the empty ones, which are the only crops worth having.
 const DEBUG_DUMP_KEEP = Object.freeze({ empty: 10, failed: 10, dropped: 10, ok: 4 });
 type ScanDumpOutcome = keyof typeof DEBUG_DUMP_KEEP;
 

@@ -37,8 +37,8 @@ async function selectGameLanguage(page: ElectronTestHarness["page"], code: strin
   await select.selectOption(code);
 }
 
-// Every one of these panels used to read its name straight off the English join
-// key, so a card could sit next to a localized one and stay English.
+// Every one of these panels joins on the English key, so a panel that draws that
+// key instead of the localized name sits English beside a localized card.
 test("every inventory panel reads its names in the game language", async () => {
   test.setTimeout(240_000);
   let harness: ElectronTestHarness | undefined;

@@ -134,7 +134,7 @@ describe("tradeTracker", () => {
     expect(module.getTradeLog()).toHaveLength(2);
   });
 
-  // Entries recorded by pre-fix parser versions (v1.1.3 Stats view screenshot).
+  // Shapes the v1.1.3 parser persisted; those entries still sit in saved logs.
   it("repairs persisted entries corrupted by the old trade-dialog parser", async () => {
     const module = await tracker();
     const item = (displayName: string) => ({

@@ -151,7 +151,7 @@ export async function closeElectronTestHarness(
 ): Promise<void> {
   if (!harness) return;
   try {
-    // close() waits for a clean exit and has hung a CI teardown for the whole
+    // close() waits for a clean exit and can hang a CI teardown for the whole
     // 120s hook budget; a stuck Electron gets 15s, then a hard kill.
     const closed = harness.app.close().then(
       () => true,

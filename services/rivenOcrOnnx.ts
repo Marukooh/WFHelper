@@ -7,8 +7,8 @@ import { resolveRuntimeResourcePath } from "./runtimeResources";
 
 const log = withScope("rivenOcrOnnx");
 
-/** Inference bursts run while Warframe renders; on low-core machines the old
- *  fixed 4-thread pool starved the game (reported roll-screen stutter). */
+/** Inference bursts run while Warframe renders, so the pool scales with core
+ *  count: a fixed 4 threads starves a low-core machine and stutters the roll screen. */
 function ortCpuSessionOptions() {
   const cores =
     typeof os.availableParallelism === "function" ? os.availableParallelism() : os.cpus().length;
@@ -376,7 +376,7 @@ function ctcGreedyDecode(
 }
 
 // PP-OCRv3 pads every crop in a batch out to the widest one, so an 80:1 panel
-// rule beside nine text lines cost 667MB and froze the main process. Aspect
+// rule beside nine text lines costs 667MB and freezes the main process. Aspect
 // cannot tell a rule from text (measured: solid rules 27-37, real text to 59),
 // so crops group by width instead and only budget-busting singles are dropped.
 const REC_IMG_HEIGHT = 48;

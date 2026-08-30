@@ -42,7 +42,8 @@ describe("_parseTradeDialog quantity handling", () => {
   });
 });
 
-// Repro lines from a corrupted v1.1.3 trade log (Stats view screenshot).
+// Corruption a real trade log carries: platform glyphs in both the live U+E000
+// form and the DBWIN latin1 mojibake form.
 describe("_parseTradeDialog corruption hardening", () => {
   it("strips a trailing platform glyph (U+E000) from the partner name", () => {
     const parsed = _parseTradeDialog([

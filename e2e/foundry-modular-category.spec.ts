@@ -6,8 +6,9 @@ import {
   type ElectronTestHarness,
 } from "./electronTestHarness";
 
-// Real blueprint paths from a live account. Every modular part exports with
-// productCategory "Pistols", which used to file them under Secondary.
+// Real blueprint paths from a live inventory. Every modular part exports with
+// productCategory "Pistols", so a category read off that field files them all
+// under Secondary.
 const AMP_GRIP_BP =
   "/Lotus/Weapons/Sentients/OperatorAmplifiers/Set1/Grip/SentAmpSet1GripPartABlueprint";
 const KITGUN_HANDLE_BP =

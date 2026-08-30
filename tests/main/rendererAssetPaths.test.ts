@@ -15,7 +15,8 @@ function collectTsFiles(dir: string): string[] {
 
 describe("renderer asset paths", () => {
   // At runtime __dirname is .electron-build, which contains no renderer/ - so a
-  // renderer file resolved from it never loads. Broke linux capture + trade toasts.
+  // renderer file resolved from it never loads. Linux capture and the trade
+  // toasts both depend on this.
   it("never resolves a renderer file from __dirname", () => {
     const offenders: string[] = [];
 

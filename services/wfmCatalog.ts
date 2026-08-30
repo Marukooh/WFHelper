@@ -79,7 +79,7 @@ function backendCatalogUrl(): string {
 }
 
 // Worker pass-through cache: cheap, Cloudflare-fronted, and immune to the WFM
-// slowness that used to leave sessions with an empty catalog.
+// slowness that otherwise leaves a session with an empty catalog.
 async function _fetchBackendCatalog(): Promise<unknown[]> {
   const url = backendCatalogUrl();
   if (!url) return [];

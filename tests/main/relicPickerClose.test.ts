@@ -8,7 +8,7 @@ describe("relic picker close gate", () => {
   });
 
   it("closes on a fast back-out beyond the entry window", () => {
-    // Field repro: backing out 1.4s after the open used to be skipped forever.
+    // 1.4s after the open is past the entry window, so this is a back-out, not entry.
     expect(isPickerEntryMapping(2_400, 1_000, false)).toBe(false);
   });
 

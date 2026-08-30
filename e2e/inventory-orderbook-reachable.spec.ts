@@ -98,7 +98,7 @@ async function measure(page: Page): Promise<Reachability> {
 
 // Issue #29: the panel is sticky in the same scroll container as the filter
 // band, which is opaque and paints above it. Pinned at the scrollport top, its
-// whole action row sat under the band and could not be clicked.
+// whole action row lands under the band and out of reach of a click.
 test.describe("Inventory order book stays reachable while scrolled", () => {
   test.setTimeout(180_000);
 

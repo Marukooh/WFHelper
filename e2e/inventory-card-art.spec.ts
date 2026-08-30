@@ -34,7 +34,7 @@ test("mods and arcanes render the framed wiki card, not the market thumbnail", a
     const { page } = harness;
     await page.locator('#sidebar [data-view="inventory"]').click();
 
-    // The WFM thumb used to win for ranked listings, which is every mod and arcane.
+    // Ranked listings, which is every mod and arcane, must not let the WFM thumb win.
     const mods = await tabImages(page, "mods");
     expect(mods.some((src) => src.includes("/mod-art/AcceleratedIsotopeMod.webp"))).toBe(true);
     expect(mods.some((src) => src.includes("/wfm/"))).toBe(false);

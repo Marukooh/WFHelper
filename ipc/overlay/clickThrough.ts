@@ -18,7 +18,7 @@ export function setClickThrough(
 ): void {
   if (ignoreMouse && platform === "linux") win.setIgnoreMouseEvents(false);
   // Never {forward:true}: on Windows it installs a global WH_MOUSE_LL hook that
-  // taxes every mouse event system-wide - it lagged the game's input.
+  // taxes every mouse event system-wide, which lags the game's input.
   win.setIgnoreMouseEvents(ignoreMouse);
 }
 

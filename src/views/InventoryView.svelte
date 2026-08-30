@@ -353,8 +353,8 @@
 
   onMount(() => {
     hydration.resume();
-    // The "Order placed" badges read the orders store, which only the Market
-    // tab used to fill; straight-to-inventory sessions saw every item as unlisted.
+    // The "Order placed" badges read the orders store, which otherwise only the
+    // Market tab fills; a straight-to-inventory session reads every item as unlisted.
     void ensureMarketOrdersLoaded();
   });
 

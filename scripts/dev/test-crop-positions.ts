@@ -22,7 +22,6 @@ const CROP_CANDIDATES = [
   { label: "candidate-B",   x: 0.42, y: 0.38, w: 0.20, h: 0.42 },
   { label: "candidate-C",   x: 0.40, y: 0.35, w: 0.24, h: 0.45 },
   { label: "candidate-D",   x: 0.38, y: 0.35, w: 0.26, h: 0.45 },
-  // Old production crop (before my changes)
   { label: "OLD-PROD",      x: 0.34, y: 0.39, w: 0.28, h: 0.49 },
   // Debug script's right crop
   { label: "DEBUG-SCRIPT",  x: 0.50, y: 0.38, w: 0.28, h: 0.38 },

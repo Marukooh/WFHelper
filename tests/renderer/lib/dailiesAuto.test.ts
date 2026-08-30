@@ -302,8 +302,8 @@ describe("autoTrackerState", () => {
   });
 
   it("never ticks a nightwave act from the season challenge history", () => {
-    // Regression: a live account had 25 current-season history entries against
-    // 1,000 season standing (one act). DE logs instantiated acts there, not
+    // Live inventory carries 25 current-season history entries against 1,000
+    // season standing (one act). DE logs instantiated acts there, not
     // completions, so a history hit must not read as done.
     const wd = world({
       nightwave: {
