@@ -51,10 +51,11 @@ vi.mock("../../services/wfmClient", () => ({
   clearCsrfToken: vi.fn(),
 }));
 
-const API = "https://api.warframe.market/v1";
-
 type Session = typeof import("../../services/wfmSession");
 type Contracts = typeof import("../../services/wfmContracts");
+
+/** What `/v2/me` reports for the signed-in account; null means it omits it. */
+let meSlug: string | null = null;
 
 function skippable404(): Error {
   return Object.assign(new Error("HTTP 404"), { status: 404 });
@@ -77,6 +78,7 @@ async function signedInAs(userName: string): Promise<{ session: Session; contrac
 }
 
 const v1Paths = (): string[] => client.request.mock.calls.map((call) => String(call[1]));
+const v2Paths = (): string[] => client.requestV2.mock.calls.map((call) => String(call[1]));
 
 beforeAll(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wfhelper-slug-"));
@@ -92,7 +94,11 @@ beforeEach(() => {
   client.requestV2.mockReset();
   client.requestRedirectTarget.mockReset();
   client.requestRedirectTarget.mockResolvedValue(null);
-  client.requestV2.mockResolvedValue({ data: { status: "online" } });
+  meSlug = null;
+  client.requestV2.mockImplementation(async (_method: string, requestPath: string) => {
+    if (requestPath === "/me") return { data: meSlug ? { slug: meSlug } : {} };
+    return { data: { status: "online" } };
+  });
   // The account-implicit auctions route is the first candidate; leaving it dead
   // is what lets the slug-bearing profile route be the one that answers.
   client.request.mockImplementation(async (_method: string, requestPath: string) => {
@@ -102,14 +108,14 @@ beforeEach(() => {
 });
 
 describe("signed-in account profile slug", () => {
-  it("sends both self-addressed routes to the slug WFM redirects the name to", async () => {
-    client.requestRedirectTarget.mockResolvedValue(`${API}/profile/alt-handle/reviews/`);
+  it("sends both self-addressed routes to the slug /v2/me reports", async () => {
+    meSlug = "alt-handle";
     const { session, contracts } = await signedInAs("-Alt-Handle");
 
     await session.getPublicStatus();
     await contracts.getMyContracts();
 
-    expect(client.requestRedirectTarget).toHaveBeenCalledWith("/profile/-Alt-Handle/reviews/");
+    expect(v2Paths()).toContain("/me");
     expect(client.requestV2).toHaveBeenCalledWith("GET", "/user/alt-handle");
     expect(v1Paths()).toContain("/profile/alt-handle/auctions?limit=40");
   });
@@ -123,7 +129,7 @@ describe("signed-in account profile slug", () => {
     ["Spare_Parts", "spare-parts"],
     ["Relay Fox", "relay-fox-7"],
   ])("routes %s to %s", async (name, slug) => {
-    client.requestRedirectTarget.mockResolvedValue(`${API}/profile/${slug}/reviews/`);
+    meSlug = slug;
     const { session, contracts } = await signedInAs(name);
 
     await session.getPublicStatus();
@@ -134,7 +140,7 @@ describe("signed-in account profile slug", () => {
   });
 
   it("leaves a plain alphanumeric name on the paths it already used", async () => {
-    client.requestRedirectTarget.mockResolvedValue(`${API}/profile/testuser/reviews/`);
+    meSlug = "testuser";
     const { session, contracts } = await signedInAs("TestUser");
 
     await session.getPublicStatus();
@@ -144,44 +150,28 @@ describe("signed-in account profile slug", () => {
     expect(v1Paths()).toContain("/profile/testuser/auctions?limit=40");
   });
 
-  it("skips the probe entirely when the account-implicit route answers", async () => {
+  it("skips the slug lookup entirely when the account-implicit route answers", async () => {
     client.request.mockImplementation(async () => ({ payload: { auctions: [] } }));
     const { contracts } = await signedInAs("Trade Partner");
 
     await contracts.getMyContracts();
 
     expect(v1Paths()).toEqual(["/profile/auctions?limit=40"]);
-    expect(client.requestRedirectTarget).not.toHaveBeenCalled();
+    expect(v2Paths()).not.toContain("/me");
   });
 
-  it("probes once for the session and reuses the answer", async () => {
-    client.requestRedirectTarget.mockResolvedValue(`${API}/profile/trade-partner/reviews/`);
+  it("reads /v2/me once for the session and reuses the answer", async () => {
+    meSlug = "trade-partner";
     const { session, contracts } = await signedInAs("Trade Partner");
 
     await session.getPublicStatus();
     await contracts.getMyContracts();
     await contracts.getMyContracts({ page: 2 });
 
-    expect(client.requestRedirectTarget).toHaveBeenCalledTimes(1);
+    expect(v2Paths().filter((requestPath) => requestPath === "/me")).toHaveLength(1);
   });
 
-  it("shares one in-flight probe between concurrent callers", async () => {
-    let release: (value: string | null) => void = () => {};
-    client.requestRedirectTarget.mockReturnValue(
-      new Promise<string | null>((resolve) => {
-        release = resolve;
-      }),
-    );
-    const { session } = await signedInAs("Trade Partner");
-
-    const both = Promise.all([session.getProfileSlug(), session.getProfileSlug()]);
-    release(`${API}/profile/trade-partner/reviews/`);
-
-    expect(await both).toEqual(["trade-partner", "trade-partner"]);
-    expect(client.requestRedirectTarget).toHaveBeenCalledTimes(1);
-  });
-
-  it("falls back to folding the name when WFM offers no redirect", async () => {
+  it("falls back to folding the name when /v2/me omits the slug", async () => {
     const { session, contracts } = await signedInAs("Trade Partner");
 
     await session.getPublicStatus();
@@ -189,39 +179,5 @@ describe("signed-in account profile slug", () => {
 
     expect(client.requestV2).toHaveBeenCalledWith("GET", "/user/trade_partner");
     expect(v1Paths()).toContain("/profile/trade_partner/auctions?limit=40");
-  });
-
-  it("keeps a name that is already slug shaped instead of folding it", async () => {
-    const { session } = await signedInAs("alt-handle");
-
-    await expect(session.getProfileSlug()).resolves.toBe("alt-handle");
-  });
-
-  it("ignores a redirect target that is not a profile slug", async () => {
-    client.requestRedirectTarget.mockResolvedValue(`${API}/profile/..%2Fadmin/reviews/`);
-    const { session } = await signedInAs("Trade Partner");
-
-    await expect(session.getProfileSlug()).resolves.toBe("trade_partner");
-  });
-
-  it("does not latch a probe that failed in transport", async () => {
-    const { session } = await signedInAs("Trade Partner");
-    client.requestRedirectTarget.mockRejectedValueOnce(new Error("WFM request queue full"));
-
-    await expect(session.getProfileSlug()).resolves.toBe("trade_partner");
-
-    client.requestRedirectTarget.mockResolvedValueOnce(`${API}/profile/trade-partner/reviews/`);
-    await expect(session.getProfileSlug()).resolves.toBe("trade-partner");
-  });
-
-  it("drops the cached slug on sign-out", async () => {
-    client.requestRedirectTarget.mockResolvedValue(`${API}/profile/trade-partner/reviews/`);
-    const { session } = await signedInAs("Trade Partner");
-
-    await expect(session.getProfileSlug()).resolves.toBe("trade-partner");
-    session.signOut();
-
-    await expect(session.getProfileSlug()).resolves.toBeNull();
-    expect(client.requestRedirectTarget).toHaveBeenCalledTimes(1);
   });
 });

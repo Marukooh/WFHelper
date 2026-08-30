@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { withScope } from "./logger";
 import { userDataPath } from "./userDataPath";
 import { normalizeErrorMessage } from "../config/shared/errors";
-import { normalizeWfmSlug, type WfmStatus } from "../config/shared/wfm";
+import { normalizeWfmSlug, sanitizeWfmSlug, type WfmStatus } from "../config/shared/wfm";
 
 import {
   WfmApiError,
@@ -14,7 +14,6 @@ import {
   updateCsrfFromToken,
   clearCsrfToken,
 } from "./wfmClient";
-import { probeProfileSlug } from "./wfmProfileSlug";
 import { setStatusViaWebSocket } from "./wfmWebSocket";
 import { safeStorage } from "electron";
 
@@ -250,9 +249,18 @@ export function getInGameName(): string | null {
   return _userName;
 }
 
+// Throws on transport failure so callers can tell "WFM did not answer" from
+// "WFM answered without the field"; getMe() below folds both into null.
+async function _requestMe(): Promise<WfmUserProfile | null> {
+  if (!_token) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped WFM v2 envelope
+  const data = (await requestV2("GET", "/me")) as Record<string, any>;
+  return (data?.data ?? null) as WfmUserProfile | null;
+}
+
 /** The account's own profile slug, which every self-addressed WFM route needs.
- *  Probed once per session and cached; name folding is only the fallback, and
- *  unlike the review path it may legitimately yield nothing to address. */
+ *  `/v2/me` mints it, so it is authoritative; it is read once per session and
+ *  cached, and folding the name is only the fallback for an absent answer. */
 export async function getProfileSlug(): Promise<string | null> {
   const name = _userName;
   if (!name) return null;
@@ -266,9 +274,12 @@ export async function getProfileSlug(): Promise<string | null> {
     const settle = (): void => {
       if (_profileSlugProbe === probe) _profileSlugProbe = null;
     };
-    probe = probeProfileSlug(name).then(
-      (slug) => {
+    probe = _requestMe().then(
+      (me) => {
         settle();
+        // WFM minted this, so the catalog allowlist is the gate that fits: it
+        // keeps path separators out of every self-addressed route below.
+        const slug = sanitizeWfmSlug(me?.slug);
         // Same reason: a late answer must not seed another account's slug.
         if (_userName === name) _profileSlug = slug ?? folded;
         return slug;
@@ -284,18 +295,15 @@ export async function getProfileSlug(): Promise<string | null> {
   try {
     return (await probe) ?? folded;
   } catch (err) {
-    // A transport failure is not an answer, so the next call may probe again.
-    log.warn("[WFMSession] Profile slug probe failed:", normalizeErrorMessage(err));
+    // A transport failure is not an answer, so the next call may ask again.
+    log.warn("[WFMSession] Profile slug lookup failed:", normalizeErrorMessage(err));
     return folded;
   }
 }
 
 export async function getMe(): Promise<WfmUserProfile | null> {
-  if (!_token) return null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped WFM v2 envelope
-    const data = (await requestV2("GET", "/me")) as Record<string, any>;
-    return (data?.data ?? null) as WfmUserProfile | null;
+    return await _requestMe();
   } catch (err) {
     log.warn("[WFMSession] getMe failed:", normalizeErrorMessage(err));
     return null;
