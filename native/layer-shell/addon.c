@@ -1,0 +1,425 @@
+// N-API wrapper around zwlr_layer_shell_v1, the only Wayland protocol that lets
+// a client choose its window's output and draw above a fullscreen game.
+// Every entry point is safe on a compositor that does not implement it: they
+// report unavailable rather than throwing, so the caller keeps its normal window.
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <poll.h>
+#include <node_api.h>
+#include <wayland-client.h>
+
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+#define MAX_OUTPUTS 16
+#define MAX_SURFACES 8
+#define BUFFER_SLOTS 2
+
+struct output_entry {
+  struct wl_output *output;
+  char name[64];
+};
+
+struct buffer_slot {
+  struct wl_buffer *buffer;
+  uint8_t *pixels;
+  size_t size;
+  int busy;
+};
+
+struct layer_window {
+  int used;
+  struct wl_surface *surface;
+  struct zwlr_layer_surface_v1 *layer;
+  struct buffer_slot slots[BUFFER_SLOTS];
+  int next_slot;
+  int width;
+  int height;
+  int configured;
+  int closed;
+};
+
+static struct wl_display *display = NULL;
+static struct wl_compositor *compositor = NULL;
+static struct wl_shm *shm = NULL;
+static struct zwlr_layer_shell_v1 *layer_shell = NULL;
+static struct output_entry outputs[MAX_OUTPUTS];
+static int output_count = 0;
+static struct layer_window windows[MAX_SURFACES];
+static int init_attempted = 0;
+static int init_ok = 0;
+
+static void noop_geometry(void *d, struct wl_output *o, int32_t x, int32_t y, int32_t pw,
+                          int32_t ph, int32_t sp, const char *make, const char *model, int32_t tr) {
+  (void)d; (void)o; (void)x; (void)y; (void)pw; (void)ph; (void)sp; (void)make; (void)model; (void)tr;
+}
+static void noop_mode(void *d, struct wl_output *o, uint32_t f, int32_t w, int32_t h, int32_t r) {
+  (void)d; (void)o; (void)f; (void)w; (void)h; (void)r;
+}
+static void noop_done(void *d, struct wl_output *o) { (void)d; (void)o; }
+static void noop_scale(void *d, struct wl_output *o, int32_t s) { (void)d; (void)o; (void)s; }
+static void on_output_name(void *data, struct wl_output *o, const char *name) {
+  (void)o;
+  struct output_entry *entry = data;
+  snprintf(entry->name, sizeof(entry->name), "%s", name);
+}
+static void noop_description(void *d, struct wl_output *o, const char *desc) {
+  (void)d; (void)o; (void)desc;
+}
+
+static const struct wl_output_listener output_listener = {
+    .geometry = noop_geometry,
+    .mode = noop_mode,
+    .done = noop_done,
+    .scale = noop_scale,
+    .name = on_output_name,
+    .description = noop_description,
+};
+
+static void on_global(void *data, struct wl_registry *registry, uint32_t id, const char *interface,
+                      uint32_t version) {
+  (void)data;
+  if (strcmp(interface, wl_compositor_interface.name) == 0) {
+    compositor = wl_registry_bind(registry, id, &wl_compositor_interface, 4);
+  } else if (strcmp(interface, wl_shm_interface.name) == 0) {
+    shm = wl_registry_bind(registry, id, &wl_shm_interface, 1);
+  } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
+    uint32_t want = version < 4 ? version : 4;
+    layer_shell = wl_registry_bind(registry, id, &zwlr_layer_shell_v1_interface, want);
+  } else if (strcmp(interface, wl_output_interface.name) == 0 && output_count < MAX_OUTPUTS &&
+             version >= 4) {
+    struct output_entry *entry = &outputs[output_count++];
+    entry->output = wl_registry_bind(registry, id, &wl_output_interface, 4);
+    entry->name[0] = '\0';
+    wl_output_add_listener(entry->output, &output_listener, entry);
+  }
+}
+
+static void on_global_remove(void *d, struct wl_registry *r, uint32_t id) {
+  (void)d; (void)r; (void)id;
+}
+
+static const struct wl_registry_listener registry_listener = {
+    .global = on_global,
+    .global_remove = on_global_remove,
+};
+
+static int ensure_init(void) {
+  if (init_attempted) return init_ok;
+  init_attempted = 1;
+  display = wl_display_connect(NULL);
+  if (!display) return 0;
+  struct wl_registry *registry = wl_display_get_registry(display);
+  wl_registry_add_listener(registry, &registry_listener, NULL);
+  wl_display_roundtrip(display);
+  // Second pass so the per-output name events land.
+  wl_display_roundtrip(display);
+  init_ok = compositor && shm && layer_shell;
+  return init_ok;
+}
+
+/** Non-blocking read plus dispatch. dispatch_pending alone only drains events
+ *  already read off the socket, so buffer releases would never arrive and both
+ *  shm slots would stay busy after the second frame. */
+static void pump_events(void) {
+  if (!display) return;
+  while (wl_display_prepare_read(display) != 0) {
+    wl_display_dispatch_pending(display);
+  }
+  wl_display_flush(display);
+  struct pollfd pfd = {.fd = wl_display_get_fd(display), .events = POLLIN, .revents = 0};
+  if (poll(&pfd, 1, 0) > 0 && (pfd.revents & POLLIN)) {
+    wl_display_read_events(display);
+  } else {
+    wl_display_cancel_read(display);
+  }
+  wl_display_dispatch_pending(display);
+}
+
+static void on_layer_configure(void *data, struct zwlr_layer_surface_v1 *layer, uint32_t serial,
+                               uint32_t width, uint32_t height) {
+  struct layer_window *win = data;
+  if (width > 0) win->width = (int)width;
+  if (height > 0) win->height = (int)height;
+  zwlr_layer_surface_v1_ack_configure(layer, serial);
+  win->configured = 1;
+}
+
+static void on_layer_closed(void *data, struct zwlr_layer_surface_v1 *layer) {
+  (void)layer;
+  struct layer_window *win = data;
+  win->closed = 1;
+}
+
+static const struct zwlr_layer_surface_v1_listener layer_listener = {
+    .configure = on_layer_configure,
+    .closed = on_layer_closed,
+};
+
+static void on_buffer_release(void *data, struct wl_buffer *buffer) {
+  (void)buffer;
+  struct buffer_slot *slot = data;
+  slot->busy = 0;
+}
+
+static const struct wl_buffer_listener buffer_listener = {.release = on_buffer_release};
+
+static int alloc_slot(struct buffer_slot *slot, int width, int height) {
+  size_t size = (size_t)width * (size_t)height * 4;
+  int fd = memfd_create("wfhelper-layer", MFD_CLOEXEC);
+  if (fd < 0) return 0;
+  if (ftruncate(fd, (off_t)size) < 0) {
+    close(fd);
+    return 0;
+  }
+  void *pixels = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (pixels == MAP_FAILED) {
+    close(fd);
+    return 0;
+  }
+  struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, (int32_t)size);
+  slot->buffer = wl_shm_pool_create_buffer(pool, 0, width, height, width * 4,
+                                           WL_SHM_FORMAT_ARGB8888);
+  wl_shm_pool_destroy(pool);
+  close(fd);
+  if (!slot->buffer) {
+    munmap(pixels, size);
+    return 0;
+  }
+  slot->pixels = pixels;
+  slot->size = size;
+  slot->busy = 0;
+  wl_buffer_add_listener(slot->buffer, &buffer_listener, slot);
+  return 1;
+}
+
+static void free_slot(struct buffer_slot *slot) {
+  if (slot->buffer) wl_buffer_destroy(slot->buffer);
+  if (slot->pixels) munmap(slot->pixels, slot->size);
+  memset(slot, 0, sizeof(*slot));
+}
+
+static napi_value Available(napi_env env, napi_callback_info info) {
+  (void)info;
+  napi_value out;
+  napi_get_boolean(env, ensure_init() ? true : false, &out);
+  return out;
+}
+
+static napi_value Outputs(napi_env env, napi_callback_info info) {
+  (void)info;
+  napi_value list;
+  napi_create_array(env, &list);
+  if (!ensure_init()) return list;
+  for (int i = 0; i < output_count; i++) {
+    napi_value name;
+    napi_create_string_utf8(env, outputs[i].name, NAPI_AUTO_LENGTH, &name);
+    napi_set_element(env, list, (uint32_t)i, name);
+  }
+  return list;
+}
+
+// create(outputName|null, width, height, anchor, marginTop, marginRight,
+//        marginBottom, marginLeft) -> handle, or -1
+static napi_value Create(napi_env env, napi_callback_info info) {
+  size_t argc = 8;
+  napi_value argv[8];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+
+  napi_value failed;
+  napi_create_int32(env, -1, &failed);
+  if (argc < 3 || !ensure_init()) return failed;
+
+  char wanted[64] = {0};
+  napi_valuetype type;
+  napi_typeof(env, argv[0], &type);
+  if (type == napi_string) {
+    size_t len = 0;
+    napi_get_value_string_utf8(env, argv[0], wanted, sizeof(wanted), &len);
+  }
+
+  int32_t width = 0, height = 0, anchor = 0, mt = 0, mr = 0, mb = 0, ml = 0;
+  napi_get_value_int32(env, argv[1], &width);
+  napi_get_value_int32(env, argv[2], &height);
+  if (argc > 3) napi_get_value_int32(env, argv[3], &anchor);
+  if (argc > 4) napi_get_value_int32(env, argv[4], &mt);
+  if (argc > 5) napi_get_value_int32(env, argv[5], &mr);
+  if (argc > 6) napi_get_value_int32(env, argv[6], &mb);
+  if (argc > 7) napi_get_value_int32(env, argv[7], &ml);
+  if (width <= 0 || height <= 0) return failed;
+
+  struct wl_output *target = NULL;
+  if (wanted[0]) {
+    for (int i = 0; i < output_count; i++) {
+      if (strcmp(outputs[i].name, wanted) == 0) {
+        target = outputs[i].output;
+        break;
+      }
+    }
+    // A named output that is gone is an error, not a silent move elsewhere.
+    if (!target) return failed;
+  }
+
+  int handle = -1;
+  for (int i = 0; i < MAX_SURFACES; i++) {
+    if (!windows[i].used) {
+      handle = i;
+      break;
+    }
+  }
+  if (handle < 0) return failed;
+
+  struct layer_window *win = &windows[handle];
+  memset(win, 0, sizeof(*win));
+  win->used = 1;
+  win->width = width;
+  win->height = height;
+
+  win->surface = wl_compositor_create_surface(compositor);
+  win->layer = zwlr_layer_shell_v1_get_layer_surface(
+      layer_shell, win->surface, target, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "wfhelper");
+  zwlr_layer_surface_v1_add_listener(win->layer, &layer_listener, win);
+  zwlr_layer_surface_v1_set_size(win->layer, (uint32_t)width, (uint32_t)height);
+  zwlr_layer_surface_v1_set_anchor(win->layer, (uint32_t)anchor);
+  zwlr_layer_surface_v1_set_margin(win->layer, mt, mr, mb, ml);
+  // -1 so the overlay never reserves space and shoves tiled windows aside.
+  zwlr_layer_surface_v1_set_exclusive_zone(win->layer, -1);
+  zwlr_layer_surface_v1_set_keyboard_interactivity(
+      win->layer, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+
+  struct wl_region *empty = wl_compositor_create_region(compositor);
+  wl_surface_set_input_region(win->surface, empty);
+  wl_region_destroy(empty);
+
+  wl_surface_commit(win->surface);
+  wl_display_roundtrip(display);
+
+  if (!win->configured || win->closed) {
+    zwlr_layer_surface_v1_destroy(win->layer);
+    wl_surface_destroy(win->surface);
+    memset(win, 0, sizeof(*win));
+    return failed;
+  }
+
+  for (int i = 0; i < BUFFER_SLOTS; i++) {
+    if (!alloc_slot(&win->slots[i], win->width, win->height)) {
+      for (int j = 0; j < i; j++) free_slot(&win->slots[j]);
+      zwlr_layer_surface_v1_destroy(win->layer);
+      wl_surface_destroy(win->surface);
+      memset(win, 0, sizeof(*win));
+      return failed;
+    }
+  }
+
+  napi_value out;
+  napi_create_int32(env, handle, &out);
+  return out;
+}
+
+// commit(handle, buffer) -> boolean. Never blocks on a roundtrip: this runs on
+// Electron's main thread and a stalled compositor must not freeze the app.
+static napi_value Commit(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value argv[2];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+
+  napi_value no, yes;
+  napi_get_boolean(env, false, &no);
+  napi_get_boolean(env, true, &yes);
+  if (argc < 2 || !init_ok) return no;
+
+  int32_t handle = -1;
+  napi_get_value_int32(env, argv[0], &handle);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) return no;
+  struct layer_window *win = &windows[handle];
+  if (win->closed) return no;
+
+  void *data = NULL;
+  size_t length = 0;
+  bool is_buffer = false;
+  napi_is_buffer(env, argv[1], &is_buffer);
+  if (!is_buffer) return no;
+  napi_get_buffer_info(env, argv[1], &data, &length);
+
+  size_t expected = (size_t)win->width * (size_t)win->height * 4;
+  if (!data || length < expected) return no;
+
+  pump_events();
+
+  struct buffer_slot *slot = &win->slots[win->next_slot];
+  // Both slots still held by the compositor means we are ahead of it; dropping
+  // this frame is correct, the next paint supersedes it anyway.
+  if (slot->busy) {
+    slot = &win->slots[(win->next_slot + 1) % BUFFER_SLOTS];
+    if (slot->busy) return no;
+  } else {
+    win->next_slot = (win->next_slot + 1) % BUFFER_SLOTS;
+  }
+
+  memcpy(slot->pixels, data, expected);
+  slot->busy = 1;
+  wl_surface_attach(win->surface, slot->buffer, 0, 0);
+  wl_surface_damage_buffer(win->surface, 0, 0, win->width, win->height);
+  wl_surface_commit(win->surface);
+  wl_display_flush(display);
+  return yes;
+}
+
+static napi_value Destroy(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value argv[1];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+
+  napi_value undefined;
+  napi_get_undefined(env, &undefined);
+  if (argc < 1 || !init_ok) return undefined;
+
+  int32_t handle = -1;
+  napi_get_value_int32(env, argv[0], &handle);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) return undefined;
+
+  struct layer_window *win = &windows[handle];
+  for (int i = 0; i < BUFFER_SLOTS; i++) free_slot(&win->slots[i]);
+  if (win->layer) zwlr_layer_surface_v1_destroy(win->layer);
+  if (win->surface) wl_surface_destroy(win->surface);
+  memset(win, 0, sizeof(*win));
+  wl_display_flush(display);
+  return undefined;
+}
+
+static napi_value IsClosed(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value argv[1];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+  napi_value out;
+  if (argc < 1 || !init_ok) {
+    napi_get_boolean(env, true, &out);
+    return out;
+  }
+  int32_t handle = -1;
+  napi_get_value_int32(env, argv[0], &handle);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) {
+    napi_get_boolean(env, true, &out);
+    return out;
+  }
+  pump_events();
+  napi_get_boolean(env, windows[handle].closed ? true : false, &out);
+  return out;
+}
+
+NAPI_MODULE_INIT() {
+  napi_property_descriptor props[] = {
+      {"available", NULL, Available, NULL, NULL, NULL, napi_default, NULL},
+      {"outputs", NULL, Outputs, NULL, NULL, NULL, napi_default, NULL},
+      {"create", NULL, Create, NULL, NULL, NULL, napi_default, NULL},
+      {"commit", NULL, Commit, NULL, NULL, NULL, napi_default, NULL},
+      {"destroy", NULL, Destroy, NULL, NULL, NULL, napi_default, NULL},
+      {"isClosed", NULL, IsClosed, NULL, NULL, NULL, napi_default, NULL},
+  };
+  napi_define_properties(env, exports, sizeof(props) / sizeof(props[0]), props);
+  return exports;
+}

@@ -1,0 +1,94 @@
+// Builds the optional Wayland layer-shell addon. Never wired into `pnpm install`
+// so Windows and macOS contributors never try to compile Wayland code, and it
+// always exits 0: a Linux box without the dev headers still gets an AppImage,
+// just one that falls back to ordinary overlay windows.
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const source = path.join(root, "native", "layer-shell");
+const outDir = path.join(source, "build");
+const protocolXml = path.join(source, "wlr-layer-shell-unstable-v1.xml");
+
+function skip(reason) {
+  console.log(`build-layer-shell: skipped (${reason})`);
+  process.exit(0);
+}
+
+function run(command, args, cwd) {
+  execFileSync(command, args, { cwd, stdio: "pipe" });
+}
+
+function capture(command, args) {
+  return execFileSync(command, args, { encoding: "utf8" }).trim();
+}
+
+if (process.platform !== "linux") skip(`platform ${process.platform}`);
+
+for (const tool of ["wayland-scanner", "pkg-config", "cc"]) {
+  try {
+    run("sh", ["-c", `command -v ${tool}`]);
+  } catch {
+    skip(`${tool} not installed`);
+  }
+}
+
+let xdgShellXml = "";
+try {
+  const dir = capture("pkg-config", ["--variable=pkgdatadir", "wayland-protocols"]);
+  xdgShellXml = path.join(dir, "stable", "xdg-shell", "xdg-shell.xml");
+  if (!fs.existsSync(xdgShellXml)) skip("xdg-shell.xml not found");
+} catch {
+  skip("wayland-protocols not installed");
+}
+
+const nodeHeaders = path.join(path.dirname(path.dirname(process.execPath)), "include", "node");
+const headerDirs = [nodeHeaders, "/usr/include/node", "/usr/local/include/node"];
+const includeDir = headerDirs.find((dir) => fs.existsSync(path.join(dir, "node_api.h")));
+if (!includeDir) skip("node_api.h not found");
+
+try {
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const generated = [];
+  for (const [xml, base] of [
+    [protocolXml, "wlr-layer-shell-unstable-v1"],
+    [xdgShellXml, "xdg-shell"],
+  ]) {
+    run("wayland-scanner", ["client-header", xml, path.join(outDir, `${base}-client-protocol.h`)]);
+    const code = path.join(outDir, `${base}-protocol.c`);
+    run("wayland-scanner", ["private-code", xml, code]);
+    generated.push(code);
+  }
+
+  const cflags = capture("pkg-config", ["--cflags", "wayland-client"]).split(/\s+/).filter(Boolean);
+  const libs = capture("pkg-config", ["--libs", "wayland-client"]).split(/\s+/).filter(Boolean);
+
+  run(
+    "cc",
+    [
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-shared",
+      "-fPIC",
+      "-o",
+      path.join(outDir, "layershell.node"),
+      path.join(source, "addon.c"),
+      ...generated,
+      `-I${includeDir}`,
+      `-I${outDir}`,
+      ...cflags,
+      ...libs,
+    ],
+    root,
+  );
+
+  console.log(`build-layer-shell: built ${path.join(outDir, "layershell.node")}`);
+} catch (err) {
+  // Deliberately not fatal. The addon is optional and the app works without it.
+  console.log(`build-layer-shell: skipped (${err?.message?.split("\n")[0] ?? "compile failed"})`);
+}
+process.exit(0);

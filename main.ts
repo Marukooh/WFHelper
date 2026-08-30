@@ -8,6 +8,7 @@ import path from "node:path";
 import { app, BrowserWindow, crashReporter, globalShortcut } from "electron";
 
 import * as linuxDisplay from "./services/linuxDisplayBackend";
+import { probeLayerShell } from "./services/layerShell";
 
 const DISPLAY_BACKEND = linuxDisplay.initialize(
   app.getPath("userData"),
@@ -607,6 +608,15 @@ void app.whenReady().then(async () => {
     );
   } else if (linuxDisplay.info().noXServer) {
     log.warn("[Display] no X server to join - the compositor owns overlay placement and stacking");
+  }
+
+  if (process.platform === "linux") {
+    // Diagnostic only for now. It is the one thing a bug report cannot tell us
+    // by inspection: whether this compositor offers the protocol at all.
+    const layerShell = probeLayerShell();
+    if (!layerShell) log.info("[LayerShell] addon not present in this build");
+    else if (!layerShell.available) log.info("[LayerShell] compositor does not offer the protocol");
+    else log.info(`[LayerShell] available, outputs: ${layerShell.outputs.join(", ") || "none"}`);
   }
 
   const sessionRestoreStart = Date.now();

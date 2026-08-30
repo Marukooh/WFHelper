@@ -15,6 +15,8 @@
     "dev": "pnpm run build:main && concurrently -k \"pnpm:dev:main\" \"pnpm:dev:preloads\" \"pnpm:dev:renderer\" \"pnpm:dev:electron\"",
     "verify:onnx-models": "node scripts/verify-onnx-models.mjs",
     "dist": "pnpm run verify:onnx-models && pnpm run build && electron-builder",
+    "dist:linux": "pnpm run build && node scripts/build-layer-shell.mjs && electron-builder --linux AppImage",
+    "build:layer-shell": "node scripts/build-layer-shell.mjs",
     "dist:win": "pnpm run verify:onnx-models && pnpm run build && electron-builder --win nsis",
     "check": "svelte-check --tsconfig tsconfig.json",
     "typecheck": "pnpm run typecheck:renderer && pnpm run typecheck:main && pnpm run typecheck:tests && pnpm run typecheck:e2e",
@@ -135,6 +137,7 @@
     },
     "files": [
       ".electron-build/**/*",
+      "native/layer-shell/build/*.node",
       "renderer/**/*",
       "assets/**/*",
       "src/data/itemNames/**/*",
@@ -161,7 +164,8 @@
     ],
     "asar": true,
     "asarUnpack": [
-      "node_modules/@img/**/*"
+      "node_modules/@img/**/*",
+      "native/layer-shell/build/*.node"
     ],
     "extraResources": [
       {
