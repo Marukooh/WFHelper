@@ -2,6 +2,7 @@ import ctx from "./context";
 import { registerTransientHotkey, unregisterTransientHotkey } from "./hotkeyRegistry";
 import { assertTradeNotificationSender, onAuthorized } from "./ipcSecurity";
 import { recordNotification } from "./notificationLogIpc";
+import { sendDesktopNotificationRaw } from "./worldStateIpc";
 import { withScope } from "../services/logger";
 import { hardenBrowserWindowNavigation } from "../services/windowSecurity";
 import * as wfmReviews from "../services/wfmReviews";
@@ -216,11 +217,16 @@ function _tradeHistoryBody(match: TradeMatchPayload): string {
   return `${quantity}${match.itemName}${platinum}${partner}`;
 }
 
-// The toast is a custom window, not an OS notification, so it has to log its
-// own history entry.
+// The toast is a custom window, so it logs its own history entry. The desktop
+// notification path logs for itself, hence the either/or.
 function _recordTradeHistory(pending: PendingTradeNotification): void {
   const title = TRADE_STATUS_TITLES[pending.status] ?? TRADE_STATUS_TITLES.detected;
-  recordNotification("trade", title, _tradeHistoryBody(pending.match));
+  const body = _tradeHistoryBody(pending.match);
+  if (ctx.overlaySettings.tradeDesktopNotificationsEnabled) {
+    sendDesktopNotificationRaw(title, body, "trade");
+    return;
+  }
+  recordNotification("trade", title, body);
 }
 
 function _displayNotification(

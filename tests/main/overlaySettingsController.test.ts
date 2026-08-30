@@ -134,6 +134,20 @@ describe("overlay settings controller", () => {
     ).toBe(12);
   });
 
+  it("keeps the trade desktop notification opt-in off unless it is set", () => {
+    const { controller } = buildController();
+
+    expect(controller.normalizeOverlaySettings({}).tradeDesktopNotificationsEnabled).toBe(false);
+    expect(
+      controller.normalizeOverlaySettings({ tradeDesktopNotificationsEnabled: true })
+        .tradeDesktopNotificationsEnabled,
+    ).toBe(true);
+    expect(
+      controller.normalizeOverlaySettings({ tradeDesktopNotificationsEnabled: false })
+        .tradeDesktopNotificationsEnabled,
+    ).toBe(false);
+  });
+
   it("normalizes notification sound and overlay availability settings", () => {
     const { controller } = buildController();
 

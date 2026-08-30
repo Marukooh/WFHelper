@@ -239,6 +239,7 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
         candidate.tradeNotificationSeconds,
         Number((defaults as Record<string, unknown>).tradeNotificationSeconds ?? 5),
       ),
+      tradeDesktopNotificationsEnabled: booleanSetting("tradeDesktopNotificationsEnabled"),
       wfmStatusHoldMinutes: normalizeWfmHoldMinutes(
         candidate.wfmStatusHoldMinutes,
         Number((defaults as Record<string, unknown>).wfmStatusHoldMinutes ?? 0),

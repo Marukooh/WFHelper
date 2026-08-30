@@ -23,6 +23,7 @@ const h = vi.hoisted(() => ({
   unregisterHotkey: vi.fn(),
   sendPlusRep: vi.fn(),
   recordNotification: vi.fn(),
+  sendDesktopNotification: vi.fn(),
 }));
 
 vi.mock("electron", () => {
@@ -119,6 +120,11 @@ vi.mock("../../ipc/notificationLogIpc", () => ({
   recordNotification: h.recordNotification,
 }));
 
+// Stubbed so the toast tests do not pull in the world-state module graph.
+vi.mock("../../ipc/worldStateIpc", () => ({
+  sendDesktopNotificationRaw: h.sendDesktopNotification,
+}));
+
 function sale(partner: string): TradeMatchPayload {
   return {
     kind: "order",
@@ -141,6 +147,7 @@ async function setup(overrides: Record<string, unknown> = {}) {
   h.unregisterHotkey.mockReset();
   h.sendPlusRep.mockReset();
   h.recordNotification.mockReset();
+  h.sendDesktopNotification.mockReset();
   h.registerHotkey.mockImplementation((accelerator: string, handler: () => void) => {
     h.hotkeys.set(accelerator, handler);
     return true;
@@ -210,7 +217,7 @@ describe("configured toast duration", () => {
 });
 
 describe("trade notification history", () => {
-  it("records one entry for the toast it shows", async () => {
+  it("records one entry and raises no OS notification while the opt-in is off", async () => {
     const { notifications } = await setup({ tradeRepHotkeyEnabled: false });
 
     notifications.showTradeNotification(sale("Buyer"), "closed");
@@ -222,6 +229,26 @@ describe("trade notification history", () => {
       "Listing Closed",
       "Ash Prime Chassis 45p with Buyer",
     );
+    expect(h.sendDesktopNotification).not.toHaveBeenCalled();
+  });
+
+  // The notification path records for itself, so recording here too would double up.
+  it("hands the entry to the OS notification once the opt-in is on", async () => {
+    const { notifications } = await setup({
+      tradeDesktopNotificationsEnabled: true,
+      tradeRepHotkeyEnabled: false,
+    });
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    h.windows[0].finishLoad();
+
+    expect(h.sendDesktopNotification).toHaveBeenCalledTimes(1);
+    expect(h.sendDesktopNotification).toHaveBeenCalledWith(
+      "Listing Closed",
+      "Ash Prime Chassis 45p with Buyer",
+      "trade",
+    );
+    expect(h.recordNotification).not.toHaveBeenCalled();
   });
 
   it("does not record a toast that was invalidated before the renderer was ready", async () => {
@@ -232,6 +259,7 @@ describe("trade notification history", () => {
     h.windows[0].finishLoad();
 
     expect(h.recordNotification).not.toHaveBeenCalled();
+    expect(h.sendDesktopNotification).not.toHaveBeenCalled();
   });
 });
 

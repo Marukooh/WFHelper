@@ -171,6 +171,7 @@
     "tradeRepHotkeyEnabled",
     "tradeRepHotkey",
     "tradeNotificationSeconds",
+    "tradeDesktopNotificationsEnabled",
     "tradeNotificationOverlayEnabled",
     "relicRewardsOverlayEnabled",
     "relicRecommendationOverlayEnabled",
@@ -464,6 +465,15 @@
                   bind:value={form.tradeNotificationSeconds}
                   on:change={autoSave}
                   class="settings-input"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.tradeDesktopNotifications")}>
+                <input
+                  type="checkbox"
+                  bind:checked={form.tradeDesktopNotificationsEnabled}
+                  on:change={autoSave}
+                  class="accent-accent"
                 />
               </SettingsRow>
 

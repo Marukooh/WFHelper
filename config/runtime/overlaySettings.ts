@@ -46,6 +46,8 @@ export interface OverlaySettings {
   tradeRepHotkey: string;
   /** Seconds the trade toast stays on screen before it fades. */
   tradeNotificationSeconds: number;
+  /** Also raise an OS notification on a trade; the in-game toast shows either way. */
+  tradeDesktopNotificationsEnabled: boolean;
   relicRewardsOverlayEnabled: boolean;
   relicRecommendationOverlayEnabled: boolean;
   tradeNotificationOverlayEnabled: boolean;
@@ -109,6 +111,8 @@ export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   tradeRepHotkeyEnabled: true,
   tradeRepHotkey: "F9",
   tradeNotificationSeconds: 5,
+  // Off by default: the in-game toast already covers the common case.
+  tradeDesktopNotificationsEnabled: false,
   relicRewardsOverlayEnabled: true,
   relicRecommendationOverlayEnabled: true,
   tradeNotificationOverlayEnabled: true,

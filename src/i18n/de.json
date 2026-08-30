@@ -390,6 +390,7 @@
   "settings.tradeDetectedOverlay": "Trade-erkannt-Overlay",
   "settings.tradeRepKeybind": "+1-Rep-Taste",
   "settings.tradeNotificationSeconds": "Anzeigedauer der Handelsbenachrichtigung (Sekunden)",
+  "settings.tradeDesktopNotifications": "Windows-Benachrichtigung bei Handel",
   "notifications.title": "Benachrichtigungsverlauf",
   "notifications.open": "Benachrichtigungsverlauf öffnen",
   "notifications.empty": "Noch nichts vorhanden",
