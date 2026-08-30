@@ -76,6 +76,7 @@ export const rewardWindowsController = createOverlayWindowsController({
   overlayWindowFile: OVERLAY_WINDOW_FILE,
   // fits a card whose set-part chips (30px icons) wrap to two rows + best bar
   windowHeight: 236,
+  windowTitle: "WFHelper Relic Rewards",
   windowStateKey: "reward",
   onWindowBoundsChanged: rememberOverlayWindowBounds,
 });
@@ -102,6 +103,7 @@ export const plannerWindowsController = createOverlayWindowsController({
   fileSearch: "mode=planner",
   transparent: false,
   backgroundColor: "#060a12",
+  windowTitle: "WFHelper Relic Planner",
   windowStateKey: "planner",
   onWindowBoundsChanged: rememberOverlayWindowBounds,
 });

@@ -113,6 +113,7 @@ const rivenLeftWindowsController = createOverlayWindowsController({
     _rivenInteractive = !!enabled;
   },
   windowLabel: "riven overlay left window",
+  windowTitle: "WFHelper Riven Scanner Left",
   fileSearch: "side=left",
   placement: "top-left",
   windowStateKey: "rivenLeft",
@@ -130,6 +131,7 @@ const rivenRightWindowsController = createOverlayWindowsController({
     _rivenInteractive = !!enabled;
   },
   windowLabel: "riven overlay right window",
+  windowTitle: "WFHelper Riven Scanner Right",
   fileSearch: "side=right",
   placement: "top-right",
   windowStateKey: "rivenRight",

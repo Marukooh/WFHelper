@@ -71,6 +71,9 @@ type OverlayWindowsControllerOptions = {
   ) => void;
   overlayWindowFile: string;
   windowLabel?: string;
+  /** Stable, untranslated window title. Compositor rules match on it, so it
+   *  must not follow the UI language or a user's rule breaks on a switch. */
+  windowTitle?: string;
   preloadFileName?: string;
   fileSearch?: string;
   placement?: "center" | "top-left" | "top-right";
@@ -154,6 +157,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     hardenBrowserWindowNavigation,
     overlayWindowFile,
     windowLabel = "overlay window",
+    windowTitle,
     preloadFileName = "preload-overlay.js",
     fileSearch,
     placement = "center",
@@ -685,6 +689,13 @@ export function createOverlayWindowsController(options: OverlayWindowsController
         sandbox: true,
       },
     });
+
+    if (windowTitle) {
+      createdWindow.setTitle(windowTitle);
+      // The overlays share one html file, so the page title cannot tell them
+      // apart; hold ours so each window stays individually addressable.
+      createdWindow.on("page-title-updated", (event) => event.preventDefault());
+    }
 
     // Edge drags stay proportional, so any edge scales the overlay uniformly
     // instead of stretching a layout that only the zoom factor can resize.

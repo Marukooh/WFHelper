@@ -247,6 +247,9 @@ function _getOrCreateWindow(): InstanceType<typeof BrowserWindow> {
   const win = new BrowserWindow({
     // Notification windows prevent Linux focus-on-map for non-interactive toasts.
     ...(process.platform === "linux" ? { type: "notification" } : {}),
+    // Untranslated on purpose: compositor window rules match on the title, so it
+    // must not move when the UI language does.
+    title: "WFHelper Trade Notification",
     width: WIN_W,
     height: WIN_H,
     x: dX + dW - WIN_W - MARGIN,

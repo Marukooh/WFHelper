@@ -287,6 +287,7 @@ function createPresentationProbe(options: {
   transparent?: boolean;
   neverClickThrough?: boolean;
   tiling?: boolean;
+  windowTitle?: string;
 }) {
   const display = {
     id: 1,
@@ -318,6 +319,8 @@ function createPresentationProbe(options: {
     show = vi.fn(() => {
       this.visible = true;
     });
+    setTitle = vi.fn();
+
     hide = vi.fn(() => {
       this.visible = false;
     });
@@ -367,6 +370,7 @@ function createPresentationProbe(options: {
     platform: options.platform,
     isNativeWayland: () => options.nativeWayland,
     isTilingCompositor: () => options.tiling === true,
+    windowTitle: options.windowTitle,
   });
 
   const contentEvents = (win: FakePresentationWindow) =>
@@ -379,6 +383,13 @@ function createPresentationProbe(options: {
 function fireWindowEvent(win: { on: Mock }, event: string): void {
   for (const [name, handler] of win.on.mock.calls) {
     if (name === event) (handler as () => void)();
+  }
+}
+
+/** Same, for the handlers that take an event object. */
+function fireWindowEventWith(win: { on: Mock }, event: string, arg: unknown): void {
+  for (const [name, handler] of win.on.mock.calls) {
+    if (name === event) (handler as (value: unknown) => void)(arg);
   }
 }
 
@@ -1321,5 +1332,31 @@ describe("overlayHideDueIn", () => {
     vi.advanceTimersByTime(3_000);
 
     expect(controller.overlayHideDueIn()).toBeNull();
+  });
+});
+
+describe("window title", () => {
+  it("names the window and holds the name against the page", () => {
+    const probe = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      windowTitle: "WFHelper Relic Rewards",
+    });
+    probe.controller.createOverlayWindow();
+    const win = probe.windows[0];
+
+    expect(win.setTitle).toHaveBeenCalledWith("WFHelper Relic Rewards");
+    // Two overlays share one html file, so the page title would collapse them
+    // back into one name and no compositor rule could tell them apart.
+    const prevented = vi.fn();
+    fireWindowEventWith(win, "page-title-updated", { preventDefault: prevented });
+    expect(prevented).toHaveBeenCalled();
+  });
+
+  it("leaves the title alone when none is configured", () => {
+    const probe = createPresentationProbe({ platform: "win32", nativeWayland: false });
+    probe.controller.createOverlayWindow();
+
+    expect(probe.windows[0].setTitle).not.toHaveBeenCalled();
   });
 });
