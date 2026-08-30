@@ -48,6 +48,12 @@
   </p>
 </div>
 
+{#if info?.noXServer}
+  <p class="mt-2 text-[var(--font-small-size,0.82rem)] text-warning">
+    {$tr("settings.linuxDisplayNoXServer")}
+  </p>
+{/if}
+
 <div class="mt-2.5 flex flex-wrap gap-2">
   {#each OPTIONS as option (option.value)}
     <button

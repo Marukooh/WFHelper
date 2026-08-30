@@ -9,6 +9,10 @@ export interface LinuxDisplayInfo {
   fallbackActive: boolean;
   /** Raised once per remembered failure; the renderer toasts on it. */
   fallbackHint: boolean;
+  /** Wayland with no X server to join, so overlays cannot be placed at all. */
+  noXServer: boolean;
+  /** Raised the first time that is seen; the renderer toasts on it. */
+  noXServerHint: boolean;
 }
 
 export function isDisplayPreference(value: unknown): value is DisplayPreference {

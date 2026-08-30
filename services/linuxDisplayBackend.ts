@@ -15,6 +15,7 @@ interface DisplayState {
   xwaylandFailed?: boolean;
   failedVersion?: string;
   hintShown?: boolean;
+  noXServerHintShown?: boolean;
   preference?: DisplayPreference;
 }
 
@@ -25,6 +26,8 @@ let _waylandSession = false;
 let _pinned = false;
 let _fallbackActive = false;
 let _fallbackHint = false;
+let _noXServer = false;
+let _noXServerHint = false;
 let _tiling = false;
 
 // These turn off the keep-mapped overlay hide; ipc/overlay/keepMapped.ts says why.
@@ -90,6 +93,8 @@ export function initialize(
   _waylandSession = false;
   _fallbackActive = false;
   _fallbackHint = false;
+  _noXServer = false;
+  _noXServerHint = false;
   _tiling = false;
   if (platform !== "linux") return _active;
   if (!env.WAYLAND_DISPLAY && env.XDG_SESSION_TYPE !== "wayland") return _active;
@@ -126,6 +131,14 @@ export function initialize(
       _fallbackHint = true;
       writeState({ ...state, hintShown: true });
     }
+  } else {
+    // Wayland with nothing to join, so overlays get neither placement nor a
+    // stack above the game. Say so once: starting an X server fixes all of it.
+    _noXServer = true;
+    if (!state.noXServerHintShown) {
+      _noXServerHint = true;
+      writeState({ ...state, noXServerHintShown: true });
+    }
   }
   return _active;
 }
@@ -146,6 +159,8 @@ export function info(): LinuxDisplayInfo {
     active: _active,
     fallbackActive: _fallbackActive,
     fallbackHint: _fallbackHint,
+    noXServer: _noXServer,
+    noXServerHint: _noXServerHint,
   };
 }
 
@@ -158,6 +173,8 @@ export function applyPreference(value: unknown): LinuxDisplayInfo {
     active: _active,
     fallbackActive: _fallbackActive,
     fallbackHint: _fallbackHint,
+    noXServer: _noXServer,
+    noXServerHint: _noXServerHint,
   };
 }
 

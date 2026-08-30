@@ -119,16 +119,24 @@ export function initRendererEvents(): () => void {
   void refreshInventoryModifiedAt();
   void loadNotificationHistory();
 
-  // Main raises fallbackHint once per remembered XWayland failure.
+  // Main raises each hint once: XWayland failed here, or there is no X server.
   void invoke("getLinuxDisplay").then((display) => {
-    if (!display?.fallbackHint) return;
     const t = get(tr);
-    addToast({
-      level: "warning",
-      title: t("app.overlayFallbackTitle"),
-      message: t("app.overlayFallbackMessage"),
-      durationMs: 15000,
-    });
+    if (display?.fallbackHint) {
+      addToast({
+        level: "warning",
+        title: t("app.overlayFallbackTitle"),
+        message: t("app.overlayFallbackMessage"),
+        durationMs: 15000,
+      });
+    } else if (display?.noXServerHint) {
+      addToast({
+        level: "warning",
+        title: t("app.overlayNoXServerTitle"),
+        message: t("app.overlayNoXServerMessage"),
+        durationMs: 20000,
+      });
+    }
   });
 
   return () => {

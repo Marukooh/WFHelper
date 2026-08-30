@@ -171,6 +171,42 @@ describe("fallback hint", () => {
   });
 });
 
+describe("no x server", () => {
+  it("reports it and raises the hint exactly once when DISPLAY is unset", () => {
+    const bare = { XDG_SESSION_TYPE: "wayland", WAYLAND_DISPLAY: "wayland-1" };
+
+    start(bare);
+    expect(info().noXServer).toBe(true);
+    expect(info().noXServerHint).toBe(true);
+
+    start(bare);
+    expect(info().noXServer).toBe(true);
+    expect(info().noXServerHint).toBe(false);
+  });
+
+  it("reports it when DISPLAY names a server nobody is serving", () => {
+    setXSocket(false);
+
+    expect(start(WAYLAND)).toBe("auto");
+    expect(info().noXServer).toBe(true);
+  });
+
+  it("stays quiet once XWayland is joined", () => {
+    expect(start(WAYLAND)).toBe("x11");
+    expect(info().noXServer).toBe(false);
+    expect(info().noXServerHint).toBe(false);
+  });
+
+  it("stays quiet on the remembered-failure fallback, which has its own hint", () => {
+    remember({ xwaylandFailed: true, failedVersion: "1.0.0" });
+
+    start(WAYLAND);
+
+    expect(info().fallbackActive).toBe(true);
+    expect(info().noXServer).toBe(false);
+  });
+});
+
 describe("applyPreference", () => {
   it("pins a backend across restarts and clears the remembered failure", () => {
     remember({ xwaylandFailed: true, failedVersion: "1.0.0" });
