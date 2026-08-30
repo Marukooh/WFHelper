@@ -64,7 +64,10 @@ export function toFiniteOr(value: unknown, fallback: number = 0): number {
 export function clampNumber(value: number, min: number, max: number): number;
 export function clampNumber(value: unknown, min: number, max: number, fallback: number): number;
 export function clampNumber(value: unknown, min: number, max: number, fallback?: number): number {
-  const n = fallback !== undefined ? Number(value) : (value as number);
+  // Number(null) and Number("") are both 0, which is finite, so an absent value
+  // would clamp up to the range floor instead of reaching the fallback.
+  const absent = value == null || (typeof value === "string" && value.trim().length === 0);
+  const n = fallback !== undefined ? (absent ? Number.NaN : Number(value)) : (value as number);
   if (!Number.isFinite(n)) {
     if (fallback === undefined) {
       throw new TypeError(`clampNumber: value must be finite, got ${String(value)}`);
