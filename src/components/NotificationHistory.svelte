@@ -25,6 +25,7 @@
         >
         <button
           class="btn-secondary btn-sm !px-2"
+          data-notification-close
           aria-label={$tr("common.close")}
           title={$tr("common.close")}
           onclick={onClose}>&times;</button

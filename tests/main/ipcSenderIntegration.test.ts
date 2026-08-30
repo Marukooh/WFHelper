@@ -42,8 +42,9 @@ describe("IPC sender guard integration", () => {
     });
 
     // register() guards against double-registration; only __test__.reset() re-arms it.
-    expect(handle).toHaveBeenCalledTimes(1);
-    expect(handle.mock.calls[0]?.[0]).toBe("get-world-state");
+    const firstPass = handle.mock.calls.map((call) => call[0]);
+    expect(firstPass).toContain("get-world-state");
+    expect(new Set(firstPass).size).toBe(firstPass.length);
 
     worldStateIpc.__test__.reset();
     worldStateIpc.register({
@@ -51,7 +52,7 @@ describe("IPC sender guard integration", () => {
       Notification: MockNotification,
     });
 
-    expect(handle).toHaveBeenCalledTimes(2);
+    expect(handle).toHaveBeenCalledTimes(firstPass.length * 2);
   });
 
   it("blocks unauthorized sender through registered world-state handler", async () => {

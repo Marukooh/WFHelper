@@ -7,7 +7,11 @@ import { withScope } from "../services/logger";
 import * as worldStateParser from "../services/worldStateParser";
 import { resolveRuntimeResourcePath } from "../services/runtimeResources";
 import { normalizeErrorMessage } from "../config/shared/errors";
-import { DB_GET_WORLD_STATE, WORLD_STATE_FETCH_ERROR } from "../config/shared/ipcChannels";
+import {
+  DB_GET_WORLD_STATE,
+  NOTIFICATION_TEST,
+  WORLD_STATE_FETCH_ERROR,
+} from "../config/shared/ipcChannels";
 import { execFile } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
@@ -674,6 +678,17 @@ function register(
   const ipc = options.ipcMain || electronModule.ipcMain;
   if (!ipc || typeof ipc.handle !== "function") {
     throw new Error("IPC main bridge is unavailable");
+  }
+
+  // Settings needs a way to see a notification without waiting for a cycle, a
+  // whisper or a trade. It bypasses the per-feature gates, so it exists only
+  // where the dev-mode button that calls it does.
+  if (!electronModule.app?.isPackaged) {
+    ipc.handle(NOTIFICATION_TEST, async (event: unknown) => {
+      assertAuthorizedSender(assertMainRendererSender, event as never, NOTIFICATION_TEST);
+      sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+      return true;
+    });
   }
 
   ipc.handle(DB_GET_WORLD_STATE, async (event: unknown) => {

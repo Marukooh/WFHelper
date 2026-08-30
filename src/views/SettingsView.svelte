@@ -45,6 +45,7 @@
   import { TOGGLEABLE_TABS, tabVisibility } from "../stores/sidebarTabs.js";
   import type { ToggleableView } from "../types/views.js";
   import { startTour } from "../stores/tour.js";
+  import { devMode } from "../stores/devMode.js";
   import { currentView } from "../stores/app.js";
   import type { InventorySource, OverlaySettings, OverlayWindowKey } from "../types/ipc.js";
 
@@ -428,6 +429,19 @@
                   class="settings-input"
                 />
               </SettingsRow>
+
+              {#if $devMode}
+                <SettingsRow label={$tr("settings.testNotification")}>
+                  <button
+                    type="button"
+                    class="btn-secondary btn-sm"
+                    data-test-notification
+                    on:click={() => void invoke("sendTestNotification")}
+                  >
+                    {$tr("common.send")}
+                  </button>
+                </SettingsRow>
+              {/if}
 
               <SettingsRow label={$tr("settings.wfmDmNotifications")}>
                 <input

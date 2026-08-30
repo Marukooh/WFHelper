@@ -66,3 +66,25 @@ test("clearing empties the list and the badge", async () => {
   await expect(page.locator("[data-notification-entry]")).toHaveCount(0);
   await expect(page.locator(".bell-count")).toHaveCount(0);
 });
+
+test("the settings test button records a notification", async () => {
+  const { page } = harness;
+
+  // The previous test left the history modal open over the sidebar.
+  await page.locator("[data-notification-close]").click();
+  await expect(page.locator("[data-notification-history]")).toHaveCount(0);
+
+  await page.locator('#sidebar [data-view="settings"]').click();
+  // Dev-only button; the sandbox runs unpackaged, so it appears once the runtime
+  // info resolves.
+  await page.locator("[data-test-notification]").click();
+
+  const bell = page.locator("[data-notification-open]");
+  await expect(bell.locator(".bell-count")).toHaveText("1");
+
+  await bell.click();
+  await expect(page.locator("[data-notification-entry]")).toHaveCount(1);
+  await expect(page.locator("[data-notification-entry]").first()).toContainText(
+    "Test notification",
+  );
+});

@@ -64,6 +64,7 @@ import {
   LOG_WARN,
   NOTIFICATION_HISTORY_GET,
   NOTIFICATION_HISTORY_CLEAR,
+  NOTIFICATION_TEST,
   NOTIFICATION_HISTORY_ADDED,
   RANKED_HOTSET_LOAD,
   RANKED_HOTSET_SAVE,
@@ -204,6 +205,7 @@ try {
 
     getNotificationHistory: inv<"getNotificationHistory">(NOTIFICATION_HISTORY_GET),
     clearNotificationHistory: inv<"clearNotificationHistory">(NOTIFICATION_HISTORY_CLEAR),
+    sendTestNotification: inv<"sendTestNotification">(NOTIFICATION_TEST),
     onNotificationHistoryAdded: ipcDataBridge<IpcEventMap["notification-history-added"]>(
       ipcRenderer,
       NOTIFICATION_HISTORY_ADDED,

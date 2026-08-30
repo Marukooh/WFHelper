@@ -324,6 +324,10 @@ export interface IpcInvokeMap {
     args: [];
     return: void;
   };
+  sendTestNotification: {
+    args: [];
+    return: boolean;
+  };
   loadRankedHotset: {
     args: [];
     return: Record<string, unknown> | null;
