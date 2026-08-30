@@ -323,7 +323,12 @@ function logStartupPaths(profileStage: ProfileStage): void {
   // Printed so a support request can name the exact file instead of guessing.
   log.info(`[Startup] logFile: ${getLogFilePath() || "unknown"}`);
   if (process.platform === "linux") {
-    log.info(`[Startup] display=${DISPLAY_BACKEND} gpu=${GPU_ACCELERATION_ENABLED ? "on" : "off"}`);
+    // tiling is printed because it decides whether overlays unmap or stay
+    // mapped, which is the first thing to check in a linux overlay report.
+    log.info(
+      `[Startup] display=${DISPLAY_BACKEND} gpu=${GPU_ACCELERATION_ENABLED ? "on" : "off"}` +
+        ` tiling=${linuxDisplay.isTilingCompositor()}`,
+    );
   }
   reportSessionHealth(profileStage);
 }

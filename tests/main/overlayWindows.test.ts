@@ -286,6 +286,7 @@ function createPresentationProbe(options: {
   nativeWayland: boolean;
   transparent?: boolean;
   neverClickThrough?: boolean;
+  tiling?: boolean;
 }) {
   const display = {
     id: 1,
@@ -365,6 +366,7 @@ function createPresentationProbe(options: {
     neverClickThrough: options.neverClickThrough === true,
     platform: options.platform,
     isNativeWayland: () => options.nativeWayland,
+    isTilingCompositor: () => options.tiling === true,
   });
 
   const contentEvents = (win: FakePresentationWindow) =>
@@ -427,6 +429,16 @@ describe("keep-mapped presentation mode (native Wayland)", () => {
       // Planner, riven and arbi request an opaque window; linux overrides that.
       { platform: "linux" as const, nativeWayland: true, transparent: false, keepMapped: true },
       { platform: "linux" as const, nativeWayland: true, keepMapped: true },
+      // niri leaves a blanked window on screen still taking clicks, so there the
+      // overlay has to unmap for real however transparent it is.
+      { platform: "linux" as const, nativeWayland: true, tiling: true, keepMapped: false },
+      {
+        platform: "linux" as const,
+        nativeWayland: true,
+        transparent: false,
+        tiling: true,
+        keepMapped: false,
+      },
     ];
     for (const testCase of cases) {
       const probe = createPresentationProbe(testCase);

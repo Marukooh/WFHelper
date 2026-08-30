@@ -9,6 +9,7 @@ import {
   info,
   initialize,
   isNativeWayland,
+  isTilingCompositor,
   isXServerReachable,
   rememberXWaylandFailure,
 } from "../../services/linuxDisplayBackend";
@@ -247,5 +248,57 @@ describe("remembered failure", () => {
     forgetXWaylandFailure();
 
     expect(recalled().preference).toBe("x11");
+  });
+});
+
+describe("tiling compositor detection", () => {
+  // niri keeps a blanked keep-mapped overlay on screen as a floating window, so
+  // it still takes clicks instead of disappearing.
+  it.each(["niri", "sway", "Hyprland", "river", "dwl"])("recognises %s", (desktop) => {
+    setXSocket(false);
+    start({ ...WAYLAND, DISPLAY: undefined, XDG_CURRENT_DESKTOP: desktop });
+
+    expect(isNativeWayland()).toBe(true);
+    expect(isTilingCompositor()).toBe(true);
+  });
+
+  it("leaves a stacking desktop alone", () => {
+    setXSocket(false);
+    start({ ...WAYLAND, DISPLAY: undefined, XDG_CURRENT_DESKTOP: "GNOME" });
+
+    expect(isNativeWayland()).toBe(true);
+    expect(isTilingCompositor()).toBe(false);
+  });
+
+  it("reads the session desktop when the current desktop is unset", () => {
+    setXSocket(false);
+    start({ ...WAYLAND, DISPLAY: undefined, XDG_SESSION_DESKTOP: "niri" });
+
+    expect(isTilingCompositor()).toBe(true);
+  });
+
+  it("stays false off Wayland", () => {
+    start({ XDG_CURRENT_DESKTOP: "niri" }, "win32");
+
+    expect(isTilingCompositor()).toBe(false);
+  });
+
+  // Launched from a tty there is no session script, so the desktop vars are
+  // empty and only the compositor's own ipc variable names it.
+  it.each([
+    ["NIRI_SOCKET", "/run/user/1000/niri.wayland-1.sock"],
+    ["SWAYSOCK", "/run/user/1000/sway-ipc.sock"],
+    ["HYPRLAND_INSTANCE_SIGNATURE", "abc123_1700000000"],
+  ])("recognises a bare %s session", (name, value) => {
+    setXSocket(false);
+    start({ ...WAYLAND, DISPLAY: undefined, [name]: value });
+
+    expect(isTilingCompositor()).toBe(true);
+  });
+
+  it("ignores a stale ipc variable off Wayland", () => {
+    start({ NIRI_SOCKET: "/run/user/1000/niri.wayland-1.sock" }, "win32");
+
+    expect(isTilingCompositor()).toBe(false);
   });
 });

@@ -25,6 +25,21 @@ let _waylandSession = false;
 let _pinned = false;
 let _fallbackActive = false;
 let _fallbackHint = false;
+let _tiling = false;
+
+// These turn off the keep-mapped overlay hide; ipc/overlay/keepMapped.ts says why.
+const TILING_COMPOSITORS = /(^|:)(niri|sway|hyprland|river|dwl)(:|$)/i;
+// XDG_CURRENT_DESKTOP is written by the session script a display manager runs,
+// which a compositor started bare from a tty never sees. These are exported by
+// the compositor itself for its own ipc, so they survive that launch.
+const TILING_IPC_VARS = ["NIRI_SOCKET", "SWAYSOCK", "HYPRLAND_INSTANCE_SIGNATURE"] as const;
+
+function detectTiling(env: Record<string, string | undefined>): boolean {
+  if (TILING_IPC_VARS.some((name) => env[name])) return true;
+  return TILING_COMPOSITORS.test(
+    `${env.XDG_CURRENT_DESKTOP ?? ""}:${env.XDG_SESSION_DESKTOP ?? ""}`,
+  );
+}
 
 function statePath(): string {
   return path.join(_userDataDir, STATE_FILE);
@@ -75,9 +90,11 @@ export function initialize(
   _waylandSession = false;
   _fallbackActive = false;
   _fallbackHint = false;
+  _tiling = false;
   if (platform !== "linux") return _active;
   if (!env.WAYLAND_DISPLAY && env.XDG_SESSION_TYPE !== "wayland") return _active;
   _waylandSession = true;
+  _tiling = detectTiling(env);
 
   // An explicit ozone flag in argv is what chromium actually runs; it beats every
   // stored choice, else keep-mapped hides can run against real X11 windows.
@@ -116,6 +133,11 @@ export function initialize(
 /** Wayland session and the app did not join XWayland - overlays map natively. */
 export function isNativeWayland(): boolean {
   return _waylandSession && _active !== "x11";
+}
+
+/** One of the named tiling compositors - see ipc/overlay/keepMapped.ts. */
+export function isTilingCompositor(): boolean {
+  return _tiling;
 }
 
 export function info(): LinuxDisplayInfo {

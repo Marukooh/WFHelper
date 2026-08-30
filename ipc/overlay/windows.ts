@@ -2,7 +2,10 @@ import path from "node:path";
 import { clampNumber } from "../../config/shared/numeric";
 import { baseZoomForDisplay } from "../../config/runtime/uiScale";
 import { OVERLAY_CONTENT_VISIBLE } from "../../config/shared/ipcChannels";
-import { isNativeWayland as linuxIsNativeWayland } from "../../services/linuxDisplayBackend";
+import {
+  isNativeWayland as linuxIsNativeWayland,
+  isTilingCompositor as linuxIsTilingCompositor,
+} from "../../services/linuxDisplayBackend";
 import { createKeepMappedMode } from "./keepMapped";
 import type {
   OverlaySavedWindowBounds,
@@ -93,6 +96,7 @@ type OverlayWindowsControllerOptions = {
   onWindowCreated?: (window: import("electron").BrowserWindow) => void;
   platform?: NodeJS.Platform;
   isNativeWayland?: () => boolean;
+  isTilingCompositor?: () => boolean;
 };
 
 interface MovableWindow {
@@ -167,6 +171,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     onWindowCreated,
     platform = process.platform,
     isNativeWayland = linuxIsNativeWayland,
+    isTilingCompositor = linuxIsTilingCompositor,
   } = options;
 
   // Every linux overlay is transparent whatever the caller asked for: only a
@@ -196,6 +201,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     transparent: transparentWindow,
     platform,
     isNativeWayland,
+    isTilingCompositor,
     log,
   });
 

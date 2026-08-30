@@ -1,4 +1,7 @@
-import { isNativeWayland as linuxIsNativeWayland } from "../../services/linuxDisplayBackend";
+import {
+  isNativeWayland as linuxIsNativeWayland,
+  isTilingCompositor as linuxIsTilingCompositor,
+} from "../../services/linuxDisplayBackend";
 
 interface KeepMappedWindow {
   isVisible: () => boolean;
@@ -14,6 +17,7 @@ interface KeepMappedOptions {
   transparent: boolean;
   platform?: NodeJS.Platform;
   isNativeWayland?: () => boolean;
+  isTilingCompositor?: () => boolean;
   log?: { info?: (...args: unknown[]) => void };
 }
 
@@ -26,12 +30,16 @@ export function createKeepMappedMode(options: KeepMappedOptions) {
     transparent,
     platform = process.platform,
     isNativeWayland = linuxIsNativeWayland,
+    isTilingCompositor = linuxIsTilingCompositor,
     log,
   } = options;
   let logged = false;
 
+  // Tiling compositors are excluded: they do not honour setIgnoreMouseEvents, so
+  // a blanked window stays on screen as a floating window that still takes the
+  // clicks meant for the game. Unmapping for real is the lesser evil there.
   function isActive(): boolean {
-    return platform === "linux" && transparent && isNativeWayland();
+    return platform === "linux" && transparent && isNativeWayland() && !isTilingCompositor();
   }
 
   function logOnce(): void {
