@@ -20,6 +20,8 @@ interface ElectronTestHarnessOptions {
   lang?: string;
   /** Leave app-language unset so detectLocale() falls through to the OS locale. */
   skipLanguageSeed?: boolean;
+  /** JSON files to drop into userData before launch, keyed by file name. */
+  userDataFiles?: Record<string, unknown>;
 }
 
 export interface ElectronTestHarness {
@@ -43,6 +45,9 @@ export async function launchElectronTestHarness(
     path.join(helperDir, "inventory.json"),
     JSON.stringify(options.inventory ?? { Suits: [] }),
   );
+  for (const [name, contents] of Object.entries(options.userDataFiles ?? {})) {
+    fs.writeFileSync(path.join(userData, name), JSON.stringify(contents));
+  }
 
   const env = { ...process.env } as Record<string, string>;
   delete env.ELECTRON_RUN_AS_NODE;
