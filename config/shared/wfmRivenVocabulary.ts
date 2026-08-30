@@ -60,7 +60,7 @@ const POLARITY_TO_WFM: Record<string, string> = {
   naramon: "naramon",
 };
 
-/** Folds a polarity to the WFM vocabulary; null for one WFM would reject. */
+/** Folds a polarity to the WFM vocabulary; null for anything WFM has no name for. */
 export function polarityToWfm(value: string | null | undefined): string | null {
   const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
   return POLARITY_TO_WFM[raw] ?? null;
