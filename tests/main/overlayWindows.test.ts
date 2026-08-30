@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { OVERLAY_CONTENT_VISIBLE } from "../../config/shared/ipcChannels";
 
@@ -288,6 +288,7 @@ function createPresentationProbe(options: {
   neverClickThrough?: boolean;
   tiling?: boolean;
   windowTitle?: string;
+  placeOnGameOutput?: (title: string) => Promise<boolean>;
 }) {
   const display = {
     id: 1,
@@ -371,6 +372,7 @@ function createPresentationProbe(options: {
     isNativeWayland: () => options.nativeWayland,
     isTilingCompositor: () => options.tiling === true,
     windowTitle: options.windowTitle,
+    placeOnGameOutput: options.placeOnGameOutput,
   });
 
   const contentEvents = (win: FakePresentationWindow) =>
@@ -1332,6 +1334,64 @@ describe("overlayHideDueIn", () => {
     vi.advanceTimersByTime(3_000);
 
     expect(controller.overlayHideDueIn()).toBeNull();
+  });
+});
+
+describe("compositor placement", () => {
+  async function probeWithPlacer(
+    nativeWayland: boolean,
+    placeOnGameOutput: (title: string) => Promise<boolean>,
+    platform: typeof process.platform = "linux",
+  ) {
+    const probe = createPresentationProbe({
+      platform,
+      nativeWayland,
+      windowTitle: "WFHelper Relic Rewards",
+      placeOnGameOutput,
+    });
+    probe.controller.createOverlayWindow();
+    await vi.advanceTimersByTimeAsync(2000);
+    return probe;
+  }
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("asks the compositor for the game's output on native Wayland", async () => {
+    const place = vi.fn(async () => true);
+
+    await probeWithPlacer(true, place);
+
+    expect(place).toHaveBeenCalledWith("WFHelper Relic Rewards");
+    // A compositor that placed the window is not asked a second time.
+    expect(place).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks again when the first try lands before the window is mapped", async () => {
+    const place = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true);
+
+    await probeWithPlacer(true, place);
+
+    expect(place).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up rather than asking forever", async () => {
+    const place = vi.fn(async () => false);
+
+    await probeWithPlacer(true, place);
+
+    expect(place).toHaveBeenCalledTimes(2);
+  });
+
+  it("stays quiet on XWayland and off linux, where setPosition works", async () => {
+    const onXWayland = vi.fn(async () => true);
+    const onWindows = vi.fn(async () => true);
+
+    await probeWithPlacer(false, onXWayland);
+    await probeWithPlacer(false, onWindows, "win32");
+
+    expect(onXWayland).not.toHaveBeenCalled();
+    expect(onWindows).not.toHaveBeenCalled();
   });
 });
 

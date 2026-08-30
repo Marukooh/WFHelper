@@ -12,6 +12,7 @@ import {
   setClickThrough,
 } from "./clickThrough";
 import { createKeepMappedMode } from "./keepMapped";
+import { placeWindowOnGameOutput } from "../../services/waylandCompositor";
 import type {
   OverlaySavedWindowBounds,
   OverlayWindowKey,
@@ -102,6 +103,7 @@ type OverlayWindowsControllerOptions = {
   platform?: NodeJS.Platform;
   isNativeWayland?: () => boolean;
   isTilingCompositor?: () => boolean;
+  placeOnGameOutput?: (title: string) => Promise<boolean>;
 };
 
 interface MovableWindow {
@@ -178,6 +180,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     platform = process.platform,
     isNativeWayland = linuxIsNativeWayland,
     isTilingCompositor = linuxIsTilingCompositor,
+    placeOnGameOutput = placeWindowOnGameOutput,
   } = options;
 
   // Every linux overlay is transparent whatever the caller asked for: only a
@@ -490,6 +493,23 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     });
   }
 
+  // A map is not instant on Wayland, so the compositor may not know the window
+  // yet on the first ask. The second attempt is what usually lands.
+  const PLACEMENT_ATTEMPT_DELAYS_MS = [120, 500];
+
+  /** Native Wayland ignores setPosition, so the compositor is asked to move the
+   *  window to the game's output instead. Never awaited: a show must not block
+   *  on a socket, and a compositor that says no leaves the window as it was. */
+  async function placeOverlayOnGameOutput(): Promise<void> {
+    if (platform !== "linux" || !windowTitle || !isNativeWayland()) return;
+    for (const delay of PLACEMENT_ATTEMPT_DELAYS_MS) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      const overlayWindow = readOverlayWindow();
+      if (!overlayWindow || overlayWindow.isDestroyed() || !overlayWindow.isVisible()) return;
+      if (await placeOnGameOutput(windowTitle)) return;
+    }
+  }
+
   function keepOverlayAboveGame(overlayWindow: import("electron").BrowserWindow): void {
     overlayWindow.setSkipTaskbar(true);
     overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -644,6 +664,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
           // is definitely in the visible stack before we raise it.
           existingWindow.moveTop();
           keepOverlayAboveGame(existingWindow);
+          void placeOverlayOnGameOutput();
           const bounds = existingWindow.getBounds();
           const visible = existingWindow.isVisible();
           log.warn(
@@ -726,6 +747,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       keepOverlayAboveGame(createdWindow);
       createdWindow.moveTop();
       keepOverlayAboveGame(createdWindow);
+      void placeOverlayOnGameOutput();
       if (isKeepMappedActive()) keepMapped.present(createdWindow, setKeepMappedContentVisible);
       setOverlayInteractiveMode(readInteractiveMode());
       const reassertClickThrough = scheduleClickThroughReassert(
