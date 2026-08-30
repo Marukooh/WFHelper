@@ -35,6 +35,7 @@ const REP_VISIBLE_MS = 12_000;
 const REP_RESULT_VISIBLE_MS = 4_000;
 const RENDERER_FADE_MS = 400;
 const MAIN_HIDE_BUFFER_MS = 600;
+const CLICK_THROUGH_REASSERT_DELAYS_MS = [250, 1_500];
 
 export interface TradeNotificationShowPayload {
   match: TradeMatchPayload;
@@ -66,17 +67,42 @@ function _setContentVisible(win: InstanceType<typeof BrowserWindow>): (visible: 
   return (visible) => win.webContents.send(OVERLAY_CONTENT_VISIBLE, visible);
 }
 
+// Wayland drops a window's input shape when it maps one, and a keep-mapped hide
+// leaves the blanked toast mapped, so the shape has to be re-set on both edges or
+// an invisible toast swallows clicks meant for the game.
+function _applyClickThrough(win: InstanceType<typeof BrowserWindow>): void {
+  // Re-setting an identical shape tells the compositor nothing; drop it first.
+  if (process.platform === "linux") win.setIgnoreMouseEvents(false);
+  win.setIgnoreMouseEvents(true);
+}
+
+// A shape set in the same breath as the show lands before the window is mapped
+// and is lost, exactly as it is for the overlays, so it is re-asserted after.
+function _reassertClickThrough(win: InstanceType<typeof BrowserWindow>): void {
+  if (process.platform !== "linux") return;
+  for (const delay of CLICK_THROUGH_REASSERT_DELAYS_MS) {
+    setTimeout(() => {
+      if (!win.isDestroyed()) _applyClickThrough(win);
+    }, delay);
+  }
+}
+
 function _presentWindow(win: InstanceType<typeof BrowserWindow>): void {
   if (_keepMapped.isActive()) {
     _keepMapped.present(win, _setContentVisible(win));
-    return;
+  } else {
+    win.showInactive();
+    win.moveTop();
   }
-  win.showInactive();
-  win.moveTop();
+  _applyClickThrough(win);
+  _reassertClickThrough(win);
 }
 
 function _hideWindow(win: InstanceType<typeof BrowserWindow>): void {
-  if (_keepMapped.hide(win, _setContentVisible(win))) return;
+  if (_keepMapped.hide(win, _setContentVisible(win))) {
+    _applyClickThrough(win);
+    return;
+  }
   win.hide();
 }
 

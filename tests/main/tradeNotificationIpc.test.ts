@@ -11,11 +11,13 @@ interface SentMessage {
 interface WindowStub {
   hidden: boolean;
   sent: SentMessage[];
+  ignoreMouse: boolean[];
   finishLoad: () => void;
 }
 
 const h = vi.hoisted(() => ({
   windows: [] as WindowStub[],
+  keepMappedActive: false,
   hotkeys: new Map<string, () => void>(),
   registerHotkey: vi.fn(),
   unregisterHotkey: vi.fn(),
@@ -26,6 +28,7 @@ vi.mock("electron", () => {
   class BrowserWindow {
     hidden = false;
     sent: SentMessage[] = [];
+    ignoreMouse: boolean[] = [];
     private finishLoadHandler: (() => void) | null = null;
     webContents = {
       send: (channel: string, payload: unknown) => this.sent.push({ channel, payload }),
@@ -60,7 +63,9 @@ vi.mock("electron", () => {
 
     moveTop() {}
     setAlwaysOnTop() {}
-    setIgnoreMouseEvents() {}
+    setIgnoreMouseEvents(value: boolean) {
+      this.ignoreMouse.push(value);
+    }
     setVisibleOnAllWorkspaces() {}
 
     on(_event: string, _handler: () => void) {}
@@ -72,6 +77,20 @@ vi.mock("electron", () => {
     screen: { getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1920 } }) },
   };
 });
+
+// Native Wayland keeps the toast mapped while it is logically hidden.
+vi.mock("../../ipc/overlay/keepMapped", () => ({
+  createKeepMappedMode: () => ({
+    isActive: () => h.keepMappedActive,
+    present: (_win: unknown, setContentVisible: (visible: boolean) => void) =>
+      setContentVisible(true),
+    hide: (_win: unknown, setContentVisible: (visible: boolean) => void) => {
+      if (!h.keepMappedActive) return false;
+      setContentVisible(false);
+      return true;
+    },
+  }),
+}));
 
 vi.mock("../../ipc/hotkeyRegistry", () => ({
   registerTransientHotkey: h.registerHotkey,
@@ -142,10 +161,70 @@ async function flushPromises(): Promise<void> {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  h.keepMappedActive = false;
 });
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+// A blanked toast is still mapped on native Wayland, so it kept swallowing
+// clicks over the game after the notification had visually gone.
+describe("native Wayland toast", () => {
+  const realPlatform = process.platform;
+  const setPlatform = (value: string): void => {
+    Object.defineProperty(process, "platform", { value, configurable: true });
+  };
+  afterEach(() => setPlatform(realPlatform));
+
+  it("drops the input shape again once the toast is hidden", async () => {
+    h.keepMappedActive = true;
+    setPlatform("linux");
+    const { notifications } = await setup();
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    const win = h.windows[0];
+    win.finishLoad();
+    // Let the post-map re-asserts land before watching what the hide does.
+    vi.advanceTimersByTime(2_000);
+    win.ignoreMouse.length = 0;
+
+    vi.advanceTimersByTime(60_000);
+
+    // Dropped and re-set: an identical shape tells the compositor nothing.
+    expect(win.ignoreMouse).toEqual([false, true]);
+    expect(win.sent.at(-1)).toMatchObject({ channel: "overlay-content-visible", payload: false });
+  });
+
+  // XWayland and X11 take the ordinary show path, where the shape set at build
+  // time was already lost to the first map.
+  it("re-asserts the input shape after the map on the ordinary show path", async () => {
+    setPlatform("linux");
+    const { notifications } = await setup();
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    const win = h.windows[0];
+    win.ignoreMouse.length = 0;
+    win.finishLoad();
+
+    expect(win.ignoreMouse).toEqual([false, true]);
+
+    vi.advanceTimersByTime(2_000);
+
+    expect(win.ignoreMouse).toEqual([false, true, false, true, false, true]);
+  });
+
+  it("keeps the window mapped instead of hiding it", async () => {
+    h.keepMappedActive = true;
+    const { notifications } = await setup();
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    const win = h.windows[0];
+    win.finishLoad();
+    vi.advanceTimersByTime(60_000);
+
+    expect(win.hidden).toBe(false);
+  });
 });
 
 describe("trade notification reputation lifecycle", () => {
