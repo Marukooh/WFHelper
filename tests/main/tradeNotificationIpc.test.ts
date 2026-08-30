@@ -182,8 +182,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// A blanked toast is still mapped on native Wayland, so it kept swallowing
-// clicks over the game after the notification had visually gone.
 describe("configured toast duration", () => {
   it("shows a plain toast for the configured seconds", async () => {
     const { notifications } = await setup({

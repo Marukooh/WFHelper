@@ -12,7 +12,10 @@ import {
   TRADE_NOTIFICATION_REP_RESULT,
   OVERLAY_CONTENT_VISIBLE,
 } from "../config/shared/ipcChannels";
+import { scheduleClickThroughReassert, setClickThrough } from "./overlay/clickThrough";
 import { createKeepMappedMode } from "./overlay/keepMapped";
+import { tradeNotificationBody, tradeNotificationTitle } from "../config/shared/notifications";
+import { durationMsFromSeconds } from "../config/shared/numeric";
 import { resolveRepOffer } from "../config/shared/tradeMatch";
 import type {
   TradeMatchPayload,
@@ -37,7 +40,6 @@ const REP_VISIBLE_MS = 12_000;
 const REP_RESULT_VISIBLE_MS = 4_000;
 const RENDERER_FADE_MS = 400;
 const MAIN_HIDE_BUFFER_MS = 600;
-const CLICK_THROUGH_REASSERT_DELAYS_MS = [250, 1_500];
 
 export interface TradeNotificationShowPayload {
   match: TradeMatchPayload;
@@ -65,33 +67,8 @@ let _notificationRevision = 0;
 // blank-the-DOM hide the overlay controllers use on native Wayland.
 const _keepMapped = createKeepMappedMode({ label: "TradeNotification", transparent: true, log });
 
-function _configuredVisibleMs(): number {
-  const seconds = Number(ctx.overlaySettings.tradeNotificationSeconds);
-  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : DEFAULT_VISIBLE_MS;
-}
-
 function _setContentVisible(win: InstanceType<typeof BrowserWindow>): (visible: boolean) => void {
   return (visible) => win.webContents.send(OVERLAY_CONTENT_VISIBLE, visible);
-}
-
-// Wayland drops a window's input shape when it maps one, and a keep-mapped hide
-// leaves the blanked toast mapped, so the shape has to be re-set on both edges or
-// an invisible toast swallows clicks meant for the game.
-function _applyClickThrough(win: InstanceType<typeof BrowserWindow>): void {
-  // Re-setting an identical shape tells the compositor nothing; drop it first.
-  if (process.platform === "linux") win.setIgnoreMouseEvents(false);
-  win.setIgnoreMouseEvents(true);
-}
-
-// A shape set in the same breath as the show lands before the window is mapped
-// and is lost, exactly as it is for the overlays, so it is re-asserted after.
-function _reassertClickThrough(win: InstanceType<typeof BrowserWindow>): void {
-  if (process.platform !== "linux") return;
-  for (const delay of CLICK_THROUGH_REASSERT_DELAYS_MS) {
-    setTimeout(() => {
-      if (!win.isDestroyed()) _applyClickThrough(win);
-    }, delay);
-  }
 }
 
 function _presentWindow(win: InstanceType<typeof BrowserWindow>): void {
@@ -101,13 +78,17 @@ function _presentWindow(win: InstanceType<typeof BrowserWindow>): void {
     win.showInactive();
     win.moveTop();
   }
-  _applyClickThrough(win);
-  _reassertClickThrough(win);
+  setClickThrough(win, true);
+  // Only a linux map drops the shape the call above just set.
+  if (process.platform === "linux") {
+    scheduleClickThroughReassert(win, () => setClickThrough(win, true));
+  }
 }
 
 function _hideWindow(win: InstanceType<typeof BrowserWindow>): void {
   if (_keepMapped.hide(win, _setContentVisible(win))) {
-    _applyClickThrough(win);
+    // The blanked toast stays mapped, so it would swallow clicks over the game.
+    setClickThrough(win, true);
     return;
   }
   win.hide();
@@ -200,28 +181,11 @@ function _scheduleHide(win: InstanceType<typeof BrowserWindow>, delayMs: number)
   }, delayMs);
 }
 
-// English on purpose: history entries are stored, and a translated string would
-// freeze in whatever language wrote it. These mirror the toast status labels.
-const TRADE_STATUS_TITLES: Record<TradeNotificationStatus, string> = {
-  closed: "Listing Closed",
-  "no-match": "No Listing Matched",
-  "close-failed": "Closing Failed",
-  detected: "Trade Finished",
-};
-
-function _tradeHistoryBody(match: TradeMatchPayload): string {
-  const quantity = match.quantity > 1 ? `${match.quantity}x ` : "";
-  const priced = (match.type === "sale" || match.type === "purchase") && match.platinum > 0;
-  const platinum = priced ? ` ${match.platinum}p` : "";
-  const partner = match.partner ? ` with ${match.partner}` : "";
-  return `${quantity}${match.itemName}${platinum}${partner}`;
-}
-
 // The toast is a custom window, so it logs its own history entry. The desktop
 // notification path logs for itself, hence the either/or.
 function _recordTradeHistory(pending: PendingTradeNotification): void {
-  const title = TRADE_STATUS_TITLES[pending.status] ?? TRADE_STATUS_TITLES.detected;
-  const body = _tradeHistoryBody(pending.match);
+  const title = tradeNotificationTitle(pending.status);
+  const body = tradeNotificationBody(pending.match);
   if (ctx.overlaySettings.tradeDesktopNotificationsEnabled) {
     sendDesktopNotificationRaw(title, body, "trade");
     return;
@@ -241,7 +205,10 @@ function _displayNotification(
   const rep = offer && _armRepOffer(offer, pending.revision) ? offer : null;
   // A rep offer never gets less than the time it takes to reach the keybind, so a
   // short configured duration shortens the plain toast only.
-  const configuredMs = _configuredVisibleMs();
+  const configuredMs = durationMsFromSeconds(
+    ctx.overlaySettings.tradeNotificationSeconds,
+    DEFAULT_VISIBLE_MS,
+  );
   const payload: TradeNotificationShowPayload = {
     match: pending.match,
     status: pending.status,

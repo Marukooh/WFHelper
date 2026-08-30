@@ -1,5 +1,6 @@
 import ctx from "./context";
 import { assertArbiSummarySender, onAuthorized } from "./ipcSecurity";
+import { setClickThrough } from "./overlay/clickThrough";
 import {
   createOverlayWindowBoundsChangeHandler,
   createOverlayWindowsController,
@@ -79,7 +80,7 @@ export function isArbiSummaryWindow(win: InstanceType<typeof BrowserWindow>): bo
 function makeClickable(): void {
   const win = ctx.arbiSummaryWindow;
   if (!win || win.isDestroyed()) return;
-  win.setIgnoreMouseEvents(false);
+  setClickThrough(win, false);
 }
 
 function hideArbiSummary(): void {

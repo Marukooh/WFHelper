@@ -6,14 +6,16 @@ import {
   isNativeWayland as linuxIsNativeWayland,
   isTilingCompositor as linuxIsTilingCompositor,
 } from "../../services/linuxDisplayBackend";
+import {
+  CLICK_THROUGH_REASSERT_DELAYS_MS,
+  scheduleClickThroughReassert,
+  setClickThrough,
+} from "./clickThrough";
 import { createKeepMappedMode } from "./keepMapped";
 import type {
   OverlaySavedWindowBounds,
   OverlayWindowKey,
 } from "../../config/runtime/overlaySettings";
-
-// Two passes: one right after the map, one late enough for a slow compositor.
-const CLICK_THROUGH_REASSERT_DELAYS_MS = [250, 1_500];
 
 // Shared with the z-order poll: re-stacking a window in its last seconds before a
 // queued hide is what crashed under injected hooks. Lives here to keep zOrder.ts
@@ -497,12 +499,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   function applyClickThrough(overlayWindow: import("electron").BrowserWindow, force = false): void {
     if (neverClickThrough && !force) return;
     clickThroughApplied = true;
-    // Re-setting an identical X11 input shape tells the compositor nothing, so the
-    // region is dropped first - that is the transition F7 makes by hand.
-    if (platform === "linux") overlayWindow.setIgnoreMouseEvents(false);
-    // Never {forward:true}: on Windows it installs a global WH_MOUSE_LL hook
-    // that taxes every mouse event system-wide - it lagged the game's input.
-    overlayWindow.setIgnoreMouseEvents(true);
+    setClickThrough(overlayWindow, true, platform);
   }
 
   // X11 never hands input back after click-through: setIgnoreMouseEvents(false)
@@ -553,21 +550,6 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     );
   }
 
-  // Click-through set in the same breath as the first show lands before X maps
-  // the window and is lost, so passive mode is re-asserted once it is up.
-  function scheduleClickThroughReassert(overlayWindow: import("electron").BrowserWindow): void {
-    let reassertLogged = false;
-    const reassert = (): void => {
-      if (overlayWindow.isDestroyed() || readInteractiveMode()) return;
-      applyClickThrough(overlayWindow);
-      if (reassertLogged) return;
-      reassertLogged = true;
-      log.info?.(`[OverlayWindow] ${windowLabel} click-through re-asserted after map`);
-    };
-    overlayWindow.webContents.once("did-finish-load", reassert);
-    for (const delay of CLICK_THROUGH_REASSERT_DELAYS_MS) setTimeout(reassert, delay);
-  }
-
   function setKeepMappedContentVisible(visible: boolean): void {
     logicalVisible = visible;
     sendOverlayEvent(OVERLAY_CONTENT_VISIBLE, visible);
@@ -578,7 +560,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     keepOverlayAboveGame(overlayWindow);
     // Blanking forces click-through even on a never-click-through window, so
     // restoring the content has to hand its input back.
-    if (neverClickThrough) overlayWindow.setIgnoreMouseEvents(false);
+    if (neverClickThrough) setClickThrough(overlayWindow, false, platform);
   }
 
   function isWebContentsCrashed(webContents: import("electron").WebContents): boolean {
@@ -734,7 +716,16 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       keepOverlayAboveGame(createdWindow);
       if (isKeepMappedActive()) keepMapped.present(createdWindow, setKeepMappedContentVisible);
       setOverlayInteractiveMode(readInteractiveMode());
-      scheduleClickThroughReassert(createdWindow);
+      const reassertClickThrough = scheduleClickThroughReassert(
+        createdWindow,
+        () => applyClickThrough(createdWindow),
+        {
+          skip: readInteractiveMode,
+          onFirstPass: () =>
+            log.info?.(`[OverlayWindow] ${windowLabel} click-through re-asserted after map`),
+        },
+      );
+      createdWindow.webContents.once("did-finish-load", reassertClickThrough);
       if (!isKeepMappedActive()) scheduleRaiseReassert(createdWindow);
     }
     createdWindow.on("closed", () => {
@@ -897,7 +888,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     // Input flags apply even while hidden. Skipping them desynced the window from
     // the mode, so a hotkey press during a scan left the overlay click-through.
     if (interactive) {
-      overlayWindow.setIgnoreMouseEvents(false);
+      setClickThrough(overlayWindow, false, platform);
       overlayWindow.setFocusable(true);
     } else {
       applyClickThrough(overlayWindow);
