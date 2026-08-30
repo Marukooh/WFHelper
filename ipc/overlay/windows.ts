@@ -507,8 +507,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
 
   // X11 never hands input back after click-through: setIgnoreMouseEvents(false)
   // leaves the empty input shape, so the window must be rebuilt to take clicks.
+  // Wayland either honours the change or never applied the shape in the first place.
   function needsRebuildForInteractive(): boolean {
-    return platform === "linux" && clickThroughApplied && !isKeepMappedActive();
+    return platform === "linux" && clickThroughApplied && !isNativeWayland();
   }
 
   function rebuildForInteractive(): void {

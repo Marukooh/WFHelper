@@ -849,6 +849,27 @@ describe("keep-mapped presentation mode (native Wayland)", () => {
     expect(fresh.hide).toHaveBeenCalled();
   });
 
+  it("keeps the window on a native-Wayland tiling compositor going interactive", () => {
+    // Keep-mapped mode is off on niri and friends, which is not a reason to
+    // rebuild: only X11 refuses to hand the input shape back.
+    const { controller, windows } = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      tiling: true,
+    });
+
+    controller.createOverlayWindow();
+    controller.markRendererReady(1);
+    const win = windows[0];
+    expect(win.setIgnoreMouseEvents).toHaveBeenCalledWith(true);
+
+    controller.setOverlayInteractiveMode(true);
+
+    expect(windows).toHaveLength(1);
+    expect(win.destroy).not.toHaveBeenCalled();
+    expect(win.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
+  });
+
   it("keeps interactive mode on the same window off linux", () => {
     const { controller, windows } = createPresentationProbe({
       platform: "win32",
