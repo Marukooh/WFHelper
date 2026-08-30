@@ -7,6 +7,7 @@ import { withScope } from "../services/logger";
 import * as worldStateParser from "../services/worldStateParser";
 import { resolveRuntimeResourcePath } from "../services/runtimeResources";
 import { normalizeErrorMessage } from "../config/shared/errors";
+import { durationMsFromSeconds } from "../config/shared/numeric";
 import {
   DB_GET_WORLD_STATE,
   NOTIFICATION_TEST,
@@ -200,11 +201,6 @@ let _toastTagCounter = 0;
  *  screen until it is pulled, so this is what the user actually sees. */
 const TOAST_DISMISS_MS = 5_000;
 
-function _toastDismissMs(): number {
-  const seconds = Number(ctx.overlaySettings?.windowsNotificationSeconds);
-  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : TOAST_DISMISS_MS;
-}
-
 const SHOW_TOAST_SCRIPT = [
   "param([string]$XmlPath, [string]$Tag, [string]$Group, [string]$AppId)",
   "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null",
@@ -323,6 +319,11 @@ function sendWindowsToast(title: string, body: string): void {
   // The toast is silent (incomingCall would otherwise ring); play the sound here.
   playNotificationSound();
 
+  const dismissMs = durationMsFromSeconds(
+    ctx.overlaySettings?.windowsNotificationSeconds,
+    TOAST_DISMISS_MS,
+  );
+
   // Auto-dismiss: remove the toast from the notification center after the
   // banner display time so it doesn't stick around like a phone call.
   setTimeout(() => {
@@ -346,7 +347,7 @@ function sendWindowsToast(title: string, body: string): void {
         fs.unlink(removeScriptPath, () => {});
       },
     );
-  }, _toastDismissMs());
+  }, dismissMs);
 }
 
 // Keep references to active notifications to prevent GC before display.
@@ -357,9 +358,10 @@ function sendDesktopNotification(title: string, body: string): void {
   sendDesktopNotificationRaw(title, body, "world");
 }
 
-/** Sends a toast for callers that apply their own settings gate.
- *  History is recorded before the platform gate so a system that cannot show
- *  the toast still leaves the user something to read back. */
+/** Sends a toast for callers that apply their own settings gate. History is
+ *  recorded before the platform gate, so a caller that reaches here still leaves
+ *  an entry on a system that cannot show toasts. World events check that gate
+ *  themselves and never call in, so those record nothing. */
 export function sendDesktopNotificationRaw(
   title: string,
   body: string,

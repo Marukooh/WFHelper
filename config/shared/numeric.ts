@@ -47,6 +47,13 @@ export function isCacheEntryFresh(
   return isTimestampFresh(record[timestampKey], status === "ok" ? okTtlMs : noDataTtlMs);
 }
 
+/** A configured duration in seconds -> milliseconds, falling back when the
+ *  setting is missing or not a positive number. */
+export function durationMsFromSeconds(value: unknown, fallbackMs: number): number {
+  const seconds = toFiniteNumber(value);
+  return seconds != null && seconds > 0 ? seconds * 1000 : fallbackMs;
+}
+
 /** Like {@link toFiniteNumber}, but returns a fallback instead of `null`. */
 export function toFiniteOr(value: unknown, fallback: number = 0): number {
   const n = toFiniteNumber(value);
