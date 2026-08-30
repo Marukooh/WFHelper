@@ -2,7 +2,7 @@ import { withScope } from "./logger";
 import { normalizeErrorMessage } from "../config/shared/errors";
 
 import { request, requestV2 } from "./wfmClient";
-import { getInGameName } from "./wfmSession";
+import { getInGameName, getProfileSlug } from "./wfmSession";
 import { toNonEmptyString } from "../config/shared/stringValidation";
 import { toFiniteNumber } from "../config/shared/numeric";
 import { formatWfmAssetUrl, titleFromSlug } from "../config/shared/wfm";
@@ -37,7 +37,9 @@ interface ExtractedContracts extends PageInfo {
 interface EndpointCandidate {
   name: string;
   api: "v1" | "v2";
-  path: string;
+  /** Built from the account slug when `needsSlug`; the argument is ignored otherwise. */
+  path: (profileSlug: string) => string;
+  needsSlug: boolean;
 }
 
 function firstNonEmpty(...values: unknown[]): string | null {
@@ -248,71 +250,65 @@ function buildQuery(page: number, limit: number): string {
   return query ? `?${query}` : "";
 }
 
-function endpointCandidates(
-  userName: string | null,
-  page: number,
-  limit: number,
-): EndpointCandidate[] {
+// A slug-bearing route takes the slug WFM minted for the account, never the
+// in-game name: lowercasing a name that carries punctuation builds a profile
+// path that does not exist.
+function endpointCandidates(page: number, limit: number): EndpointCandidate[] {
   const query = buildQuery(page, limit);
-  const encodedUser = encodeURIComponent((userName || "").toLowerCase());
+  const slugged = (build: (user: string) => string) => (profileSlug: string) =>
+    build(encodeURIComponent(profileSlug));
 
-  const candidates: EndpointCandidate[] = [];
-
-  candidates.push({
-    name: "v1_my_profile_auctions",
-    api: "v1",
-    path: `/profile/auctions${query}`,
-  });
-
-  if (encodedUser) {
-    candidates.push({
+  return [
+    {
+      name: "v1_my_profile_auctions",
+      api: "v1",
+      path: () => `/profile/auctions${query}`,
+      needsSlug: false,
+    },
+    {
       name: "v1_profile_auctions",
       api: "v1",
-      path: `/profile/${encodedUser}/auctions${query}`,
-    });
-  }
-
-  candidates.push(
+      path: slugged((user) => `/profile/${user}/auctions${query}`),
+      needsSlug: true,
+    },
     {
       name: "v2_contracts_my",
       api: "v2",
-      path: `/contracts/my${query}`,
+      path: () => `/contracts/my${query}`,
+      needsSlug: false,
     },
     {
       name: "v2_auctions_my",
       api: "v2",
-      path: `/auctions/my${query}`,
+      path: () => `/auctions/my${query}`,
+      needsSlug: false,
     },
-  );
-
-  if (encodedUser) {
-    candidates.push(
-      {
-        name: "v2_profile_contracts",
-        api: "v2",
-        path: `/profile/${encodedUser}/contracts${query}`,
-      },
-      {
-        name: "v2_profile_auctions",
-        api: "v2",
-        path: `/profile/${encodedUser}/auctions${query}`,
-      },
-      {
-        name: "v1_profile_contracts",
-        api: "v1",
-        path: `/profile/${encodedUser}/contracts${query}`,
-      },
-    );
-  }
-
-  return candidates;
+    {
+      name: "v2_profile_contracts",
+      api: "v2",
+      path: slugged((user) => `/profile/${user}/contracts${query}`),
+      needsSlug: true,
+    },
+    {
+      name: "v2_profile_auctions",
+      api: "v2",
+      path: slugged((user) => `/profile/${user}/auctions${query}`),
+      needsSlug: true,
+    },
+    {
+      name: "v1_profile_contracts",
+      api: "v1",
+      path: slugged((user) => `/profile/${user}/contracts${query}`),
+      needsSlug: true,
+    },
+  ];
 }
 
-async function invokeCandidate(candidate: EndpointCandidate): Promise<unknown> {
-  if (candidate.api === "v2") {
-    return requestV2("GET", candidate.path);
+async function invokeCandidate(api: "v1" | "v2", path: string): Promise<unknown> {
+  if (api === "v2") {
+    return requestV2("GET", path);
   }
-  return request("GET", candidate.path);
+  return request("GET", path);
 }
 
 function isSkippableError(err: unknown): boolean {
@@ -335,7 +331,7 @@ export async function getMyContracts({
     Math.min(MAX_LIMIT, Math.round(toFiniteNumber(limit) || DEFAULT_LIMIT)),
   );
 
-  const candidates = endpointCandidates(getInGameName(), safePage, safeLimit);
+  const candidates = endpointCandidates(safePage, safeLimit);
   if (_resolvedEndpointName) {
     candidates.sort((a, b) => {
       if (a.name === _resolvedEndpointName) return -1;
@@ -345,15 +341,29 @@ export async function getMyContracts({
   }
 
   let lastError: unknown = null;
+  // Resolving the account slug costs a request of its own, so it waits until a
+  // route that needs it is actually reached; undefined means "not asked yet".
+  let profileSlug: string | null | undefined;
 
   for (const candidate of candidates) {
+    let slugForPath = "";
+    if (candidate.needsSlug) {
+      if (profileSlug === undefined) profileSlug = await getProfileSlug();
+      if (!profileSlug) continue;
+      slugForPath = profileSlug;
+    }
+    const path = candidate.path(slugForPath);
+
     try {
-      const data = await invokeCandidate(candidate);
+      const data = await invokeCandidate(candidate.api, path);
       const extracted = extractContracts(data);
       const contracts = extracted.rows
         .map(normalizeContract)
         .filter((row): row is WfmContract => row != null);
 
+      if (_resolvedEndpointName !== candidate.name) {
+        log.info(`[WFMContracts] Resolved endpoint: ${candidate.name}`);
+      }
       _resolvedEndpointName = candidate.name;
       return {
         contracts,
@@ -372,7 +382,7 @@ export async function getMyContracts({
 
       if (isSkippableError(err)) {
         log.info(
-          `[WFMContracts] ${candidate.api.toUpperCase()} ${candidate.path} unavailable (${(err as Record<string, unknown>).status})`,
+          `[WFMContracts] ${candidate.api.toUpperCase()} ${path} unavailable (${(err as Record<string, unknown>).status})`,
         );
         if (_resolvedEndpointName === candidate.name) {
           _resolvedEndpointName = null;
@@ -382,7 +392,7 @@ export async function getMyContracts({
 
       lastError = err;
       log.warn(
-        `[WFMContracts] ${candidate.api.toUpperCase()} ${candidate.path} failed:`,
+        `[WFMContracts] ${candidate.api.toUpperCase()} ${path} failed:`,
         normalizeErrorMessage(err),
       );
     }

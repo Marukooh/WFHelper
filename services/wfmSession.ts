@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { withScope } from "./logger";
 import { userDataPath } from "./userDataPath";
 import { normalizeErrorMessage } from "../config/shared/errors";
-import { normalizeWfmSlugKey, type WfmStatus } from "../config/shared/wfm";
+import { normalizeWfmSlug, type WfmStatus } from "../config/shared/wfm";
 
 import {
   WfmApiError,
@@ -14,6 +14,7 @@ import {
   updateCsrfFromToken,
   clearCsrfToken,
 } from "./wfmClient";
+import { probeProfileSlug } from "./wfmProfileSlug";
 import { setStatusViaWebSocket } from "./wfmWebSocket";
 import { safeStorage } from "electron";
 
@@ -52,6 +53,8 @@ const DEVICE_ID_FILE = (): string => userDataPath("wfm.device-id");
 let _token: string | null = null;
 let _userName: string | null = null;
 let _platform = "pc";
+let _profileSlug: string | null = null;
+let _profileSlugProbe: Promise<string | null> | null = null;
 
 // Register the token provider so wfmClient can inject the JWT into requests
 setTokenProvider(() => _token);
@@ -98,9 +101,15 @@ function _saveSession(token: string, userName: string): void {
   }
 }
 
+function _resetProfileSlug(): void {
+  _profileSlug = null;
+  _profileSlugProbe = null;
+}
+
 function _clearSession(): void {
   _token = null;
   _userName = null;
+  _resetProfileSlug();
   clearCsrfToken();
   try {
     if (fs.existsSync(SESSION_FILE())) {
@@ -194,6 +203,7 @@ export async function signIn(email: string, password: string): Promise<SignInRes
 
   _token = token;
   _userName = userName;
+  _resetProfileSlug();
 
   updateCsrfFromToken(token);
 
@@ -219,6 +229,7 @@ export async function restoreSession(): Promise<void> {
   _token = saved.token;
   _userName = saved.userName || null;
   _platform = saved.platform || "pc";
+  _resetProfileSlug();
   updateCsrfFromToken(saved.token);
   log.info(`[WFMSession] Restored session for: ${_userName}`);
 }
@@ -237,6 +248,46 @@ export function getToken(): string | null {
 
 export function getInGameName(): string | null {
   return _userName;
+}
+
+/** The account's own profile slug, which every self-addressed WFM route needs.
+ *  Probed once per session and cached; name folding is only the fallback, and
+ *  unlike the review path it may legitimately yield nothing to address. */
+export async function getProfileSlug(): Promise<string | null> {
+  const name = _userName;
+  if (!name) return null;
+  if (_profileSlug) return _profileSlug;
+
+  const folded = normalizeWfmSlug(name);
+  let probe = _profileSlugProbe;
+  if (!probe) {
+    // Free the slot only while it still holds this probe: a sign-out mid-flight
+    // clears it, and the next account may already have started its own.
+    const settle = (): void => {
+      if (_profileSlugProbe === probe) _profileSlugProbe = null;
+    };
+    probe = probeProfileSlug(name).then(
+      (slug) => {
+        settle();
+        // Same reason: a late answer must not seed another account's slug.
+        if (_userName === name) _profileSlug = slug ?? folded;
+        return slug;
+      },
+      (err) => {
+        settle();
+        throw err;
+      },
+    );
+    _profileSlugProbe = probe;
+  }
+
+  try {
+    return (await probe) ?? folded;
+  } catch (err) {
+    // A transport failure is not an answer, so the next call may probe again.
+    log.warn("[WFMSession] Profile slug probe failed:", normalizeErrorMessage(err));
+    return folded;
+  }
 }
 
 export async function getMe(): Promise<WfmUserProfile | null> {
@@ -265,7 +316,8 @@ export async function setStatus(
 export async function getPublicStatus(): Promise<WfmStatus | null> {
   if (!_token || !_userName) return null;
   try {
-    const slug = normalizeWfmSlugKey(_userName);
+    const slug = await getProfileSlug();
+    if (!slug) return null;
     // Only the one field is read, so the envelope needs no type of its own.
     const data = (await requestV2("GET", `/user/${encodeURIComponent(slug)}`)) as {
       data?: { status?: unknown };
