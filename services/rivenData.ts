@@ -159,6 +159,13 @@ function stripColorTags(text: string): string {
   return text.replace(/<[^>]+>/g, "").trim();
 }
 
+// Ranks entries that share a display name. Duviri exports a Drifter-controlled
+// twin of six Tenno melee weapons under the same name at a flat 0.5 dispo; the
+// riven belongs to the Tenno entry, so the twin must never win the name key.
+function weaponNameRank(productCategory: string): number {
+  return productCategory === "DrifterMelee" ? 0 : 1;
+}
+
 function normalizeWeaponOcrText(text: string): string {
   return String(text || "")
     .toLowerCase()
@@ -205,14 +212,23 @@ function ensureBuilt(): void {
       if (!name || typeof name !== "string") continue;
       if (typeof w.omegaAttenuation !== "number") continue;
 
-      _weaponByNameLc.set(name.toLowerCase(), {
-        uniqueName,
-        omegaAttenuation: w.omegaAttenuation,
-        productCategory: w.productCategory || "",
-        holsterCategory: w.holsterCategory || "",
-        compatibilityTags: Array.isArray(w.compatibilityTags) ? w.compatibilityTags : [],
-      });
-      _weaponDisplayNames.set(name.toLowerCase(), name);
+      const nameLc = name.toLowerCase();
+      const productCategory: string = w.productCategory || "";
+      const existing = _weaponByNameLc.get(nameLc);
+      // Ties keep the later entry, so every other colliding name resolves as before.
+      if (
+        !existing ||
+        weaponNameRank(productCategory) >= weaponNameRank(existing.productCategory)
+      ) {
+        _weaponByNameLc.set(nameLc, {
+          uniqueName,
+          omegaAttenuation: w.omegaAttenuation,
+          productCategory,
+          holsterCategory: w.holsterCategory || "",
+          compatibilityTags: Array.isArray(w.compatibilityTags) ? w.compatibilityTags : [],
+        });
+      }
+      _weaponDisplayNames.set(nameLc, name);
       _weaponDisplayNamesNormalized.set(normalizeWeaponOcrText(name), name);
       _weaponByUniqueName.set(uniqueName, name);
       weaponCount++;

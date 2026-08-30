@@ -231,6 +231,23 @@ describe("rivenData", () => {
     it("returns null for unknown weapon", () => {
       expect(rivenData.getWeaponDisposition("Nonexistent Weapon")).toBeNull();
     });
+
+    // Duviri ships a Drifter-controlled twin of each of these under the same
+    // display name at a flat 0.5, but rivens roll against the Tenno entry.
+    it("resolves a Duviri melee name to the Tenno weapon, not the Drifter twin", () => {
+      expect(rivenData.getWeaponDisposition("Sampotes")).toBe(1);
+      expect(rivenData.getWeaponDisposition("Syam")).toBe(0.75);
+      expect(rivenData.getWeaponDisposition("Edun")).toBe(1.15);
+      expect(rivenData.getWeaponDisposition("Argo & Vel")).toBe(1.15);
+      expect(rivenData.getWeaponDisposition("Sun & Moon")).toBe(0.8);
+      expect(rivenData.getWeaponDisposition("Azothane")).toBe(1.1);
+    });
+
+    // The twin is deduplicated by name, so the grader's dispo refit cannot
+    // reach 0.5 through the family list either.
+    it("lists no Drifter disposition among a Duviri weapon's family variants", () => {
+      expect(rivenData.getFamilyVariants("Edun")).toEqual([{ name: "Edun", disposition: 1.15 }]);
+    });
   });
 
   describe("isMeleeWeapon", () => {
@@ -289,7 +306,8 @@ describe("rivenData", () => {
     });
 
     it("resolves Duviri melee to the ordinary melee riven", () => {
-      // Their own productCategory, so they resolved to nothing and never graded.
+      // Both names collide with a Drifter twin, so this also pins that the melee
+      // riven type survives whichever entry wins the name key.
       expect(rivenData.resolveRivenType("Sun & Moon")).toContain("MeleeWeaponRandomModRare");
       expect(rivenData.resolveRivenType("Edun")).toContain("MeleeWeaponRandomModRare");
       expect(rivenData.isMeleeWeapon("Edun")).toBe(true);
@@ -464,6 +482,30 @@ describe("gradeRiven", () => {
     expect(result!.stats[2].grade).toBeTruthy();
   });
 
+  // A 3-buff/1-curse Edun card rebuilt from the forward formula at its own
+  // disposition. Graded against the Drifter twin's 0.5 every buff clamps to S
+  // and the curse to F, and no family variant or rank exists to refit it.
+  it("grades a Duviri melee card against the Tenno disposition", () => {
+    const result = gradeRiven("Edun", [
+      { name: "Melee Damage", positive: true, value: 177.6 },
+      { name: "Critical Damage", positive: true, value: 101.3 },
+      { name: "Attack Speed", positive: true, value: 56.8 },
+      { name: "Impact", positive: false, value: 101.2 },
+    ]);
+    expect(result).not.toBeNull();
+    for (const stat of result!.stats) {
+      expect(stat.rollFloat).toBeGreaterThan(0);
+      expect(stat.rollFloat).toBeLessThan(1);
+    }
+    const grades = Object.fromEntries(result!.stats.map((s) => [s.name, s.grade]));
+    expect(grades).toEqual({
+      "Melee Damage": "B",
+      "Critical Damage": "A-",
+      "Attack Speed": "C+",
+      Impact: "B+",
+    });
+  });
+
   it("returns null for an impossible buff/curse shape instead of clamped S grades", () => {
     expect(
       gradeRiven("Kuva Nukor", [
@@ -573,7 +615,8 @@ describe("kitgun rolls", () => {
 });
 
 describe("correctScannedStats", () => {
-  // Real roll from a 2026-08-03 field report: Nami Solo (melee), 3 buffs.
+  // Nami Solo is melee, so a 190.2% middle stat on a 3-buff card can only be
+  // Melee Damage whatever the OCR read there.
   const namiRoll = (middleName: string) => [
     { name: "Additional Combo Count Chance", positive: true, value: 69.3 },
     { name: middleName, positive: true, value: 190.2 },
@@ -626,9 +669,8 @@ describe("correctScannedStats", () => {
     expect(stats.map((s) => s.name)).toEqual(["Damage to Grineer", "Damage"]);
   });
 
-  // 2026-08-29 field report: the card reads +2.3 Range, +104.6% Critical Damage,
-  // +141.8% Finisher Damage, -104% Impact. One of four scans dropped the curse
-  // line, and its absence pushed every buff out of range.
+  // A dropped curse line scales every remaining buff up, so a card whose names
+  // are all correct still reads out of range. That is not a misread label.
   const obexBuffs = [
     { name: "Range", positive: true, value: 2.3 },
     { name: "Critical Damage", positive: true, value: 104.6 },
