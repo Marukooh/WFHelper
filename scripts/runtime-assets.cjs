@@ -8,7 +8,7 @@ module.exports = {
     "riven-ocr/paddle/ch_dict.txt",
   ],
   // Shipped only in a packaged build, so the repo check skips them.
-  packagedResources: ["notification.wav", "scripts/ocr-server.ps1", "scripts/ocr.ps1"],
+  packagedResources: ["scripts/ocr-server.ps1", "scripts/ocr.ps1"],
   asarFiles: [
     "node_modules/debug/src/common.js",
     "node_modules/ms/index.js",

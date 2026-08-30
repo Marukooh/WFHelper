@@ -4,6 +4,11 @@ export const FORMA_ICON_URL = new URL("../../assets/Forma.webp", import.meta.url
 export const APP_LOGO_URL = new URL("../../assets/logo.png", import.meta.url).href;
 export const CREDITS_ICON_URL = new URL("../../assets/Bounties/Credits.png", import.meta.url).href;
 
+/** Played by the renderer, not the toast, so Windows bills it to WFHelper and
+ *  the app's own volume-mixer slider applies. */
+export const NOTIFICATION_SOUND_URL = new URL("../../assets/notification.wav", import.meta.url)
+  .href;
+
 export const NAV_ICON_URLS = {
   inventory: new URL("../../assets/icons/IconWarframe_256.png", import.meta.url).href,
   foundry: new URL("../../assets/icons/Foundry.png", import.meta.url).href,

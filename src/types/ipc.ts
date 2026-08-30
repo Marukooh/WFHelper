@@ -554,6 +554,7 @@ export interface IpcEventMap {
   "arbi-open-run": string;
   "warframe-ui-scale-updated": number | null;
   "notification-history-added": NotificationEntry;
+  "notification-sound-play": undefined;
 }
 
 export interface IpcSendMap {

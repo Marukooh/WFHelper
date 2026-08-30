@@ -66,6 +66,7 @@ import {
   NOTIFICATION_HISTORY_CLEAR,
   NOTIFICATION_TEST,
   NOTIFICATION_HISTORY_ADDED,
+  NOTIFICATION_SOUND_PLAY,
   RANKED_HOTSET_LOAD,
   RANKED_HOTSET_SAVE,
   SNAPSHOT_CACHE_LOAD,
@@ -209,6 +210,10 @@ try {
     onNotificationHistoryAdded: ipcDataBridge<IpcEventMap["notification-history-added"]>(
       ipcRenderer,
       NOTIFICATION_HISTORY_ADDED,
+    ),
+    onNotificationSoundPlay: ipcDataBridge<IpcEventMap["notification-sound-play"]>(
+      ipcRenderer,
+      NOTIFICATION_SOUND_PLAY,
     ),
 
     loadRankedHotset: inv<"loadRankedHotset">(RANKED_HOTSET_LOAD),

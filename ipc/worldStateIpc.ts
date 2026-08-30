@@ -9,6 +9,7 @@ import { normalizeErrorMessage } from "../config/shared/errors";
 import { durationMsFromSeconds } from "../config/shared/numeric";
 import {
   DB_GET_WORLD_STATE,
+  NOTIFICATION_SOUND_PLAY,
   NOTIFICATION_TEST,
   WORLD_STATE_FETCH_ERROR,
 } from "../config/shared/ipcChannels";
@@ -251,15 +252,23 @@ function notificationSoundEnabled(): boolean {
 const SOUND_MIN_GAP_MS = 3_000;
 let _lastSoundAt = 0;
 
-// Letting the toast name the sound is what keeps it under the user's System Sounds
-// volume and notification settings. incomingCall defaults to a looping ringtone, so
-// loop has to be turned off explicitly.
-function toastAudioXml(): string {
-  if (!notificationSoundEnabled()) return '<audio silent="true"/>';
+// The toast never carries audio: a system sound plays at master volume and a
+// separate player process is billed to that process, so neither one lands on the
+// app's volume-mixer slider. The renderer owns the clip instead.
+const TOAST_SILENT_AUDIO = '<audio silent="true"/>';
+
+function playNotificationSound(): void {
+  if (!notificationSoundEnabled()) return;
+  const window = ctx.mainWindow;
+  if (!window || window.isDestroyed()) return;
   const now = Date.now();
-  if (now - _lastSoundAt < SOUND_MIN_GAP_MS) return '<audio silent="true"/>';
+  if (now - _lastSoundAt < SOUND_MIN_GAP_MS) return;
   _lastSoundAt = now;
-  return '<audio src="ms-winsoundevent:Notification.Default" loop="false"/>';
+  try {
+    window.webContents.send(NOTIFICATION_SOUND_PLAY);
+  } catch (err) {
+    log.warn("[WorldState] notification sound push failed:", normalizeErrorMessage(err));
+  }
 }
 
 // A shown toast lives in Windows, not in this process, so an exit before the
@@ -316,7 +325,7 @@ function sendWindowsToast(title: string, body: string): void {
   const tag = `wfc-${++_toastTagCounter}`;
   const xml = `<toast scenario="incomingCall"><visual><binding template="ToastGeneric"><text>${escapeXml(
     title,
-  )}</text><text>${escapeXml(body)}</text></binding></visual>${toastAudioXml()}</toast>`;
+  )}</text><text>${escapeXml(body)}</text></binding></visual>${TOAST_SILENT_AUDIO}</toast>`;
   const xmlPath = path.join(os.tmpdir(), `wfc-toast-${process.pid}-${Date.now()}-${tag}.xml`);
   try {
     fs.writeFileSync(xmlPath, xml, "utf8");
@@ -331,6 +340,7 @@ function sendWindowsToast(title: string, body: string): void {
     return;
   }
   _outstandingToastTags.add(tag);
+  playNotificationSound();
   execFile(
     "powershell.exe",
     [

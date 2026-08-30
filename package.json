@@ -168,10 +168,6 @@
         "to": "riven-ocr"
       },
       {
-        "from": "resources/notification.wav",
-        "to": "notification.wav"
-      },
-      {
         "from": "scripts/ocr-server.ps1",
         "to": "scripts/ocr-server.ps1"
       },

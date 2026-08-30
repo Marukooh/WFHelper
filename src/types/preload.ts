@@ -70,6 +70,9 @@ export interface PreloadAPI {
   onNotificationHistoryAdded: (
     callback: (entry: IpcEventMap["notification-history-added"]) => void,
   ) => () => void;
+  onNotificationSoundPlay: (
+    callback: (payload: IpcEventMap["notification-sound-play"]) => void,
+  ) => () => void;
   onInventoryUpdated: (callback: (data: IpcEventMap["inventory-updated"]) => void) => () => void;
   onInventoryStatusUpdated: (
     callback: (status: IpcEventMap["inventory-status-updated"]) => void,

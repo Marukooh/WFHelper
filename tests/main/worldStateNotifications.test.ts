@@ -13,7 +13,7 @@ import {
   OVERLAY_SETTINGS_DEFAULTS,
   type OverlaySettings,
 } from "../../config/runtime/overlaySettings";
-import { DB_GET_WORLD_STATE } from "../../config/shared/ipcChannels";
+import { DB_GET_WORLD_STATE, NOTIFICATION_SOUND_PLAY } from "../../config/shared/ipcChannels";
 import ctx from "../../ipc/context";
 import * as worldStateIpc from "../../ipc/worldStateIpc";
 import * as worldStateParser from "../../services/worldStateParser";
@@ -183,6 +183,20 @@ describe("world state desktop notifications", () => {
 
 describe("windows toast audio and lifetime", () => {
   let written: Array<{ path: string; data: string }> = [];
+  let soundSends: string[] = [];
+
+  function attachMainWindow(destroyed = false): void {
+    ctx.mainWindow = {
+      isDestroyed: () => destroyed,
+      webContents: {
+        id: 101,
+        // The same window also receives history pushes; only the sound matters here.
+        send: (channel: string) => {
+          if (channel === NOTIFICATION_SOUND_PLAY) soundSends.push(channel);
+        },
+      },
+    } as unknown as BrowserWindow;
+  }
 
   function registerWithQuitHook(): () => void {
     let listener: (() => void) | null = null;
@@ -217,7 +231,8 @@ describe("windows toast audio and lifetime", () => {
     vi.useFakeTimers();
     setPlatform("win32");
     written = [];
-    ctx.mainWindow = null;
+    soundSends = [];
+    attachMainWindow();
     ctx.overlaySettings = { ...OVERLAY_SETTINGS_DEFAULTS } as OverlaySettings;
     // register() arms a 3s startup seed; advancing timers here must not hit the network.
     vi.spyOn(worldStateParser, "fetchAndParse").mockResolvedValue({ fissures: [] });
@@ -231,23 +246,25 @@ describe("windows toast audio and lifetime", () => {
   afterEach(() => {
     worldStateIpc.__test__.reset();
     setPlatform(ORIGINAL_PLATFORM);
+    ctx.mainWindow = null;
     ctx.overlaySettings = { ...OVERLAY_SETTINGS_DEFAULTS } as OverlaySettings;
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
-  it("lets the toast play the system notification sound", () => {
+  it("keeps the toast silent and asks the renderer for the sound", () => {
     registerWithQuitHook();
     worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
 
     const xml = toastXml();
     expect(xml).toContain('scenario="incomingCall"');
-    expect(xml).toContain('<audio src="ms-winsoundevent:Notification.Default" loop="false"/>');
-    expect(xml).not.toContain('silent="true"');
+    expect(xml).toContain('<audio silent="true"/>');
+    expect(xml).not.toContain("ms-winsoundevent");
+    expect(soundSends).toEqual([NOTIFICATION_SOUND_PLAY]);
     expect(execFileArgs().some((args) => args.join(" ").includes("SoundPlayer"))).toBe(false);
   });
 
-  it("keeps the toast silent when the notification sound is disabled", () => {
+  it("plays nothing when the notification sound is disabled", () => {
     ctx.overlaySettings = {
       ...OVERLAY_SETTINGS_DEFAULTS,
       notificationSoundEnabled: false,
@@ -255,9 +272,8 @@ describe("windows toast audio and lifetime", () => {
     registerWithQuitHook();
     worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
 
-    const xml = toastXml();
-    expect(xml).toContain('<audio silent="true"/>');
-    expect(xml).not.toContain("ms-winsoundevent");
+    expect(toastXml()).toContain('<audio silent="true"/>');
+    expect(soundSends).toEqual([]);
   });
 
   it("sounds once per burst of toasts", () => {
@@ -265,8 +281,36 @@ describe("windows toast audio and lifetime", () => {
     worldStateIpc.sendDesktopNotificationRaw("WFHelper", "First", "app");
     worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Second", "app");
 
-    expect(toastXml(0)).toContain("ms-winsoundevent:Notification.Default");
+    expect(toastXml(0)).toContain('<audio silent="true"/>');
     expect(toastXml(1)).toContain('<audio silent="true"/>');
+    expect(soundSends).toEqual([NOTIFICATION_SOUND_PLAY]);
+  });
+
+  it("sounds again once the burst window has passed", () => {
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "First", "app");
+    vi.advanceTimersByTime(3_000);
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Second", "app");
+
+    expect(soundSends).toEqual([NOTIFICATION_SOUND_PLAY, NOTIFICATION_SOUND_PLAY]);
+  });
+
+  it("still shows the toast when there is no renderer to play the sound", () => {
+    ctx.mainWindow = null;
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    expect(toastXml()).toContain('<audio silent="true"/>');
+    expect(soundSends).toEqual([]);
+  });
+
+  it("does not push the sound to a destroyed window", () => {
+    attachMainWindow(true);
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    expect(toastXml()).toContain('<audio silent="true"/>');
+    expect(soundSends).toEqual([]);
   });
 
   it("pulls an outstanding toast when the app quits", () => {

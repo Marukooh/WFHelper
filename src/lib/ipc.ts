@@ -104,6 +104,10 @@ const eventApiMap: Record<
     window.api.onNotificationHistoryAdded(
       cb as (entry: IpcEventMap["notification-history-added"]) => void,
     ),
+  "notification-sound-play": (cb) =>
+    window.api.onNotificationSoundPlay(
+      cb as (payload: IpcEventMap["notification-sound-play"]) => void,
+    ),
 };
 
 export function on<K extends EventChannel>(
