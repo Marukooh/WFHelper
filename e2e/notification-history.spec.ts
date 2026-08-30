@@ -1,9 +1,12 @@
-import fs from "node:fs";
 import path from "node:path";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-import { type ElectronTestHarness, launchElectronTestHarness } from "./electronTestHarness";
+import {
+  closeElectronTestHarness,
+  type ElectronTestHarness,
+  launchElectronTestHarness,
+} from "./electronTestHarness";
 
 const SEEDED = [
   {
@@ -32,9 +35,31 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  await harness?.app.close();
-  fs.rmSync(harness.sandboxDir, { recursive: true, force: true });
+  await closeElectronTestHarness(harness);
 });
+
+// Every test starts from whatever the previous one left, and a retry restarts
+// the whole file with only the failed test, so state is set up per test.
+async function openHistory(page: Page): Promise<void> {
+  if ((await page.locator("[data-notification-history]").count()) > 0) return;
+  await page.locator("[data-notification-open]").click();
+  await expect(page.locator("[data-notification-history]")).toBeVisible();
+}
+
+async function closeHistory(page: Page): Promise<void> {
+  if ((await page.locator("[data-notification-history]").count()) === 0) return;
+  await page.locator("[data-notification-close]").click();
+  await expect(page.locator("[data-notification-history]")).toHaveCount(0);
+}
+
+async function clearHistory(page: Page): Promise<void> {
+  await openHistory(page);
+  if ((await page.locator("[data-notification-entry]").count()) > 0) {
+    await page.locator("[data-notification-clear]").click();
+    await expect(page.locator("[data-notification-entry]")).toHaveCount(0);
+  }
+  await closeHistory(page);
+}
 
 test("the status bar bell opens the stored notification history", async () => {
   const { page } = harness;
@@ -43,7 +68,7 @@ test("the status bar bell opens the stored notification history", async () => {
   await expect(bell).toBeVisible();
   await expect(bell.locator(".bell-count")).toHaveText("2");
 
-  await bell.click();
+  await openHistory(page);
 
   const entries = page.locator("[data-notification-entry]");
   await expect(entries).toHaveCount(2);
@@ -55,24 +80,29 @@ test("the status bar bell opens the stored notification history", async () => {
   await page
     .locator("[data-notification-history]")
     .screenshot({ path: path.join("test-results", "notification-history.png") });
+
+  await closeHistory(page);
 });
 
 test("clearing empties the list and the badge", async () => {
   const { page } = harness;
+
+  await openHistory(page);
+  await expect(page.locator("[data-notification-entry]")).not.toHaveCount(0);
 
   await page.locator("[data-notification-clear]").click();
 
   await expect(page.locator("[data-notification-empty]")).toBeVisible();
   await expect(page.locator("[data-notification-entry]")).toHaveCount(0);
   await expect(page.locator(".bell-count")).toHaveCount(0);
+
+  await closeHistory(page);
 });
 
 test("the settings test button records a notification", async () => {
   const { page } = harness;
 
-  // The previous test left the history modal open over the sidebar.
-  await page.locator("[data-notification-close]").click();
-  await expect(page.locator("[data-notification-history]")).toHaveCount(0);
+  await clearHistory(page);
 
   await page.locator('#sidebar [data-view="settings"]').click();
   // Dev-only button; the sandbox runs unpackaged, so it appears once the runtime
@@ -82,9 +112,33 @@ test("the settings test button records a notification", async () => {
   const bell = page.locator("[data-notification-open]");
   await expect(bell.locator(".bell-count")).toHaveText("1");
 
-  await bell.click();
+  await openHistory(page);
   await expect(page.locator("[data-notification-entry]")).toHaveCount(1);
   await expect(page.locator("[data-notification-entry]").first()).toContainText(
     "Test notification",
   );
+
+  await closeHistory(page);
+});
+
+// An emptied number input binds to null, which coerces to 0 and clamps up to the
+// floor of 2 unless the payload is normalized before it leaves the renderer.
+test("an emptied notification duration saves the default, not the floor", async () => {
+  const { page } = harness;
+
+  await closeHistory(page);
+  await page.locator('#sidebar [data-view="settings"]').click();
+
+  for (const setting of ["windows-notification-seconds", "trade-notification-seconds"]) {
+    const input = page.locator(`[data-setting="${setting}"] input`);
+    await expect(input).toHaveValue("5");
+
+    await input.fill("12");
+    await input.blur();
+    await expect(input).toHaveValue("12");
+
+    await input.fill("");
+    await input.blur();
+    await expect(input).toHaveValue("5");
+  }
 });
