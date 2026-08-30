@@ -62,7 +62,7 @@ const UNPINNED: Term[] = [
   { en: "Invasion", de: "Invasion" },
   { en: "Mastery", de: "Meisterschaft" },
   { en: "Arcane", de: "Arkana", stem: "Arkan" },
-  { en: "Veiled", de: "Verschleiert", stem: "erschleiert" },
+  { en: "Veiled", de: "Verschleiert", stem: "erschleiert", zh: "未揭示" },
   { en: "Credits", de: "Credits" },
 ];
 

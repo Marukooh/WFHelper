@@ -18,6 +18,17 @@ const ENGLISH_ONLY = ["common.whisperBuy", "common.whisperSell"];
 // so de.json leaves them out and the English fallback serves them.
 const LANGUAGE_NEUTRAL = /^(appearance\.label\.grade|inventory\.wt[bs]|relics\.tier\.)/;
 
+// Names the game's own Chinese client leaves in English, so the fallback is the
+// correct rendering rather than a gap.
+const CHINESE_NAMES_IN_ENGLISH = new Set([
+  "filters.ducatonator",
+  "world.baroKiteer",
+  "world.cycle.fass",
+  "world.cycle.vome",
+  "world.spBadge",
+  "world.vs",
+]);
+
 // Same text today, but each names a distinct UI role and must stay free to diverge.
 const ALLOWED_TWINS = new Set(["setup.step.finish"]);
 
@@ -39,9 +50,9 @@ const normalise = (value: string): string => value.trim().replace(/\{\w+\}/g, "{
 const placeholders = (value: string): string[] =>
   [...new Set([...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]))].sort();
 
-// Every catalogue gets the correctness checks. Coverage and duplicate values stay
-// German-only: zh is a partial first pass, and CJK collapses distinct English
-// wordings often enough that the twin check would be an allow-list, not a gate.
+// Every catalogue gets the correctness checks. Duplicate values stay German-only:
+// CJK collapses distinct English wordings often enough that the twin check would
+// be an allow-list rather than a gate.
 const TRANSLATIONS: Array<[string, Record<string, string>]> = [
   ["German", de],
   ["Chinese", zh],
@@ -77,6 +88,18 @@ describe("i18n dictionaries", () => {
   it("translates every key German is expected to carry", () => {
     const untranslated = Object.keys(en).filter(
       (key) => !(key in de) && !ENGLISH_ONLY.includes(key) && !LANGUAGE_NEUTRAL.test(key),
+    );
+
+    expect(untranslated).toEqual([]);
+  });
+
+  it("translates every key Chinese is expected to carry", () => {
+    const untranslated = Object.keys(en).filter(
+      (key) =>
+        !(key in zh) &&
+        !ENGLISH_ONLY.includes(key) &&
+        !LANGUAGE_NEUTRAL.test(key) &&
+        !CHINESE_NAMES_IN_ENGLISH.has(key),
     );
 
     expect(untranslated).toEqual([]);
