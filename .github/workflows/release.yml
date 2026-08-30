@@ -11,9 +11,9 @@ permissions:
 
 jobs:
   # The tag points at a commit the branch push already ran CI on, and check runs
-  # attach to the commit rather than the ref. Reading that result instead of
-  # re-running the suite takes about nine minutes off every release. A commit
-  # with missing, failed or still-running checks does not get built.
+  # attach to the commit rather than the ref, so the release reads that result
+  # instead of re-running the suite. A commit with missing, failed or
+  # still-running checks does not get built.
   require-green-ci:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -23,7 +23,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SHA: ${{ github.sha }}
         run: |
-          required="validate validate-windows"
+          # Job names as they appear in check-runs; every CI job is listed so a
+          # red one cannot be released around.
+          required="validate validate-windows commit-style"
           # Tolerates tagging straight after the branch push, when the branch run
           # has not reported yet.
           for attempt in $(seq 1 40); do

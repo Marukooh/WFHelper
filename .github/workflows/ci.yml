@@ -4,7 +4,6 @@ on:
   push:
     branches: ["**"]
   pull_request:
-  workflow_call:
   workflow_dispatch:
 
 jobs:
@@ -53,8 +52,8 @@ jobs:
 
       # Skipped on PRs: the merge commit is frozen at run creation, so an
       # advisory published after a PR opened reddens it for reasons unrelated
-      # to its diff. Branch pushes, releases (workflow_call) and the pre-push
-      # hook still gate on it; audit.yml catches drift on a schedule.
+      # to its diff. Branch pushes and the pre-push hook still gate on it, and
+      # releases read this job's result; audit.yml catches drift on a schedule.
       - name: Dependency vulnerability audit
         if: github.event_name != 'pull_request'
         run: pnpm audit --prod --audit-level high
