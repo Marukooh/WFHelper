@@ -1035,6 +1035,7 @@
   "settings.trackArbiRuns": "Track arbitration runs (log capture + stats)",
   "settings.tradeDetectedOverlay": "Trade detected overlay",
   "settings.tradeRepKeybind": "+1 rep keybind",
+  "settings.tradeNotificationSeconds": "Trade notification duration (seconds)",
   "settings.tradeRepKeybindEnable": "+1 rep keybind on the trade popup after WFMarket sales",
   "settings.unlistOnTrade": "Unlist WFMarket orders when sold/bought",
   "settings.wfmDmNotifications": "WFM DM notifications",

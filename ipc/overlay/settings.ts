@@ -134,6 +134,10 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
     };
   }
 
+  function normalizeNotificationSeconds(value: unknown, fallback: unknown): number {
+    return Math.round(clampNumber(value, 2, 60, Number(fallback ?? 5)));
+  }
+
   function normalizeOverlayScale(value: unknown, fallback: unknown): number {
     return Number(clampNumber(value, 0.75, 1.5, Number(fallback ?? 1)).toFixed(2));
   }
@@ -231,6 +235,10 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
       messageNotificationsWhileFocused: booleanSetting("messageNotificationsWhileFocused"),
       autoCloseWfmOrders: booleanSetting("autoCloseWfmOrders"),
       wfmAutoIngameEnabled: booleanSetting("wfmAutoIngameEnabled"),
+      tradeNotificationSeconds: normalizeNotificationSeconds(
+        candidate.tradeNotificationSeconds,
+        Number((defaults as Record<string, unknown>).tradeNotificationSeconds ?? 5),
+      ),
       wfmStatusHoldMinutes: normalizeWfmHoldMinutes(
         candidate.wfmStatusHoldMinutes,
         Number((defaults as Record<string, unknown>).wfmStatusHoldMinutes ?? 0),

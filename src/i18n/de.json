@@ -389,6 +389,7 @@
   "settings.trackArbiRuns": "Arbitration-Runs aufzeichnen (Log-Erfassung + Statistiken)",
   "settings.tradeDetectedOverlay": "Trade-erkannt-Overlay",
   "settings.tradeRepKeybind": "+1-Rep-Taste",
+  "settings.tradeNotificationSeconds": "Anzeigedauer der Handelsbenachrichtigung (Sekunden)",
   "settings.tradeRepKeybindEnable": "+1-Rep-Taste auf dem Trade-Popup nach WFMarket-Verkäufen",
   "settings.unlistOnTrade": "WFMarket-Orders nach Verkauf/Kauf schließen",
   "settings.wfmDmNotifications": "WFM-DM-Benachrichtigungen",

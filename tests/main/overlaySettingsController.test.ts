@@ -113,6 +113,27 @@ describe("overlay settings controller", () => {
     ).toBe(0);
   });
 
+  it("clamps the trade notification duration to a usable range", () => {
+    const { controller } = buildController();
+
+    expect(controller.normalizeOverlaySettings({}).tradeNotificationSeconds).toBe(5);
+    expect(
+      controller.normalizeOverlaySettings({ tradeNotificationSeconds: 20 })
+        .tradeNotificationSeconds,
+    ).toBe(20);
+    expect(
+      controller.normalizeOverlaySettings({ tradeNotificationSeconds: 0 }).tradeNotificationSeconds,
+    ).toBe(2);
+    expect(
+      controller.normalizeOverlaySettings({ tradeNotificationSeconds: 999 })
+        .tradeNotificationSeconds,
+    ).toBe(60);
+    expect(
+      controller.normalizeOverlaySettings({ tradeNotificationSeconds: "12" })
+        .tradeNotificationSeconds,
+    ).toBe(12);
+  });
+
   it("normalizes notification sound and overlay availability settings", () => {
     const { controller } = buildController();
 

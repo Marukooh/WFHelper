@@ -170,6 +170,7 @@
     "autoCloseWfmOrders",
     "tradeRepHotkeyEnabled",
     "tradeRepHotkey",
+    "tradeNotificationSeconds",
     "tradeNotificationOverlayEnabled",
     "relicRewardsOverlayEnabled",
     "relicRecommendationOverlayEnabled",
@@ -451,6 +452,18 @@
                   bind:checked={form.autoCloseWfmOrders}
                   on:change={autoSave}
                   class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.tradeNotificationSeconds")} inputRow>
+                <input
+                  type="number"
+                  min="2"
+                  max="60"
+                  step="1"
+                  bind:value={form.tradeNotificationSeconds}
+                  on:change={autoSave}
+                  class="settings-input"
                 />
               </SettingsRow>
 

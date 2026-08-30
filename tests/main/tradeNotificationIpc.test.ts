@@ -128,7 +128,7 @@ function sale(partner: string): TradeMatchPayload {
   };
 }
 
-async function setup() {
+async function setup(overrides: Record<string, unknown> = {}) {
   vi.resetModules();
   h.windows.length = 0;
   h.hotkeys.clear();
@@ -149,6 +149,7 @@ async function setup() {
     ...OVERLAY_SETTINGS_DEFAULTS,
     tradeRepHotkeyEnabled: true,
     tradeRepHotkey: "F9",
+    ...overrides,
   } as unknown as typeof ctx.overlaySettings;
   const notifications = await import("../../ipc/tradeNotificationIpc");
   return { notifications };
@@ -170,6 +171,38 @@ afterEach(() => {
 
 // A blanked toast is still mapped on native Wayland, so it kept swallowing
 // clicks over the game after the notification had visually gone.
+describe("configured toast duration", () => {
+  it("shows a plain toast for the configured seconds", async () => {
+    const { notifications } = await setup({
+      tradeNotificationSeconds: 20,
+      tradeRepHotkeyEnabled: false,
+    });
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    const win = h.windows[0];
+    win.finishLoad();
+
+    expect(win.sent.at(-1)).toMatchObject({
+      channel: "trade-notification-show",
+      payload: { rep: null, timing: { visibleMs: 20_000 } },
+    });
+  });
+
+  // Below the keybind window the rep offer would vanish before it can be used.
+  it("never shortens a rep offer below the keybind window", async () => {
+    const { notifications } = await setup({ tradeNotificationSeconds: 3 });
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    const win = h.windows[0];
+    win.finishLoad();
+
+    expect(win.sent.at(-1)).toMatchObject({
+      channel: "trade-notification-show",
+      payload: { rep: { hotkey: "F9" }, timing: { visibleMs: 12_000 } },
+    });
+  });
+});
+
 describe("native Wayland toast", () => {
   const realPlatform = process.platform;
   const setPlatform = (value: string): void => {

@@ -44,6 +44,8 @@ export interface OverlaySettings {
   wfmStatusHoldMinutes: number;
   tradeRepHotkeyEnabled: boolean;
   tradeRepHotkey: string;
+  /** Seconds the trade toast stays on screen before it fades. */
+  tradeNotificationSeconds: number;
   relicRewardsOverlayEnabled: boolean;
   relicRecommendationOverlayEnabled: boolean;
   tradeNotificationOverlayEnabled: boolean;
@@ -106,6 +108,7 @@ export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   wfmStatusHoldMinutes: 0,
   tradeRepHotkeyEnabled: true,
   tradeRepHotkey: "F9",
+  tradeNotificationSeconds: 5,
   relicRewardsOverlayEnabled: true,
   relicRecommendationOverlayEnabled: true,
   tradeNotificationOverlayEnabled: true,

@@ -29,7 +29,7 @@ const WIN_H = 104 * SCALE;
 const MARGIN = 16;
 const NOTIFICATION_FILE = path.join(app.getAppPath(), "renderer", "trade-notification.html");
 
-const RENDERER_VISIBLE_MS = 5_000;
+const DEFAULT_VISIBLE_MS = 5_000;
 // Allows time to reach the keybind while returning to the mission.
 const REP_VISIBLE_MS = 12_000;
 const REP_RESULT_VISIBLE_MS = 4_000;
@@ -62,6 +62,11 @@ let _notificationRevision = 0;
 // The toast is transparent and always click-through, so it can use the same
 // blank-the-DOM hide the overlay controllers use on native Wayland.
 const _keepMapped = createKeepMappedMode({ label: "TradeNotification", transparent: true, log });
+
+function _configuredVisibleMs(): number {
+  const seconds = Number(ctx.overlaySettings.tradeNotificationSeconds);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : DEFAULT_VISIBLE_MS;
+}
 
 function _setContentVisible(win: InstanceType<typeof BrowserWindow>): (visible: boolean) => void {
   return (visible) => win.webContents.send(OVERLAY_CONTENT_VISIBLE, visible);
@@ -203,11 +208,17 @@ function _displayNotification(
     hotkey: String(ctx.overlaySettings.tradeRepHotkey || ""),
   });
   const rep = offer && _armRepOffer(offer, pending.revision) ? offer : null;
+  // A rep offer never gets less than the time it takes to reach the keybind, so a
+  // short configured duration shortens the plain toast only.
+  const configuredMs = _configuredVisibleMs();
   const payload: TradeNotificationShowPayload = {
     match: pending.match,
     status: pending.status,
     rep,
-    timing: { visibleMs: rep ? REP_VISIBLE_MS : RENDERER_VISIBLE_MS, fadeMs: RENDERER_FADE_MS },
+    timing: {
+      visibleMs: rep ? Math.max(configuredMs, REP_VISIBLE_MS) : configuredMs,
+      fadeMs: RENDERER_FADE_MS,
+    },
   };
   win.webContents.send(TRADE_NOTIFICATION_SHOW, payload);
   _presentWindow(win);
