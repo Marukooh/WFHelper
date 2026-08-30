@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { overlayMessages, setOverlayLocale } from "../../ipc/overlayI18n";
 import de from "../../src/i18n/de.json";
+import zh from "../../src/i18n/zh.json";
 import { en } from "../../src/i18n/en";
 
 // The overlay keys are named in ipc/, not src/, because main resolves them.
@@ -38,9 +39,17 @@ const normalise = (value: string): string => value.trim().replace(/\{\w+\}/g, "{
 const placeholders = (value: string): string[] =>
   [...new Set([...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]))].sort();
 
+// Every catalogue gets the correctness checks. Coverage and duplicate values stay
+// German-only: zh is a partial first pass, and CJK collapses distinct English
+// wordings often enough that the twin check would be an allow-list, not a gate.
+const TRANSLATIONS: Array<[string, Record<string, string>]> = [
+  ["German", de],
+  ["Chinese", zh],
+];
+
 describe("i18n dictionaries", () => {
-  it("keeps German placeholders identical to English", () => {
-    const mismatched = Object.entries(de)
+  it.each(TRANSLATIONS)("keeps %s placeholders identical to English", (_name, dict) => {
+    const mismatched = Object.entries(dict)
       .filter(([key, value]) => {
         const source = en[key as keyof typeof en];
         return source !== undefined && placeholders(source).join() !== placeholders(value).join();
@@ -50,17 +59,17 @@ describe("i18n dictionaries", () => {
     expect(mismatched).toEqual([]);
   });
 
-  it("has no German entry for strings sent to other players", () => {
+  it.each(TRANSLATIONS)("has no %s entry for strings sent to other players", (_name, dict) => {
     for (const key of ENGLISH_ONLY) {
       expect(en).toHaveProperty(key);
-      expect(de).not.toHaveProperty(key);
+      expect(dict).not.toHaveProperty(key);
     }
   });
 
-  it("has no translated key English does not define", () => {
+  it.each(TRANSLATIONS)("has no %s key English does not define", (_name, dict) => {
     // A JSON catalogue cannot be typechecked against MessageKey the way the old
-    // .ts one was, so a typo in a German key would otherwise go unnoticed.
-    const unknown = Object.keys(de).filter((key) => !(key in en));
+    // .ts one was, so a typo in a translated key would otherwise go unnoticed.
+    const unknown = Object.keys(dict).filter((key) => !(key in en));
 
     expect(unknown).toEqual([]);
   });
@@ -74,7 +83,7 @@ describe("i18n dictionaries", () => {
   });
 
   it("spells ellipses as three ASCII dots", () => {
-    const unicode = [...Object.entries(en), ...Object.entries(de)]
+    const unicode = [...Object.entries(en), ...Object.entries(de), ...Object.entries(zh)]
       .filter(([, value]) => value.includes("…"))
       .map(([key]) => key);
 

@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import de from "../../src/i18n/de.json";
+import zh from "../../src/i18n/zh.json";
 import { en } from "../../src/i18n/en";
 
 // The package blocks deep imports through "exports", so read the files directly.
@@ -15,6 +16,7 @@ function officialDict(locale: string): Record<string, string> {
 
 const OFFICIAL_EN = officialDict("en");
 const OFFICIAL_DE = officialDict("de");
+const OFFICIAL_ZH = officialDict("zh");
 
 type Term = {
   en: string;
@@ -22,6 +24,9 @@ type Term = {
   stem?: string;
   enPattern?: RegExp;
   ownChoice?: string;
+  /** Absent where the export never renders the term alone in Chinese. */
+  zh?: string;
+  zhStem?: string;
 };
 
 const englishPattern = (term: Term): RegExp =>
@@ -30,20 +35,20 @@ const englishPattern = (term: Term): RegExp =>
 // Match Digital Extremes by default; ownChoice records deliberate differences.
 const TERMS: Term[] = [
   { en: "Arbitration", de: "Arbitration", ownChoice: "German players say the English word" },
-  { en: "Relic", de: "Relikt" },
-  { en: "Orokin Ducats", de: "Orokin Dukaten" },
-  { en: "Rifle", de: "Gewehr" },
-  { en: "Shotgun", de: "Schrot" },
-  { en: "Melee", de: "Nahkampf" },
-  { en: "Vitus Essence", de: "Vitus-Essenz" },
-  { en: "The Circuit", de: "Der Rundkurs", stem: "Rundkurs" },
-  { en: "Riven", de: "Riven" },
-  { en: "Kuva", de: "Kuva" },
-  { en: "Endo", de: "Endo" },
-  { en: "Nightwave", de: "Nightwave" },
-  { en: "Railjack", de: "Railjack" },
-  { en: "Cetus", de: "Cetus" },
-  { en: "Duviri", de: "Duviri" },
+  { en: "Relic", de: "Relikt", zh: "虚空遗物", zhStem: "遗物" },
+  { en: "Orokin Ducats", de: "Orokin Dukaten", zh: "奥罗金杜卡德金币", zhStem: "杜卡德" },
+  { en: "Rifle", de: "Gewehr", zh: "步枪" },
+  { en: "Shotgun", de: "Schrot", zh: "霰弹枪" },
+  { en: "Melee", de: "Nahkampf", zh: "近战" },
+  { en: "Vitus Essence", de: "Vitus-Essenz", zh: "生息精华" },
+  { en: "The Circuit", de: "Der Rundkurs", stem: "Rundkurs", zh: "无尽回廊" },
+  { en: "Riven", de: "Riven", zh: "裂罅" },
+  { en: "Kuva", de: "Kuva", zh: "赤毒" },
+  { en: "Endo", de: "Endo", zh: "内融核心" },
+  { en: "Nightwave", de: "Nightwave", zh: "午夜电波" },
+  { en: "Railjack", de: "Railjack", zh: "航道星舰" },
+  { en: "Cetus", de: "Cetus", zh: "希图斯" },
+  { en: "Duviri", de: "Duviri", zh: "双衍王境" },
 ];
 
 // Words DE only writes inside longer phrases, so they cannot be pinned against
@@ -61,12 +66,12 @@ const UNPINNED: Term[] = [
   { en: "Credits", de: "Credits" },
 ];
 
-function shippedGerman(term: Term): Set<string> {
+function shippedOfficial(term: Term, dict: Record<string, string>): Set<string> {
   const needle = term.en.toLowerCase();
   const shipped = new Set<string>();
   for (const [key, value] of Object.entries(OFFICIAL_EN)) {
-    if (typeof value === "string" && value.trim().toLowerCase() === needle && OFFICIAL_DE[key]) {
-      shipped.add(OFFICIAL_DE[key].trim());
+    if (typeof value === "string" && value.trim().toLowerCase() === needle && dict[key]) {
+      shipped.add(dict[key].trim());
     }
   }
   return shipped;
@@ -77,7 +82,7 @@ describe("german game terminology", () => {
     const wrong: string[] = [];
 
     for (const term of TERMS) {
-      const shipped = shippedGerman(term);
+      const shipped = shippedOfficial(term, OFFICIAL_DE);
       if (term.ownChoice) {
         if (shipped.has(term.de)) {
           wrong.push(`${term.en}: ownChoice "${term.ownChoice}" is stale, DE now agrees with us`);
@@ -104,6 +109,46 @@ describe("german game terminology", () => {
         if (german === undefined || !mentions.test(value)) continue;
         if (!german.toLowerCase().includes(stem)) {
           inconsistent.push(`${key}: English says ${term.en}, German drops "${term.de}"`);
+        }
+      }
+    }
+
+    expect(inconsistent).toEqual([]);
+  });
+});
+
+describe("chinese game terminology", () => {
+  const pinned = TERMS.filter((term) => term.zh !== undefined);
+
+  it("matches the game's own Chinese", () => {
+    const wrong: string[] = [];
+
+    for (const term of pinned) {
+      const shipped = shippedOfficial(term, OFFICIAL_ZH);
+      if (shipped.size === 0) {
+        wrong.push(`${term.en}: gone from the CN export, drop its zh pin`);
+      } else if (!shipped.has(term.zh!)) {
+        wrong.push(`${term.en}: we use "${term.zh}", DE uses ${[...shipped].join(" / ")}`);
+      }
+    }
+
+    expect(wrong).toEqual([]);
+  });
+
+  it("uses each term the same way everywhere", () => {
+    // Chinese is a partial catalogue, so an absent key is fine; a present key
+    // that drops the agreed word is the half-migrated wording this catches.
+    const inconsistent: string[] = [];
+
+    for (const term of [...TERMS, ...UNPINNED]) {
+      if (term.zh === undefined) continue;
+      const mentions = englishPattern(term);
+      const stem = term.zhStem ?? term.zh;
+      for (const [key, value] of Object.entries(en)) {
+        const chinese = zh[key as keyof typeof zh];
+        if (chinese === undefined || !mentions.test(value)) continue;
+        if (!chinese.includes(stem)) {
+          inconsistent.push(`${key}: English says ${term.en}, Chinese drops "${term.zh}"`);
         }
       }
     }
