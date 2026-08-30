@@ -865,7 +865,7 @@ describe("tradeWfmMatcher", () => {
       });
 
       const matches = await matchTradeToOrders({
-        partner: "Pig_player",
+        partner: "Test_Partner",
         platChange: 95,
         type: "sale",
         items: [
@@ -890,7 +890,7 @@ describe("tradeWfmMatcher", () => {
       });
 
       const matches = await matchTradeToOrders({
-        partner: "Pig_player",
+        partner: "Test_Partner",
         platChange: 60,
         type: "sale",
         items: [

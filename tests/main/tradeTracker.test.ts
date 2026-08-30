@@ -67,7 +67,7 @@ describe("tradeTracker", () => {
     try {
       const module = await tracker();
       const trade = {
-        partner: "K9178",
+        partner: "T4092",
         platChange: 15,
         type: "sale" as const,
         items: [{ displayName: "Vitus Essence", count: 1, direction: "given" as const }],
@@ -87,7 +87,7 @@ describe("tradeTracker", () => {
   it("keeps an identical repeat inside the window when the log stamps differ", async () => {
     const module = await tracker();
     const trade = {
-      partner: "K9178",
+      partner: "T4092",
       platChange: 15,
       type: "sale" as const,
       items: [{ displayName: "Vitus Essence", count: 1, direction: "given" as const }],
@@ -102,7 +102,7 @@ describe("tradeTracker", () => {
   it("still suppresses re-delivery when one side carries no stamp", async () => {
     const module = await tracker();
     const trade = {
-      partner: "K9178",
+      partner: "T4092",
       platChange: 15,
       type: "sale" as const,
       items: [{ displayName: "Vitus Essence", count: 1, direction: "given" as const }],
@@ -151,7 +151,7 @@ describe("tradeTracker", () => {
           date: "2026-07-20T10:00:00.000Z",
           type: "sale",
           platChange: 45,
-          partner: "Ainikki\uE000",
+          partner: "Kestrel\uE000",
           items: [
             item("Zid-an Asheir\uE000\uE001"),
             item("\uE000\uE001\uE002\uE003"),
@@ -172,7 +172,7 @@ describe("tradeTracker", () => {
     const events = module.getTradeLog();
     // The all-corrupt event is dropped entirely.
     expect(events.map((e) => e.id)).toEqual(["glyphs"]);
-    expect(events[0].partner).toBe("Ainikki");
+    expect(events[0].partner).toBe("Kestrel");
     // Glyphs and Dialog arg tails stripped; the glyph-only item removed.
     expect(events[0].items.map((i) => i.displayName)).toEqual(["Zid-an Asheir", "Zid-an Asheir"]);
   });

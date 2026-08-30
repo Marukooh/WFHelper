@@ -16,9 +16,9 @@ describe("parseWhisperUsername", () => {
 
   it("strips the multi-char glyph mojibake from latin1-decoded dbwin lines", () => {
     // utf8 ee 80 80 (U+E000) decoded as latin1 = 3 junk chars
-    expect(parseWhisperUsername(line("Flucasdu57î"))).toBe("lucasdu57");
+    expect(parseWhisperUsername(line("Ftenno0451î"))).toBe("tenno0451");
     // same line via the utf8 file poll = 1 char
-    expect(parseWhisperUsername(line("Flucasdu57"))).toBe("lucasdu57");
+    expect(parseWhisperUsername(line("Ftenno0451"))).toBe("tenno0451");
   });
 
   it("ignores non-whisper tabs (no F prefix)", () => {

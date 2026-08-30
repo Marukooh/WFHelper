@@ -49,10 +49,10 @@ describe("_parseTradeDialog corruption hardening", () => {
       "Are you sure you want to accept this trade?",
       "You are offering:",
       "Arcane Pistoleer",
-      "and will receive from Ainikki\uE000 the following:",
+      "and will receive from Kestrel\uE000 the following:",
       "Platinum x 45, leftItem=/Menu/Confirm_Item_Ok",
     ]);
-    expect(parsed?.partner).toBe("Ainikki");
+    expect(parsed?.partner).toBe("Kestrel");
   });
 
   it("strips the DBWIN latin1-mojibake form of a platform glyph from the partner", () => {
@@ -60,10 +60,10 @@ describe("_parseTradeDialog corruption hardening", () => {
       "Are you sure you want to accept this trade?",
       "You are offering:",
       "Arcane Pistoleer",
-      "and will receive from Ainikki\u00EE\u0080\u0080 the following:",
+      "and will receive from Kestrel\u00EE\u0080\u0080 the following:",
       "Platinum x 45, leftItem=/Menu/Confirm_Item_Ok",
     ]);
-    expect(parsed?.partner).toBe("Ainikki");
+    expect(parsed?.partner).toBe("Kestrel");
   });
 
   it("drops glyph-only lines instead of recording them as items", () => {
