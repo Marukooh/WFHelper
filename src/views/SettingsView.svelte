@@ -256,8 +256,11 @@
   let saveRevision = 0;
   let saveQueue: Promise<void> = Promise.resolve();
 
+  // Re-normalized on the way out because an emptied number input binds to null,
+  // which the main-process clamp reads as 0 and raises to the range floor
+  // instead of falling back to the declared default.
   function currentOverlayPayload() {
-    return { ...form };
+    return normalizeOverlayForm(form);
   }
 
   function queueSave(
@@ -418,7 +421,11 @@
                 />
               </SettingsRow>
 
-              <SettingsRow label={$tr("settings.windowsNotificationSeconds")} inputRow>
+              <SettingsRow
+                label={$tr("settings.windowsNotificationSeconds")}
+                dataSetting="windows-notification-seconds"
+                inputRow
+              >
                 <input
                   type="number"
                   min="2"
@@ -483,7 +490,11 @@
                 />
               </SettingsRow>
 
-              <SettingsRow label={$tr("settings.tradeNotificationSeconds")} inputRow>
+              <SettingsRow
+                label={$tr("settings.tradeNotificationSeconds")}
+                dataSetting="trade-notification-seconds"
+                inputRow
+              >
                 <input
                   type="number"
                   min="2"
