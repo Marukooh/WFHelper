@@ -100,7 +100,7 @@ test("clearing empties the list and the badge", async () => {
   await closeHistory(page);
 });
 
-test("the settings test button records a notification", async () => {
+test("the dev test button records a notification", async () => {
   const { page } = harness;
 
   await clearHistory(page);
@@ -113,10 +113,9 @@ test("the settings test button records a notification", async () => {
     if (/Content Security Policy|Refused to load/i.test(text)) blocked.push(text);
   });
 
-  await page.locator('#sidebar [data-view="settings"]').click();
-  // Dev-only button; the sandbox runs unpackaged, so it appears once the runtime
-  // info resolves.
-  await page.locator("[data-test-notification]").click();
+  // Dev-only sidebar button; the sandbox runs unpackaged, so it appears once the
+  // runtime info resolves.
+  await page.locator("#sidebar [data-test-notification]").click();
 
   const bell = page.locator("[data-notification-open]");
   await expect(bell.locator(".bell-count")).toHaveText("1");

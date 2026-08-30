@@ -49,6 +49,10 @@
   function testOverlay(): void {
     send("simulate-relic-trigger");
   }
+
+  function testNotification(): void {
+    void invoke("sendTestNotification");
+  }
 </script>
 
 <nav
@@ -149,6 +153,24 @@
           <line x1="8" y1="12" x2="16" y2="12" />
         </svg>
         <span>{$tr("nav.overlay")}</span>
+      </button>
+      <button
+        class="nav-btn relative flex w-full cursor-pointer items-center gap-3 rounded-md border-0 bg-transparent px-3.5 py-2.5 font-display text-base font-medium tracking-wide text-text-secondary transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary"
+        title={$tr("nav.testNotificationTitle")}
+        data-test-notification
+        on:click={testNotification}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          class="h-6 w-6 shrink-0"
+        >
+          <path d="M18 16V11a6 6 0 10-12 0v5l-2 3h16l-2-3z" />
+          <path d="M10 21h4" />
+        </svg>
+        <span>{$tr("nav.testNotification")}</span>
       </button>
       <button
         class="nav-btn relative flex w-full cursor-pointer items-center gap-3 rounded-md border-0 bg-transparent px-3.5 py-2.5 font-display text-base font-medium tracking-wide text-text-secondary transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary"
