@@ -134,6 +134,20 @@ describe("overlay settings controller", () => {
     ).toBe(12);
   });
 
+  it("clamps the Windows notification duration to the same range", () => {
+    const { controller } = buildController();
+
+    expect(controller.normalizeOverlaySettings({}).windowsNotificationSeconds).toBe(5);
+    expect(
+      controller.normalizeOverlaySettings({ windowsNotificationSeconds: 0 })
+        .windowsNotificationSeconds,
+    ).toBe(2);
+    expect(
+      controller.normalizeOverlaySettings({ windowsNotificationSeconds: 999 })
+        .windowsNotificationSeconds,
+    ).toBe(60);
+  });
+
   it("keeps the trade desktop notification opt-in off unless it is set", () => {
     const { controller } = buildController();
 

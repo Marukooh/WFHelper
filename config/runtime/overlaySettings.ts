@@ -48,6 +48,9 @@ export interface OverlaySettings {
   tradeNotificationSeconds: number;
   /** Also raise an OS notification on a trade; the in-game toast shows either way. */
   tradeDesktopNotificationsEnabled: boolean;
+  /** Seconds a Windows notification stays on screen. Windows only: the toast is
+   *  raised as incomingCall so it holds until we pull it back. */
+  windowsNotificationSeconds: number;
   relicRewardsOverlayEnabled: boolean;
   relicRecommendationOverlayEnabled: boolean;
   tradeNotificationOverlayEnabled: boolean;
@@ -113,6 +116,7 @@ export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   tradeNotificationSeconds: 5,
   // Off by default: the in-game toast already covers the common case.
   tradeDesktopNotificationsEnabled: false,
+  windowsNotificationSeconds: 5,
   relicRewardsOverlayEnabled: true,
   relicRecommendationOverlayEnabled: true,
   tradeNotificationOverlayEnabled: true,

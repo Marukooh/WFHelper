@@ -192,8 +192,14 @@ function ensureStartMenuShortcut(): void {
 /** Auto-incrementing tag counter so each toast gets a unique tag for History.Remove(). */
 let _toastTagCounter = 0;
 
-/** Duration in ms before auto-dismissing an incomingCall toast banner. */
+/** Fallback for the configured dismiss delay; an incomingCall toast holds on
+ *  screen until it is pulled, so this is what the user actually sees. */
 const TOAST_DISMISS_MS = 5_000;
+
+function _toastDismissMs(): number {
+  const seconds = Number(ctx.overlaySettings?.windowsNotificationSeconds);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : TOAST_DISMISS_MS;
+}
 
 const SHOW_TOAST_SCRIPT = [
   "param([string]$XmlPath, [string]$Tag, [string]$Group, [string]$AppId)",
@@ -336,7 +342,7 @@ function sendWindowsToast(title: string, body: string): void {
         fs.unlink(removeScriptPath, () => {});
       },
     );
-  }, TOAST_DISMISS_MS);
+  }, _toastDismissMs());
 }
 
 // Keep references to active notifications to prevent GC before display.

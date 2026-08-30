@@ -172,6 +172,7 @@
     "tradeRepHotkey",
     "tradeNotificationSeconds",
     "tradeDesktopNotificationsEnabled",
+    "windowsNotificationSeconds",
     "tradeNotificationOverlayEnabled",
     "relicRewardsOverlayEnabled",
     "relicRecommendationOverlayEnabled",
@@ -413,6 +414,18 @@
                   bind:checked={form.notificationSoundEnabled}
                   on:change={autoSave}
                   class="accent-accent"
+                />
+              </SettingsRow>
+
+              <SettingsRow label={$tr("settings.windowsNotificationSeconds")} inputRow>
+                <input
+                  type="number"
+                  min="2"
+                  max="60"
+                  step="1"
+                  bind:value={form.windowsNotificationSeconds}
+                  on:change={autoSave}
+                  class="settings-input"
                 />
               </SettingsRow>
 
