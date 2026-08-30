@@ -128,7 +128,7 @@ function overlayKeysReferenced(): Set<string> {
 }
 
 describe("overlay messages", () => {
-  const locales = ["en", "de"];
+  const locales = ["en", "de", "zh"];
 
   it("names only keys English defines", () => {
     setOverlayLocale("en");

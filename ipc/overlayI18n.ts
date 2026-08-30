@@ -1,5 +1,6 @@
 import de from "../src/i18n/de.json";
 import en from "../src/i18n/en.json";
+import zh from "../src/i18n/zh.json";
 
 type MessageKey = keyof typeof en;
 type Dictionary = Partial<Record<MessageKey, string>>;
@@ -95,7 +96,7 @@ const OVERLAY_MESSAGE_KEYS = [
 
 // Same fallback chain as the renderer: a locale may be partial and every hole
 // is served by English.
-const DICTIONARIES: Record<string, Dictionary> = { en, de };
+const DICTIONARIES: Record<string, Dictionary> = { en, de, zh };
 
 const DEFAULT_LOCALE = "en";
 let activeLocale = DEFAULT_LOCALE;

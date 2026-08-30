@@ -5,13 +5,14 @@ import { OVERLAY_LOCALE_UPDATED } from "../../config/shared/ipcChannels.js";
 
 type MessageParamValue = string | number;
 type MessageParams = Record<string, MessageParamValue>;
-export type LocaleCode = "en" | "de";
+export type LocaleCode = "en" | "de" | "zh";
 type LocaleDictionary = Partial<Record<MessageKey, string>>;
 export type Translator = (key: MessageKey, params?: MessageParams) => string;
 
 export const LOCALE_OPTIONS: ReadonlyArray<{ code: LocaleCode; label: string }> = [
   { code: "en", label: "English" },
   { code: "de", label: "Deutsch" },
+  { code: "zh", label: "简体中文" },
 ];
 
 const LOCALE_STORAGE_KEY = "app-language";
@@ -20,6 +21,7 @@ const LOCALE_STORAGE_KEY = "app-language";
 // Every other locale is its own chunk and only the active one is ever fetched.
 const LOADERS: Record<Exclude<LocaleCode, "en">, () => Promise<LocaleDictionary>> = {
   de: () => import("../i18n/de.json").then((module) => module.default),
+  zh: () => import("../i18n/zh.json").then((module) => module.default),
 };
 
 const dictionaries = writable<Partial<Record<LocaleCode, LocaleDictionary>>>({ en });
