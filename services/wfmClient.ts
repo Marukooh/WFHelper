@@ -702,6 +702,9 @@ function _coreRequest(
 
     if (!res.ok) {
       let detail = `HTTP ${res.status}`;
+      // A redirect carries no body, so its target is the only thing that says why.
+      const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+      if (location) detail = `HTTP ${res.status} -> ${location}`;
       try {
         const text = await res.text();
         log.info(`[${label}] ${method} ${path} -> ${res.status} body:`, text.slice(0, 500));
@@ -729,6 +732,39 @@ export function request(
   opts: WfmRequestOptions = {},
 ): Promise<unknown> {
   return _coreRequest(BASE_URL, method, path, { ...opts, label: "WFMClient" });
+}
+
+/** Where WFM redirects `path`, or null when it serves the path directly. A
+ *  redirect is never re-sent with the original method or body, so a caller that
+ *  has to POST must resolve the target first. Probed with HEAD; only a target on
+ *  the API's own v1 root is trusted. */
+export function requestRedirectTarget(path: string): Promise<string | null> {
+  return enqueue(async () => {
+    const url = BASE_URL + path;
+    try {
+      const res = await _request("HEAD", url, { ...WFM_BASE_HEADERS }, null);
+      if (res.status < 300 || res.status >= 400) return null;
+      const location = res.headers.get("location");
+      if (!location) return null;
+      // Location is as often a bare path as a full URL. Resolving against the
+      // probed URL is what gives "//host/x" its real origin, so the root check
+      // has to run on the resolved target and never on the raw header.
+      let target: URL | null = null;
+      try {
+        target = new URL(location, url);
+      } catch {
+        target = null;
+      }
+      if (!target || !target.href.startsWith(`${BASE_URL}/`)) {
+        log.warn(`[WFMClient] redirect target off the v1 root for ${path}: ${location}`);
+        return null;
+      }
+      return target.href;
+    } catch (err) {
+      log.warn(`[WFMClient] redirect probe failed for ${path}:`, normalizeErrorMessage(err));
+      return null;
+    }
+  });
 }
 
 export function requestV2(
