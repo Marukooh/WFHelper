@@ -100,6 +100,10 @@ const eventApiMap: Record<
     window.api.onWarframeUiScaleUpdated(
       cb as (scale: IpcEventMap["warframe-ui-scale-updated"]) => void,
     ),
+  "notification-history-added": (cb) =>
+    window.api.onNotificationHistoryAdded(
+      cb as (entry: IpcEventMap["notification-history-added"]) => void,
+    ),
 };
 
 export function on<K extends EventChannel>(

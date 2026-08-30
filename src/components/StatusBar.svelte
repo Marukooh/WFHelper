@@ -5,11 +5,19 @@
   import { invoke } from "../lib/ipc.js";
   import { tr } from "../lib/i18n.js";
   import UpdateModal from "./UpdateModal.svelte";
+  import NotificationHistory from "./NotificationHistory.svelte";
+  import { markNotificationsSeen, notificationsUnread } from "../stores/notifications.js";
 
   import { normalizeErrorMessage } from "../../config/shared/errors.js";
 
   let updateActionPending = false;
   let showChangelog = false;
+  let showNotifications = false;
+
+  function openNotifications() {
+    markNotificationsSeen();
+    showNotifications = true;
+  }
   /** Version the changelog already popped for, so it opens once per update. */
   let autoOpenedVersion: string | null = null;
 
@@ -135,7 +143,22 @@
     <span class="truncate">{statusLabel}</span>
   </span>
   <button
-    class="update-pill ml-auto mr-2 shrink-0 whitespace-nowrap font-body"
+    class="notification-bell ml-auto mr-2 shrink-0"
+    data-notification-open
+    title={$tr("notifications.open")}
+    aria-label={$tr("notifications.open")}
+    on:click={openNotifications}
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </svg>
+    {#if $notificationsUnread > 0}
+      <span class="bell-count">{$notificationsUnread}</span>
+    {/if}
+  </button>
+  <button
+    class="update-pill mr-2 shrink-0 whitespace-nowrap font-body"
     class:is-update={hasUpdate}
     title={$appUpdateState.message || $tr("statusbar.checkForUpdates")}
     on:click={onUpdateButton}
@@ -151,6 +174,10 @@
   >
 </footer>
 
+{#if showNotifications}
+  <NotificationHistory onClose={() => (showNotifications = false)} />
+{/if}
+
 {#if showChangelog}
   <UpdateModal
     state={$appUpdateState}
@@ -162,6 +189,31 @@
 {/if}
 
 <style>
+  .notification-bell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border: none;
+    background: none;
+    padding: 0.1rem 0.2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .notification-bell:hover {
+    color: var(--text-primary);
+  }
+  .notification-bell svg {
+    width: 0.95rem;
+    height: 0.95rem;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .bell-count {
+    font-size: 0.66rem;
+    line-height: 1;
+    color: var(--accent);
+  }
   .update-pill {
     display: inline-flex;
     align-items: center;

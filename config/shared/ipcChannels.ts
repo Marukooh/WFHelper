@@ -55,6 +55,10 @@ export const WINDOW_CLOSE = "window-close";
 export const OPEN_EXTERNAL = "open-external";
 export const LOG_WARN = "log:warn";
 
+export const NOTIFICATION_HISTORY_GET = "notification-history-get";
+export const NOTIFICATION_HISTORY_CLEAR = "notification-history-clear";
+export const NOTIFICATION_HISTORY_ADDED = "notification-history-added";
+
 export const STATS_GET_HISTORY = "stats:get-history";
 export const STATS_GET_CURRENT = "stats:get-current";
 export const STATS_IMPORT = "stats:import";

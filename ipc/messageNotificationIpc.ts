@@ -38,7 +38,7 @@ export async function notifyInGameMessage(playerName: string): Promise<void> {
       }
     }
 
-    sendDesktopNotificationRaw("New in-game conversation", `from ${playerName}`);
+    sendDesktopNotificationRaw("New in-game conversation", `from ${playerName}`, "message");
   } catch (err) {
     log.warn("[Message] notify failed:", normalizeErrorMessage(err));
   }

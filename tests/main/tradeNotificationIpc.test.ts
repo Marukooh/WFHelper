@@ -22,6 +22,7 @@ const h = vi.hoisted(() => ({
   registerHotkey: vi.fn(),
   unregisterHotkey: vi.fn(),
   sendPlusRep: vi.fn(),
+  recordNotification: vi.fn(),
 }));
 
 vi.mock("electron", () => {
@@ -114,6 +115,10 @@ vi.mock("../../services/wfmReviews", () => ({
   sendPlusRep: h.sendPlusRep,
 }));
 
+vi.mock("../../ipc/notificationLogIpc", () => ({
+  recordNotification: h.recordNotification,
+}));
+
 function sale(partner: string): TradeMatchPayload {
   return {
     kind: "order",
@@ -135,6 +140,7 @@ async function setup(overrides: Record<string, unknown> = {}) {
   h.registerHotkey.mockReset();
   h.unregisterHotkey.mockReset();
   h.sendPlusRep.mockReset();
+  h.recordNotification.mockReset();
   h.registerHotkey.mockImplementation((accelerator: string, handler: () => void) => {
     h.hotkeys.set(accelerator, handler);
     return true;
@@ -200,6 +206,32 @@ describe("configured toast duration", () => {
       channel: "trade-notification-show",
       payload: { rep: { hotkey: "F9" }, timing: { visibleMs: 12_000 } },
     });
+  });
+});
+
+describe("trade notification history", () => {
+  it("records one entry for the toast it shows", async () => {
+    const { notifications } = await setup({ tradeRepHotkeyEnabled: false });
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    h.windows[0].finishLoad();
+
+    expect(h.recordNotification).toHaveBeenCalledTimes(1);
+    expect(h.recordNotification).toHaveBeenCalledWith(
+      "trade",
+      "Listing Closed",
+      "Ash Prime Chassis 45p with Buyer",
+    );
+  });
+
+  it("does not record a toast that was invalidated before the renderer was ready", async () => {
+    const { notifications } = await setup();
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    notifications.hideTradeNotification();
+    h.windows[0].finishLoad();
+
+    expect(h.recordNotification).not.toHaveBeenCalled();
   });
 });
 

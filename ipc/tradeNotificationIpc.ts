@@ -1,6 +1,7 @@
 import ctx from "./context";
 import { registerTransientHotkey, unregisterTransientHotkey } from "./hotkeyRegistry";
 import { assertTradeNotificationSender, onAuthorized } from "./ipcSecurity";
+import { recordNotification } from "./notificationLogIpc";
 import { withScope } from "../services/logger";
 import { hardenBrowserWindowNavigation } from "../services/windowSecurity";
 import * as wfmReviews from "../services/wfmReviews";
@@ -198,6 +199,30 @@ function _scheduleHide(win: InstanceType<typeof BrowserWindow>, delayMs: number)
   }, delayMs);
 }
 
+// English on purpose: history entries are stored, and a translated string would
+// freeze in whatever language wrote it. These mirror the toast status labels.
+const TRADE_STATUS_TITLES: Record<TradeNotificationStatus, string> = {
+  closed: "Listing Closed",
+  "no-match": "No Listing Matched",
+  "close-failed": "Closing Failed",
+  detected: "Trade Finished",
+};
+
+function _tradeHistoryBody(match: TradeMatchPayload): string {
+  const quantity = match.quantity > 1 ? `${match.quantity}x ` : "";
+  const priced = (match.type === "sale" || match.type === "purchase") && match.platinum > 0;
+  const platinum = priced ? ` ${match.platinum}p` : "";
+  const partner = match.partner ? ` with ${match.partner}` : "";
+  return `${quantity}${match.itemName}${platinum}${partner}`;
+}
+
+// The toast is a custom window, not an OS notification, so it has to log its
+// own history entry.
+function _recordTradeHistory(pending: PendingTradeNotification): void {
+  const title = TRADE_STATUS_TITLES[pending.status] ?? TRADE_STATUS_TITLES.detected;
+  recordNotification("trade", title, _tradeHistoryBody(pending.match));
+}
+
 function _displayNotification(
   win: InstanceType<typeof BrowserWindow>,
   pending: PendingTradeNotification,
@@ -222,6 +247,7 @@ function _displayNotification(
   };
   win.webContents.send(TRADE_NOTIFICATION_SHOW, payload);
   _presentWindow(win);
+  _recordTradeHistory(pending);
 
   _scheduleHide(win, payload.timing.visibleMs + payload.timing.fadeMs + MAIN_HIDE_BUFFER_MS);
 

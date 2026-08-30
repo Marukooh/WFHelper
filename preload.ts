@@ -62,6 +62,9 @@ import {
   WARFRAME_UI_SCALE_UPDATED,
   OPEN_EXTERNAL,
   LOG_WARN,
+  NOTIFICATION_HISTORY_GET,
+  NOTIFICATION_HISTORY_CLEAR,
+  NOTIFICATION_HISTORY_ADDED,
   RANKED_HOTSET_LOAD,
   RANKED_HOTSET_SAVE,
   SNAPSHOT_CACHE_LOAD,
@@ -198,6 +201,13 @@ try {
 
     openExternal: (url) => ipcRenderer.send(OPEN_EXTERNAL, url),
     logWarn: (message, ...args) => ipcRenderer.send(LOG_WARN, message, ...args),
+
+    getNotificationHistory: inv<"getNotificationHistory">(NOTIFICATION_HISTORY_GET),
+    clearNotificationHistory: inv<"clearNotificationHistory">(NOTIFICATION_HISTORY_CLEAR),
+    onNotificationHistoryAdded: ipcDataBridge<IpcEventMap["notification-history-added"]>(
+      ipcRenderer,
+      NOTIFICATION_HISTORY_ADDED,
+    ),
 
     loadRankedHotset: inv<"loadRankedHotset">(RANKED_HOTSET_LOAD),
     saveRankedHotset: inv<"saveRankedHotset">(RANKED_HOTSET_SAVE),

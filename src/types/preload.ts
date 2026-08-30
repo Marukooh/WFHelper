@@ -64,6 +64,11 @@ export interface PreloadAPI {
   getAppRuntimeInfo: () => Promise<IpcInvokeMap["getAppRuntimeInfo"]["return"]>;
   openScanDebugFolder: () => Promise<IpcInvokeMap["openScanDebugFolder"]["return"]>;
   openLogFolder: () => Promise<IpcInvokeMap["openLogFolder"]["return"]>;
+  getNotificationHistory: () => Promise<IpcInvokeMap["getNotificationHistory"]["return"]>;
+  clearNotificationHistory: () => Promise<IpcInvokeMap["clearNotificationHistory"]["return"]>;
+  onNotificationHistoryAdded: (
+    callback: (entry: IpcEventMap["notification-history-added"]) => void,
+  ) => () => void;
   onInventoryUpdated: (callback: (data: IpcEventMap["inventory-updated"]) => void) => () => void;
   onInventoryStatusUpdated: (
     callback: (status: IpcEventMap["inventory-status-updated"]) => void,

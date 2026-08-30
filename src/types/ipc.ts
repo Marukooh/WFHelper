@@ -23,6 +23,7 @@ import type { HelperStatus } from "../../config/shared/apiHelperTypes.js";
 import type { CodexScansResult } from "../../config/shared/codexTypes.js";
 import type { InventorySource } from "../../config/shared/inventorySource.js";
 import type { DisplayPreference, LinuxDisplayInfo } from "../../config/shared/linuxDisplay.js";
+import type { NotificationEntry } from "../../config/shared/notifications.js";
 import type { OverlaySettings, OverlayWindowKey } from "../../config/runtime/overlaySettings.js";
 
 export type { HelperStatus } from "../../config/shared/apiHelperTypes.js";
@@ -315,6 +316,14 @@ export interface IpcInvokeMap {
     args: [];
     return: { ok: boolean };
   };
+  getNotificationHistory: {
+    args: [];
+    return: NotificationEntry[];
+  };
+  clearNotificationHistory: {
+    args: [];
+    return: void;
+  };
   loadRankedHotset: {
     args: [];
     return: Record<string, unknown> | null;
@@ -540,6 +549,7 @@ export interface IpcEventMap {
   "arbi-run-saved": ArbiRunRecord;
   "arbi-open-run": string;
   "warframe-ui-scale-updated": number | null;
+  "notification-history-added": NotificationEntry;
 }
 
 export interface IpcSendMap {

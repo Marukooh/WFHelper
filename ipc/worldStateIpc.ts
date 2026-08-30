@@ -1,6 +1,8 @@
 import ctx from "./context";
 import { assertAuthorizedSender, assertMainRendererSender } from "./ipcSecurity";
 import { asRecord } from "./ipcValidators";
+import { recordNotification } from "./notificationLogIpc";
+import type { NotificationKind } from "../config/shared/notifications";
 import { withScope } from "../services/logger";
 import * as worldStateParser from "../services/worldStateParser";
 import { resolveRuntimeResourcePath } from "../services/runtimeResources";
@@ -342,11 +344,18 @@ const _activeNotifications = new Set<{ close: () => void }>();
 
 function sendDesktopNotification(title: string, body: string): void {
   if (ctx.overlaySettings.worldNotificationsEnabled === false) return;
-  sendDesktopNotificationRaw(title, body);
+  sendDesktopNotificationRaw(title, body, "world");
 }
 
-/** Sends a toast for callers that apply their own settings gate. */
-export function sendDesktopNotificationRaw(title: string, body: string): void {
+/** Sends a toast for callers that apply their own settings gate.
+ *  History is recorded before the platform gate so a system that cannot show
+ *  the toast still leaves the user something to read back. */
+export function sendDesktopNotificationRaw(
+  title: string,
+  body: string,
+  kind: NotificationKind = "app",
+): void {
+  recordNotification(kind, title, body);
   try {
     if (!canSendNotifications()) return;
     log.info("[WorldState] sending notification:", title, "-", body);

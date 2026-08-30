@@ -10,6 +10,7 @@ import { currentView } from "../stores/app.js";
 import { inventoryModifiedAt, itemDb, parsedItems } from "../stores/data.js";
 import { masteryData } from "../stores/mastery.js";
 import { applyClosedWfmListing } from "../stores/market.js";
+import { addNotificationEntry, loadNotificationHistory } from "../stores/notifications.js";
 import { detectedWarframeUiScale } from "../stores/overlaySettings.js";
 import { addToast } from "../stores/toasts.js";
 import { applyUpdateState } from "../stores/updates.js";
@@ -70,6 +71,10 @@ export function initRendererEvents(): () => void {
       for (const match of data?.wfmMatches ?? []) applyClosedWfmListing(match);
     }),
 
+    // Notifications land while the user is in-game, so the history has to be
+    // collected here rather than in the (lazily mounted) modal.
+    on("notification-history-added", (entry) => addNotificationEntry(entry)),
+
     // Post-run overlay "Detailed Stats" button: open the arbi tab on that run.
     on("arbi-open-run", (runId) => {
       pendingArbiRunId.set(runId);
@@ -88,6 +93,7 @@ export function initRendererEvents(): () => void {
 
   // The startup inventory load can predate these subscriptions, so seed the mtime.
   void refreshInventoryModifiedAt();
+  void loadNotificationHistory();
 
   // Main raises fallbackHint once per remembered XWayland failure.
   void invoke("getLinuxDisplay").then((display) => {
