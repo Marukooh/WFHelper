@@ -23,6 +23,9 @@
 // A compositor is another process; every wait on one is bounded because these
 // calls all land on Electron's main thread.
 #define ROUNDTRIP_TIMEOUT_MS 400
+// The connect probe runs on the startup path, so it gets a deadline a live
+// compositor beats by orders of magnitude and a wedged one cannot sit on.
+#define INIT_ROUNDTRIP_TIMEOUT_MS 150
 
 #define MAX_OUTPUTS 16
 #define MAX_SURFACES 8
@@ -461,7 +464,7 @@ static int ensure_init(void) {
   if (!display) return 0;
   struct wl_registry *registry = wl_display_get_registry(display);
   wl_registry_add_listener(registry, &registry_listener, NULL);
-  if (!roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS)) return 0;
+  if (!roundtrip_timeout(INIT_ROUNDTRIP_TIMEOUT_MS)) return 0;
   // An xdg-output can only be made once the manager and the outputs are both
   // bound, so it needs the second pass to deliver its geometry.
   if (xdg_output_manager) {
@@ -473,7 +476,7 @@ static int ensure_init(void) {
     }
   }
   // Second pass so the per-output name and logical geometry events land.
-  roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS);
+  roundtrip_timeout(INIT_ROUNDTRIP_TIMEOUT_MS);
   init_ok = compositor && shm && layer_shell;
   return init_ok;
 }
