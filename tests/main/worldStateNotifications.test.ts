@@ -6,6 +6,18 @@ vi.mock("node:child_process", () => ({
   spawn: vi.fn(() => ({ unref: vi.fn() })),
 }));
 
+const logged: string[] = [];
+vi.mock("../../services/logger", () => ({
+  withScope: () => ({
+    info: (...args: unknown[]) => logged.push(args.join(" ")),
+    warn: () => {},
+    error: () => {},
+    debug: () => {},
+    time: () => {},
+    timeEnd: () => {},
+  }),
+}));
+
 import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 
@@ -250,6 +262,28 @@ describe("windows toast audio and lifetime", () => {
     ctx.overlaySettings = { ...OVERLAY_SETTINGS_DEFAULTS } as OverlaySettings;
     vi.useRealTimers();
     vi.restoreAllMocks();
+  });
+
+  it("keeps a trade partner's name out of the log", () => {
+    logged.length = 0;
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw(
+      "Trade complete",
+      "Ash Prime Set with Someone",
+      "trade",
+    );
+
+    // main.log is what people attach to a support report.
+    expect(logged.join("\n")).not.toContain("Someone");
+    expect(logged.some((line) => line.includes("Trade complete"))).toBe(true);
+  });
+
+  it("still logs the text of a world notification", () => {
+    logged.length = 0;
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("Cetus", "Night in 5 minutes", "world");
+
+    expect(logged.some((line) => line.includes("Night in 5 minutes"))).toBe(true);
   });
 
   it("keeps the toast silent and asks the renderer for the sound", () => {

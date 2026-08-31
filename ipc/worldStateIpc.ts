@@ -388,10 +388,10 @@ function sendDesktopNotification(title: string, body: string): void {
   sendDesktopNotificationRaw(title, body, "world");
 }
 
-/** Sends a toast for callers that apply their own settings gate. History is
- *  recorded before the platform gate, so a caller that reaches here still leaves
- *  an entry on a system that cannot show toasts. World events check that gate
- *  themselves and never call in, so those record nothing. */
+/** Sends a toast. History is recorded before the platform gate, so a caller
+ *  that reaches here still leaves an entry on a system that cannot show toasts;
+ *  a caller whose own settings gate turned it away never reaches here and
+ *  records nothing. */
 export function sendDesktopNotificationRaw(
   title: string,
   body: string,
@@ -400,7 +400,10 @@ export function sendDesktopNotificationRaw(
   recordNotification(kind, title, body);
   try {
     if (!canSendNotifications()) return;
-    log.info("[WorldState] sending notification:", title, "-", body);
+    // A trade body names the other player, and main.log is what people attach
+    // to a support report, so only the world and app kinds log their text.
+    const shown = kind === "trade" ? "(body withheld)" : body;
+    log.info(`[WorldState] sending ${kind} notification:`, title, "-", shown);
     if (desktopNotificationSender) {
       desktopNotificationSender(title, body);
       return;
