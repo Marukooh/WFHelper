@@ -152,8 +152,8 @@ test.describe("Market tab (fixture mode)", () => {
   });
 
   test("owned-0 rows stay visible under every sort option", async () => {
-    // Field report: sorting by Amount seemed to hide unowned items. The fixture
-    // inventory owns nothing, so every row must survive every sort mode.
+    // Sorting by Amount must not drop unowned rows. The fixture inventory owns
+    // nothing, so every row has to survive every sort mode.
     const rows = page.locator(".order-row");
     const sortSelect = page.locator(".sort-control-select");
     for (const key of ["count", "amount", "platinum", "name"]) {

@@ -517,7 +517,7 @@ describe("gradeRiven", () => {
     ).toBeNull();
   });
 
-  it("grades the field-report Kuva Nukor riven mid-range, nothing clamped", () => {
+  it("grades a mid-range Kuva Nukor riven with nothing clamped", () => {
     const result = gradeRiven("Kuva Nukor", [
       { name: "Status Chance", positive: true, value: 42.6 },
       { name: "Heat", positive: true, value: 41.2 },
