@@ -49,6 +49,10 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   // show the user already dismissed.
   let generation = 0;
   let warnedCommit = false;
+  // A show already waiting on the compositor. Two callers drive one trigger (the
+  // route creates the window, then the feature controller shows it), and without
+  // this both would see no surface and allocate one; the addon has eight slots.
+  let pending: Promise<boolean> | null = null;
 
   function commitFrame(image: PaintImage): void {
     if (!surface) return;
@@ -85,23 +89,33 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
 
     /** Map the surface on the output the game is on. Async because only the
      *  compositor knows which that is; frames before it lands are dropped. */
-    async show(): Promise<boolean> {
-      if (surface && !surface.isClosed()) return true;
+    show(): Promise<boolean> {
+      if (surface && !surface.isClosed()) return Promise.resolve(true);
+      if (pending) return pending;
       const token = generation;
-      const output = await resolveOutput();
-      if (token !== generation) return false;
-      surface = createSurface({ output, width, height, anchor });
-      if (!surface) {
-        log?.warn?.(`[${label}] layer surface unavailable; using a window instead`);
-        return false;
-      }
-      warnedCommit = false;
-      log?.info?.(`[${label}] layer surface up on ${output ?? "compositor choice"}`);
-      return true;
+      const attempt = (async () => {
+        const output = await resolveOutput();
+        if (token !== generation) return false;
+        surface = createSurface({ output, width, height, anchor });
+        if (!surface) {
+          log?.warn?.(`[${label}] layer surface unavailable; using a window instead`);
+          return false;
+        }
+        warnedCommit = false;
+        log?.info?.(`[${label}] layer surface up on ${output ?? "compositor choice"}`);
+        return true;
+      })();
+      pending = attempt;
+      return attempt.finally(() => {
+        if (pending === attempt) pending = null;
+      });
     },
 
     hide(): void {
       generation++;
+      // Drop the in-flight show too, or the next show would return its promise
+      // and resolve false against the generation this hide just bumped.
+      pending = null;
       if (!surface) return;
       surface.destroy();
       surface = null;

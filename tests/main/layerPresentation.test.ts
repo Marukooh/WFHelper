@@ -115,6 +115,35 @@ describe("createLayerPresentation", () => {
     expect(createSurface).not.toHaveBeenCalled();
   });
 
+  // rewardOverlayIpc and relicSelection both show in one synchronous flow.
+  it("allocates one surface when two callers show in the same tick", async () => {
+    const { presentation, createSurface } = build();
+    presentation.attach(fakeWindow(), 100, 100);
+
+    const results = await Promise.all([presentation.show(), presentation.show()]);
+
+    expect(results).toEqual([true, true]);
+    expect(createSurface).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts a fresh attempt when a hide cancelled the show in flight", async () => {
+    let release: (value: string) => void = () => {};
+    const resolveOutput = vi.fn(() => new Promise<string>((resolve) => (release = resolve)));
+    const { presentation, createSurface } = build({ resolveOutput: resolveOutput as never });
+    presentation.attach(fakeWindow(), 100, 100);
+
+    const cancelled = presentation.show();
+    presentation.hide();
+    release("DP-1");
+    expect(await cancelled).toBe(false);
+
+    const retry = presentation.show();
+    release("DP-1");
+
+    expect(await retry).toBe(true);
+    expect(createSurface).toHaveBeenCalledTimes(1);
+  });
+
   it("drops a surface the compositor closed so the next show remakes it", async () => {
     const closed = fakeSurface({ commit: vi.fn(() => false), isClosed: vi.fn(() => true) });
     const createSurface = vi.fn(() => closed as never);
