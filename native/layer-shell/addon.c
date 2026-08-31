@@ -26,6 +26,9 @@
 // The connect probe runs on the startup path, so it gets a deadline a live
 // compositor beats by orders of magnitude and a wedged one cannot sit on.
 #define INIT_ROUNDTRIP_TIMEOUT_MS 150
+// A deadline that thin can be missed by a compositor busy with session login,
+// so a timed-out probe is retried rather than costing the run the feature.
+#define INIT_RETRY_COOLDOWN_MS 5000
 
 #define MAX_OUTPUTS 16
 #define MAX_SURFACES 8
@@ -107,6 +110,10 @@ static int output_count = 0;
 static struct layer_window windows[MAX_SURFACES];
 static int init_attempted = 0;
 static int init_ok = 0;
+// Set once the answer is final: no wayland socket, or a compositor that named
+// its globals and had no layer-shell among them. Only a timeout is retried.
+static int init_latched = 0;
+static long long init_last_attempt_ms = 0;
 
 static struct wl_seat *seat = NULL;
 static struct wl_pointer *pointer = NULL;
@@ -505,14 +512,57 @@ finish:;
   return done;
 }
 
+static long long monotonic_ms(void) {
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  return (long long)now.tv_sec * 1000 + now.tv_nsec / 1000000;
+}
+
+/** Undoes a partial connect so a retry starts from nothing. Only reachable
+ *  while init has never succeeded, and a surface needs init_ok, so no window
+ *  can be holding a proxy this frees. */
+static void reset_connection(void) {
+  for (int i = 0; i < output_count; i++) {
+    if (outputs[i].xdg_output) zxdg_output_v1_destroy(outputs[i].xdg_output);
+    if (outputs[i].output) wl_output_release(outputs[i].output);
+  }
+  memset(outputs, 0, sizeof(outputs));
+  output_count = 0;
+  if (cursor_theme) wl_cursor_theme_destroy(cursor_theme);
+  cursor_theme = NULL;
+  cursor_surface = NULL;
+  // Disconnecting destroys every remaining proxy, so the rest only need nulling.
+  if (display) wl_display_disconnect(display);
+  display = NULL;
+  compositor = NULL;
+  shm = NULL;
+  layer_shell = NULL;
+  xdg_output_manager = NULL;
+  seat = NULL;
+  pointer = NULL;
+}
+
 static int ensure_init(void) {
-  if (init_attempted) return init_ok;
+  if (init_ok) return 1;
+  if (init_latched) return 0;
+  const long long now = monotonic_ms();
+  if (init_attempted && now - init_last_attempt_ms < INIT_RETRY_COOLDOWN_MS) return 0;
   init_attempted = 1;
+  init_last_attempt_ms = now;
   display = wl_display_connect(NULL);
-  if (!display) return 0;
+  // No socket means no wayland session, and one does not appear mid-run.
+  if (!display) {
+    init_latched = 1;
+    return 0;
+  }
   struct wl_registry *registry = wl_display_get_registry(display);
   wl_registry_add_listener(registry, &registry_listener, NULL);
-  if (!roundtrip_timeout(INIT_ROUNDTRIP_TIMEOUT_MS)) return 0;
+  // A timed-out roundtrip says nothing about the compositor, so drop what was
+  // half-bound and let the next call ask again.
+  if (!roundtrip_timeout(INIT_ROUNDTRIP_TIMEOUT_MS)) {
+    reset_connection();
+    return 0;
+  }
   // An xdg-output can only be made once the manager and the outputs are both
   // bound, so it needs the second pass to deliver its geometry.
   if (xdg_output_manager) {
@@ -526,6 +576,12 @@ static int ensure_init(void) {
   // Second pass so the per-output name and logical geometry events land.
   roundtrip_timeout(INIT_ROUNDTRIP_TIMEOUT_MS);
   init_ok = compositor && shm && layer_shell;
+  // The registry roundtrip completed, so a missing layer-shell is the
+  // compositor's final word and asking again would only repeat it.
+  if (!init_ok) {
+    init_latched = 1;
+    reset_connection();
+  }
   return init_ok;
 }
 
