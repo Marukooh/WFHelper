@@ -4,9 +4,11 @@
 // report unavailable rather than throwing, so the caller keeps its normal window.
 
 #define _GNU_SOURCE
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <poll.h>
@@ -14,6 +16,10 @@
 #include <wayland-client.h>
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+// A compositor is another process; every wait on one is bounded because these
+// calls all land on Electron's main thread.
+#define ROUNDTRIP_TIMEOUT_MS 400
 
 #define MAX_OUTPUTS 16
 #define MAX_SURFACES 8
@@ -108,6 +114,75 @@ static const struct wl_registry_listener registry_listener = {
     .global_remove = on_global_remove,
 };
 
+struct sync_state {
+  int done;
+  int abandoned;
+};
+
+static void on_sync_done(void *data, struct wl_callback *callback, uint32_t serial) {
+  (void)serial;
+  struct sync_state *state = data;
+  wl_callback_destroy(callback);
+  // The waiter gave up and returned, so nobody else owns this.
+  if (state->abandoned) {
+    free(state);
+    return;
+  }
+  state->done = 1;
+}
+
+static const struct wl_callback_listener sync_listener = {.done = on_sync_done};
+
+/** wl_display_roundtrip with a deadline. The blocking form waits forever, and a
+ *  compositor that stops answering would take Electron's main thread with it. */
+static int roundtrip_timeout(int timeout_ms) {
+  if (!display) return 0;
+  struct sync_state *state = calloc(1, sizeof(*state));
+  if (!state) return 0;
+  struct wl_callback *callback = wl_display_sync(display);
+  if (!callback) {
+    free(state);
+    return 0;
+  }
+  wl_callback_add_listener(callback, &sync_listener, state);
+
+  const int fd = wl_display_get_fd(display);
+  int remaining = timeout_ms;
+  while (!state->done) {
+    while (wl_display_prepare_read(display) != 0) {
+      if (wl_display_dispatch_pending(display) < 0) goto finish;
+    }
+    if (wl_display_flush(display) < 0 && errno != EAGAIN) {
+      wl_display_cancel_read(display);
+      goto finish;
+    }
+    if (state->done) {
+      wl_display_cancel_read(display);
+      break;
+    }
+    struct pollfd pfd = {.fd = fd, .events = POLLIN, .revents = 0};
+    struct timespec before, after;
+    clock_gettime(CLOCK_MONOTONIC, &before);
+    if (poll(&pfd, 1, remaining) <= 0) {
+      wl_display_cancel_read(display);
+      goto finish;
+    }
+    if (wl_display_read_events(display) < 0) goto finish;
+    if (wl_display_dispatch_pending(display) < 0) goto finish;
+    clock_gettime(CLOCK_MONOTONIC, &after);
+    long elapsed = (after.tv_sec - before.tv_sec) * 1000 +
+                   (after.tv_nsec - before.tv_nsec) / 1000000;
+    remaining -= (int)(elapsed > 0 ? elapsed : 1);
+    if (remaining <= 0) goto finish;
+  }
+
+finish:;
+  int ok = state->done;
+  if (ok) free(state);
+  else state->abandoned = 1;
+  return ok;
+}
+
 static int ensure_init(void) {
   if (init_attempted) return init_ok;
   init_attempted = 1;
@@ -115,9 +190,9 @@ static int ensure_init(void) {
   if (!display) return 0;
   struct wl_registry *registry = wl_display_get_registry(display);
   wl_registry_add_listener(registry, &registry_listener, NULL);
-  wl_display_roundtrip(display);
+  if (!roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS)) return 0;
   // Second pass so the per-output name events land.
-  wl_display_roundtrip(display);
+  roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS);
   init_ok = compositor && shm && layer_shell;
   return init_ok;
 }
@@ -296,7 +371,7 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   wl_region_destroy(empty);
 
   wl_surface_commit(win->surface);
-  wl_display_roundtrip(display);
+  roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS);
 
   if (!win->configured || win->closed) {
     zwlr_layer_surface_v1_destroy(win->layer);
