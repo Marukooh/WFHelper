@@ -96,6 +96,9 @@ struct layer_window {
   // Buffer pixels per logical pixel. Buffers are width*scale by height*scale
   // while set_size stays logical, which is what keeps text sharp on HiDPI.
   int scale;
+  // The scale the surface last committed. Buffer scale is double-buffered
+  // state, so it may only be sent with the frame drawn at that density.
+  int committed_scale;
   int configured;
   int closed;
 };
@@ -172,9 +175,9 @@ static void adopt_output_scale(struct wl_output *output, int scale) {
   if (!output || scale <= 0) return;
   for (int i = 0; i < MAX_SURFACES; i++) {
     if (!windows[i].used || windows[i].output != output) continue;
+    // Recorded only. Sending set_buffer_scale here would let any bufferless
+    // commit apply it to the frame still attached at the old density.
     windows[i].scale = scale;
-    // Double-buffered, so it lands with the first frame at the new density.
-    wl_surface_set_buffer_scale(windows[i].surface, scale);
   }
 }
 
@@ -184,10 +187,8 @@ static void on_surface_enter(void *data, struct wl_surface *surface, struct wl_o
   win->output = output;
   for (int i = 0; i < MAX_OUTPUTS; i++) {
     if (outputs[i].output != output || outputs[i].scale <= 0) continue;
-    if (win->scale != outputs[i].scale) {
-      win->scale = outputs[i].scale;
-      wl_surface_set_buffer_scale(win->surface, win->scale);
-    }
+    // Recorded only; the commit that carries a frame at this density sends it.
+    win->scale = outputs[i].scale;
     return;
   }
 }
@@ -803,6 +804,7 @@ static napi_value Create(napi_env env, napi_callback_info info) {
       win->layer, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
 
   wl_surface_set_buffer_scale(win->surface, scale);
+  win->committed_scale = scale;
 
   struct wl_region *empty = wl_compositor_create_region(compositor);
   wl_surface_set_input_region(win->surface, empty);
@@ -885,6 +887,11 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
 
   memcpy(slot->pixels, data, expected);
   slot->busy = 1;
+  // Sent here so the density and the frame drawn at it land in one commit.
+  if (win->committed_scale != win->scale) {
+    wl_surface_set_buffer_scale(win->surface, win->scale);
+    win->committed_scale = win->scale;
+  }
   wl_surface_attach(win->surface, slot->buffer, 0, 0);
   wl_surface_damage_buffer(win->surface, 0, 0, pixel_width, pixel_height);
   wl_surface_commit(win->surface);
