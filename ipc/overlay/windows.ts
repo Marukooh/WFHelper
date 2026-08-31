@@ -12,6 +12,8 @@ import {
   setClickThrough,
 } from "./clickThrough";
 import { createKeepMappedMode } from "./keepMapped";
+import { createLayerPresentation } from "./layerPresentation";
+import { probeLayerShell } from "../../services/layerShell";
 import { placeWindowOnGameOutput } from "../../services/waylandCompositor";
 import type {
   OverlaySavedWindowBounds,
@@ -104,7 +106,20 @@ type OverlayWindowsControllerOptions = {
   isNativeWayland?: () => boolean;
   isTilingCompositor?: () => boolean;
   placeOnGameOutput?: (title: string) => Promise<boolean>;
+  /** Returns null to keep the ordinary window; the default answers null unless
+   *  the compositor offers layer-shell. */
+  createPresentation?: (
+    options: Parameters<typeof createLayerPresentation>[0],
+  ) => ReturnType<typeof createLayerPresentation> | null;
 };
+
+/** Only a compositor that offers the protocol gets a layer surface; everything
+ *  else keeps the window path unchanged. */
+function defaultPresentationFactory(
+  options: Parameters<typeof createLayerPresentation>[0],
+): ReturnType<typeof createLayerPresentation> | null {
+  return probeLayerShell()?.available ? createLayerPresentation(options) : null;
+}
 
 interface MovableWindow {
   getBounds(): { x: number; y: number };
@@ -181,6 +196,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     isNativeWayland = linuxIsNativeWayland,
     isTilingCompositor = linuxIsTilingCompositor,
     placeOnGameOutput = placeWindowOnGameOutput,
+    createPresentation = defaultPresentationFactory,
   } = options;
 
   // Every linux overlay is transparent whatever the caller asked for: only a
@@ -199,6 +215,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   let resizeSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let rendererReady = false;
   let logicalVisible = false;
+  // Non-null only while this overlay is presented as a layer surface, which
+  // means its window is offscreen and never mapped.
+  let layer: ReturnType<typeof createLayerPresentation> | null = null;
   let lastAppliedInteractive: boolean | null = null;
   let clickThroughApplied = false;
   let lastAutoHideDelayMs = 0;
@@ -517,7 +536,20 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   }
 
   function isKeepMappedActive(): boolean {
+    // Keep-mapped works around a window's map stealing focus. A layer surface
+    // never takes focus, so the workaround would only re-map a hidden window.
+    if (isLayerMode()) return false;
     return keepMapped.isActive();
+  }
+
+  function isLayerMode(): boolean {
+    return layer !== null;
+  }
+
+  /** Interactive overlays keep the window path: a layer surface with no input
+   *  region cannot be clicked, and forwarding pointer events is separate work. */
+  function layerModeAllowed(): boolean {
+    return platform === "linux" && isNativeWayland() && !readInteractiveMode();
   }
 
   function applyClickThrough(overlayWindow: import("electron").BrowserWindow, force = false): void {
@@ -531,6 +563,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   // That stuck shape has not been seen on Wayland, and on tiling compositors
   // click-through never takes effect at all - see ipc/overlay/keepMapped.ts.
   function needsRebuildForInteractive(): boolean {
+    // An offscreen window cannot be shown, so entering interactive mode has to
+    // rebuild it as an ordinary one.
+    if (isLayerMode()) return true;
     return platform === "linux" && clickThroughApplied && !isNativeWayland();
   }
 
@@ -650,7 +685,10 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       positionOverlayWindow(lastOverlayAnchorMeta);
       keepOverlayAboveGame(existingWindow);
       if (shouldShow) {
-        if (isKeepMappedActive()) {
+        if (isLayerMode()) {
+          logicalVisible = true;
+          void layer?.show();
+        } else if (isKeepMappedActive()) {
           // Keep-mapped windows stay OS-visible while logically hidden, so the
           // visibility check below cannot gate this branch.
           showKeepMapped(existingWindow);
@@ -678,6 +716,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     }
 
     const initialBounds = getOverlayBoundsForActiveDisplay(lastOverlayAnchorMeta);
+    const nextLayer = layerModeAllowed()
+      ? createPresentation({ label: windowLabel, anchor: placement, log })
+      : null;
 
     const createdWindow = new BrowserWindow({
       // Toolbar windows avoid Linux focus-on-map while still allowing explicit focus.
@@ -708,6 +749,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
+        // Offscreen so paints can be handed to the layer surface; the window
+        // itself is never mapped in this mode.
+        ...(nextLayer ? { offscreen: true } : {}),
       },
     });
 
@@ -721,6 +765,10 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     // Edge drags stay proportional, so any edge scales the overlay uniformly
     // instead of stretching a layout that only the zoom factor can resize.
     createdWindow.setAspectRatio(windowWidth / windowHeight);
+
+    layer?.hide();
+    layer = nextLayer;
+    layer?.attach(createdWindow, initialBounds.width, initialBounds.height);
 
     rendererReady = false;
     logicalVisible = false;
@@ -743,11 +791,18 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     if (shouldShow) {
       // showInactive() first, or moveTop becomes what reveals the window - without
       // the inactive part, so it took focus off the game on every riven open.
-      createdWindow.showInactive();
-      keepOverlayAboveGame(createdWindow);
-      createdWindow.moveTop();
-      keepOverlayAboveGame(createdWindow);
-      void placeOverlayOnGameOutput();
+      if (isLayerMode()) {
+        // No map, no raise, no click-through: the compositor owns all three for
+        // a layer surface, and the window behind it stays offscreen.
+        logicalVisible = true;
+        void layer?.show();
+      } else {
+        createdWindow.showInactive();
+        keepOverlayAboveGame(createdWindow);
+        createdWindow.moveTop();
+        keepOverlayAboveGame(createdWindow);
+        void placeOverlayOnGameOutput();
+      }
       if (isKeepMappedActive()) keepMapped.present(createdWindow, setKeepMappedContentVisible);
       setOverlayInteractiveMode(readInteractiveMode());
       const reassertClickThrough = scheduleClickThroughReassert(
@@ -767,6 +822,9 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       // event lands late it would tear down the replacement, so only the window
       // still registered gets to reset the controller.
       if (readOverlayWindow() !== createdWindow) return;
+      // The surface outlives the window unless it is torn down here.
+      layer?.hide();
+      layer = null;
       clearOverlayAutoHideTimer();
       if (moveSaveTimer) {
         clearTimeout(moveSaveTimer);
@@ -826,6 +884,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   function isOverlayWindowVisible(): boolean {
     const overlayWindow = readOverlayWindow();
     if (!overlayWindow || overlayWindow.isDestroyed()) return false;
+    // An offscreen window is never OS-visible, so only the logical flag knows.
+    if (isLayerMode()) return logicalVisible;
     if (!overlayWindow.isVisible()) return false;
     // Keep-mapped windows are always OS-visible; the logical flag is the truth.
     return isKeepMappedActive() ? logicalVisible : true;
@@ -834,6 +894,13 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   function hideOverlayWindow(): void {
     const overlayWindow = readOverlayWindow();
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
+    if (isLayerMode()) {
+      // Destroying the surface is what takes it off screen; the window behind
+      // it was never mapped to begin with.
+      logicalVisible = false;
+      layer?.hide();
+      return;
+    }
     if (keepMapped.hide(overlayWindow, setKeepMappedContentVisible)) {
       // A blanked window is still mapped, so it would swallow clicks meant for
       // the game. Wayland can undo this shape; only X11 could not.
@@ -849,6 +916,11 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   function showOverlayWindowInactive(): void {
     const overlayWindow = readOverlayWindow();
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
+    if (isLayerMode()) {
+      logicalVisible = true;
+      void layer?.show();
+      return;
+    }
     if (isKeepMappedActive()) {
       showKeepMapped(overlayWindow);
     } else {
@@ -936,6 +1008,10 @@ export function createOverlayWindowsController(options: OverlayWindowsController
         `[OverlayWindow] ${windowLabel} mode=${interactive ? "interactive" : "passive"} visible=${visible}`,
       );
     }
+
+    // The compositor owns a layer surface's stacking and focus, and the window
+    // behind it is offscreen, so there is nothing here to apply.
+    if (isLayerMode()) return;
 
     // Stacking and focus only mean something for a window that is on screen.
     if (!visible) return;

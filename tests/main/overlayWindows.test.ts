@@ -289,6 +289,7 @@ function createPresentationProbe(options: {
   tiling?: boolean;
   windowTitle?: string;
   placeOnGameOutput?: (title: string) => Promise<boolean>;
+  createPresentation?: (options: unknown) => unknown;
 }) {
   const display = {
     id: 1,
@@ -309,8 +310,10 @@ function createPresentationProbe(options: {
 
     visible = false;
     destroyed = false;
+    options: { webPreferences: { offscreen?: boolean } };
 
-    constructor() {
+    constructor(options: { webPreferences: { offscreen?: boolean } }) {
+      this.options = options;
       windows.push(this);
     }
 
@@ -373,6 +376,7 @@ function createPresentationProbe(options: {
     isTilingCompositor: () => options.tiling === true,
     windowTitle: options.windowTitle,
     placeOnGameOutput: options.placeOnGameOutput,
+    createPresentation: options.createPresentation as never,
   });
 
   const contentEvents = (win: FakePresentationWindow) =>
@@ -1334,6 +1338,99 @@ describe("overlayHideDueIn", () => {
     vi.advanceTimersByTime(3_000);
 
     expect(controller.overlayHideDueIn()).toBeNull();
+  });
+});
+
+describe("layer-shell presentation", () => {
+  function fakePresentation() {
+    return {
+      attach: vi.fn(),
+      show: vi.fn(async () => true),
+      hide: vi.fn(),
+      isShowing: vi.fn(() => true),
+    };
+  }
+
+  function probeWithLayer(nativeWayland: boolean, platform: typeof process.platform = "linux") {
+    const presentation = fakePresentation();
+    const createPresentation = vi.fn(() => presentation);
+    const probe = createPresentationProbe({
+      platform,
+      nativeWayland,
+      createPresentation,
+      windowTitle: "WFHelper Relic Rewards",
+    });
+    return { ...probe, presentation, createPresentation };
+  }
+
+  it("renders offscreen and never maps the window", () => {
+    const probe = probeWithLayer(true);
+
+    probe.controller.createOverlayWindow();
+    const win = probe.windows[0];
+
+    expect(win.options.webPreferences.offscreen).toBe(true);
+    expect(win.showInactive).not.toHaveBeenCalled();
+    expect(win.moveTop).not.toHaveBeenCalled();
+    expect(probe.presentation.show).toHaveBeenCalled();
+  });
+
+  it("wires the window's paints to a surface of the same size", () => {
+    const probe = probeWithLayer(true);
+
+    probe.controller.createOverlayWindow();
+
+    const [window, width, height] = probe.presentation.attach.mock.calls[0];
+    expect(window).toBe(probe.windows[0]);
+    expect(width).toBeGreaterThan(0);
+    expect(height).toBeGreaterThan(0);
+  });
+
+  // The window is never OS-visible in this mode, so isVisible() would lie.
+  it("tracks visibility logically and drops the surface on hide", () => {
+    const probe = probeWithLayer(true);
+    probe.controller.createOverlayWindow();
+
+    expect(probe.controller.isOverlayWindowVisible()).toBe(true);
+
+    probe.controller.hideOverlayWindow();
+
+    expect(probe.presentation.hide).toHaveBeenCalled();
+    expect(probe.controller.isOverlayWindowVisible()).toBe(false);
+    expect(probe.windows[0].hide).not.toHaveBeenCalled();
+  });
+
+  it("rebuilds as an ordinary window when interactive mode is entered", () => {
+    const probe = probeWithLayer(true);
+    probe.controller.createOverlayWindow();
+
+    probe.controller.setOverlayInteractiveMode(true);
+
+    expect(probe.windows.length).toBeGreaterThan(1);
+    const rebuilt = probe.windows[probe.windows.length - 1];
+    expect(rebuilt.options.webPreferences.offscreen).toBeUndefined();
+  });
+
+  it("is never built on XWayland or off linux", () => {
+    const onXWayland = probeWithLayer(false);
+    onXWayland.controller.createOverlayWindow();
+    const onWindows = probeWithLayer(false, "win32");
+    onWindows.controller.createOverlayWindow();
+
+    expect(onXWayland.createPresentation).not.toHaveBeenCalled();
+    expect(onWindows.createPresentation).not.toHaveBeenCalled();
+  });
+
+  it("keeps the window path when no layer shell is available", () => {
+    const probe = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      createPresentation: () => null,
+    });
+
+    probe.controller.createOverlayWindow();
+
+    expect(probe.windows[0].showInactive).toHaveBeenCalled();
   });
 });
 

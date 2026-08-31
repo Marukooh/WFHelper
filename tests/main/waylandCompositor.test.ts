@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   detectCompositor,
+  hyprGameOutputName,
   hyprGameWorkspace,
   hyprMoveCommand,
   niriGameOutput,
@@ -169,6 +170,26 @@ describe("hyprland", () => {
 
   it("is null when the monitor reports no active workspace", () => {
     expect(hyprGameWorkspace(clients, [{ id: 0, activeWorkspace: null }])).toBeNull();
+  });
+
+  // A layer surface is pinned by output name, not by workspace, so the same
+  // client list has to answer both questions.
+  it("names the monitor the game is on", () => {
+    const named = [
+      { id: 0, name: "DP-1", activeWorkspace: { id: 3 } },
+      { id: 1, name: "DP-2", activeWorkspace: { id: 5 } },
+    ];
+    expect(hyprGameOutputName(clients, named)).toBe("DP-1");
+  });
+
+  it("has no output name when the game or its monitor is missing", () => {
+    const named = [{ id: 1, name: "DP-2", activeWorkspace: { id: 5 } }];
+    expect(hyprGameOutputName(clients, named)).toBeNull();
+    expect(hyprGameOutputName([clients[0]], named)).toBeNull();
+  });
+
+  it("has no output name when the monitor reports none", () => {
+    expect(hyprGameOutputName(clients, [{ id: 0, activeWorkspace: { id: 3 } }])).toBeNull();
   });
 
   it("targets our window by an anchored title regex", () => {

@@ -128,6 +128,13 @@ export function niriMoveRequests(id: number, output: string): unknown[] {
   ];
 }
 
+async function niriOutputName(socketPath: string): Promise<string | null> {
+  const windows = niriOk(await niriRequest(socketPath, "Windows"), "Windows");
+  const workspaces = niriOk(await niriRequest(socketPath, "Workspaces"), "Workspaces");
+  if (!Array.isArray(windows) || !Array.isArray(workspaces)) return null;
+  return niriGameOutput(windows as NiriWindow[], workspaces as NiriWorkspace[]);
+}
+
 async function placeNiri(socketPath: string, title: string): Promise<boolean> {
   const windows = niriOk(await niriRequest(socketPath, "Windows"), "Windows");
   const workspaces = niriOk(await niriRequest(socketPath, "Workspaces"), "Workspaces");
@@ -210,6 +217,11 @@ export function swayMoveCommand(title: string, output: string): string {
   return `[title="^${title}$"] move window to output "${output}"`;
 }
 
+async function swayOutputName(socketPath: string): Promise<string | null> {
+  const tree = (await swayRequest(socketPath, SWAY_GET_TREE, "")) as SwayNode | null;
+  return swayGameOutput(tree);
+}
+
 async function placeSway(socketPath: string, title: string): Promise<boolean> {
   const tree = (await swayRequest(socketPath, SWAY_GET_TREE, "")) as SwayNode | null;
   const output = swayGameOutput(tree);
@@ -233,6 +245,15 @@ export function hyprGameWorkspace(clients: HyprClient[], monitors: HyprMonitor[]
   return typeof workspace === "number" ? workspace : null;
 }
 
+/** Layer surfaces are addressed by output name, not by workspace. */
+export function hyprGameOutputName(clients: HyprClient[], monitors: HyprMonitor[]): string | null {
+  const game = clients.find((client) => looksLikeWarframe(client.title, client.class));
+  if (!game) return null;
+  const monitor = monitors.find((entry) => entry.id === game.monitor);
+  const name = (monitor as { name?: unknown } | undefined)?.name;
+  return typeof name === "string" && name ? name : null;
+}
+
 export function hyprMoveCommand(title: string, workspace: number): string {
   return `dispatch movetoworkspacesilent ${workspace},title:^(${title})$`;
 }
@@ -245,6 +266,31 @@ async function placeHyprland(socketPath: string, title: string): Promise<boolean
   if (workspace === null) return false;
   const reply = await hyprRequest(socketPath, hyprMoveCommand(title, workspace));
   return reply.trim().toLowerCase().startsWith("ok");
+}
+
+async function hyprOutputName(socketPath: string): Promise<string | null> {
+  const clients = JSON.parse(await hyprRequest(socketPath, "j/clients")) as HyprClient[];
+  const monitors = JSON.parse(await hyprRequest(socketPath, "j/monitors")) as HyprMonitor[];
+  if (!Array.isArray(clients) || !Array.isArray(monitors)) return null;
+  return hyprGameOutputName(clients, monitors);
+}
+
+/** The connector the game is on, in the same spelling a layer surface wants.
+ *  Null means unknown, and the caller must not guess: a layer surface pinned to
+ *  the wrong output is worse than one the compositor placed itself. */
+export async function resolveGameOutput(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<string | null> {
+  const compositor = detectCompositor(env);
+  if (!compositor) return null;
+  try {
+    if (compositor.kind === "niri") return await niriOutputName(compositor.socketPath);
+    if (compositor.kind === "sway") return await swayOutputName(compositor.socketPath);
+    return await hyprOutputName(compositor.socketPath);
+  } catch (err) {
+    log.warn(`[Compositor] ${compositor.kind} output lookup failed:`, (err as Error)?.message);
+    return null;
+  }
 }
 
 let loggedKind: CompositorKind | null = null;

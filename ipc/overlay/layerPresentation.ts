@@ -1,0 +1,114 @@
+// Presents a passive overlay as a Wayland layer surface instead of a window.
+// It is the only way to pick the monitor and sit above a fullscreen game; both
+// are impossible for an ordinary window on native Wayland.
+
+import { createLayerSurface, type LayerAnchor, type LayerSurface } from "../../services/layerShell";
+import { resolveGameOutput } from "../../services/waylandCompositor";
+
+interface PaintImage {
+  toBitmap: () => Buffer;
+}
+
+// Narrowed to the one overload we use, so an Electron BrowserWindow satisfies it
+// without dragging the whole WebContents event map in.
+interface OffscreenWindow {
+  webContents: {
+    setFrameRate: (fps: number) => void;
+    on: (
+      event: "paint",
+      listener: (event: unknown, dirty: unknown, image: PaintImage) => void,
+    ) => unknown;
+  };
+}
+
+interface LayerPresentationOptions {
+  label: string;
+  anchor: LayerAnchor;
+  frameRate?: number;
+  log?: { info?: (...args: unknown[]) => void; warn?: (...args: unknown[]) => void };
+  createSurface?: typeof createLayerSurface;
+  resolveOutput?: typeof resolveGameOutput;
+}
+
+const DEFAULT_FRAME_RATE = 30;
+
+export function createLayerPresentation(options: LayerPresentationOptions) {
+  const {
+    label,
+    anchor,
+    frameRate = DEFAULT_FRAME_RATE,
+    log,
+    createSurface = createLayerSurface,
+    resolveOutput = resolveGameOutput,
+  } = options;
+
+  let surface: LayerSurface | null = null;
+  let width = 0;
+  let height = 0;
+  // Bumped on every hide so a slow output lookup cannot map a surface for a
+  // show the user already dismissed.
+  let generation = 0;
+  let warnedCommit = false;
+
+  function commitFrame(image: PaintImage): void {
+    if (!surface) return;
+    let frame: Buffer;
+    try {
+      frame = image.toBitmap();
+    } catch {
+      return;
+    }
+    if (surface.commit(frame)) return;
+    if (surface.isClosed()) {
+      // The compositor took the surface away; drop it so the next show remakes it.
+      surface.destroy();
+      surface = null;
+      log?.info?.(`[${label}] layer surface closed by the compositor`);
+      return;
+    }
+    if (!warnedCommit) {
+      warnedCommit = true;
+      log?.warn?.(`[${label}] layer frame refused; further refusals are not logged`);
+    }
+  }
+
+  return {
+    /** Wire an offscreen window's paints to whatever surface is up at the time. */
+    attach(window: OffscreenWindow, frameWidth: number, frameHeight: number): void {
+      width = frameWidth;
+      height = frameHeight;
+      window.webContents.setFrameRate(frameRate);
+      window.webContents.on("paint", (_event, _dirty, image) => {
+        if (image && typeof image.toBitmap === "function") commitFrame(image);
+      });
+    },
+
+    /** Map the surface on the output the game is on. Async because only the
+     *  compositor knows which that is; frames before it lands are dropped. */
+    async show(): Promise<boolean> {
+      if (surface && !surface.isClosed()) return true;
+      const token = generation;
+      const output = await resolveOutput();
+      if (token !== generation) return false;
+      surface = createSurface({ output, width, height, anchor });
+      if (!surface) {
+        log?.warn?.(`[${label}] layer surface unavailable; using a window instead`);
+        return false;
+      }
+      warnedCommit = false;
+      log?.info?.(`[${label}] layer surface up on ${output ?? "compositor choice"}`);
+      return true;
+    },
+
+    hide(): void {
+      generation++;
+      if (!surface) return;
+      surface.destroy();
+      surface = null;
+    },
+
+    isShowing(): boolean {
+      return surface !== null && !surface.isClosed();
+    },
+  };
+}
