@@ -8,7 +8,7 @@ import path from "node:path";
 import { app, BrowserWindow, crashReporter, globalShortcut } from "electron";
 
 import * as linuxDisplay from "./services/linuxDisplayBackend";
-import { probeLayerShell } from "./services/layerShell";
+import { layerOutputRects, probeLayerShell } from "./services/layerShell";
 
 const DISPLAY_BACKEND = linuxDisplay.initialize(
   app.getPath("userData"),
@@ -617,7 +617,18 @@ void app.whenReady().then(async () => {
     const layerShell = probeLayerShell();
     if (!layerShell) log.info("[LayerShell] addon not present in this build");
     else if (!layerShell.available) log.info("[LayerShell] compositor does not offer the protocol");
-    else log.info(`[LayerShell] available, outputs: ${layerShell.outputs.join(", ") || "none"}`);
+    else {
+      // Geometry, not just names: picking the game's monitor depends on it, and
+      // an unplaced output is why an overlay would land on the wrong screen.
+      const rects = layerOutputRects().map(
+        (rect) =>
+          `${rect.name} ${rect.width}x${rect.height}+${rect.x}+${rect.y}@${rect.scale}x` +
+          `${rect.placed ? "" : " (unplaced)"}`,
+      );
+      log.info(
+        `[LayerShell] available, outputs: ${rects.join(", ") || layerShell.outputs.join(", ") || "none"}`,
+      );
+    }
     profileStage("layer-shell:probe", layerShellStart);
   }
 
