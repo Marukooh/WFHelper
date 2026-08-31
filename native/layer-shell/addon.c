@@ -372,6 +372,12 @@ static void on_global(void *data, struct wl_registry *registry, uint32_t id, con
     entry->global_id = id;
     entry->output = wl_registry_bind(registry, id, &wl_output_interface, 4);
     wl_output_add_listener(entry->output, &output_listener, entry);
+    // A monitor plugged in mid-session needs its logical geometry too, and only
+    // xdg-output reports it; ensure_init's pass covers the first batch alone.
+    if (xdg_output_manager) {
+      entry->xdg_output = zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, entry->output);
+      zxdg_output_v1_add_listener(entry->xdg_output, &xdg_output_listener, entry);
+    }
   }
 }
 
@@ -475,7 +481,7 @@ static int ensure_init(void) {
   // bound, so it needs the second pass to deliver its geometry.
   if (xdg_output_manager) {
     for (int i = 0; i < output_count; i++) {
-      if (!outputs[i].output) continue;
+      if (!outputs[i].output || outputs[i].xdg_output) continue;
       outputs[i].xdg_output =
           zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, outputs[i].output);
       zxdg_output_v1_add_listener(outputs[i].xdg_output, &xdg_output_listener, &outputs[i]);
