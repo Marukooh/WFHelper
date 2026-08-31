@@ -104,7 +104,8 @@ try {
 
   console.log(`build-layer-shell: built ${path.join(outDir, "layershell.node")}`);
 } catch (err) {
-  // Deliberately not fatal. The addon is optional and the app works without it.
-  console.log(`build-layer-shell: skipped (${err?.message?.split("\n")[0] ?? "compile failed"})`);
+  // Same contract as a missing tool: optional off release builds, fatal under
+  // --require, where a swallowed compile error ships the feature dead.
+  skip(err?.message?.split("\n")[0] ?? "compile failed");
 }
 process.exit(0);
