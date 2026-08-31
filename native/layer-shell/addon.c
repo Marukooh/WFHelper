@@ -400,21 +400,10 @@ static const struct wl_registry_listener registry_listener = {
     .global_remove = on_global_remove,
 };
 
-struct sync_state {
-  int done;
-  int abandoned;
-};
-
 static void on_sync_done(void *data, struct wl_callback *callback, uint32_t serial) {
   (void)serial;
-  struct sync_state *state = data;
-  wl_callback_destroy(callback);
-  // The waiter gave up and returned, so nobody else owns this.
-  if (state->abandoned) {
-    free(state);
-    return;
-  }
-  state->done = 1;
+  (void)callback;
+  *(int *)data = 1;
 }
 
 static const struct wl_callback_listener sync_listener = {.done = on_sync_done};
@@ -423,18 +412,16 @@ static const struct wl_callback_listener sync_listener = {.done = on_sync_done};
  *  compositor that stops answering would take Electron's main thread with it. */
 static int roundtrip_timeout(int timeout_ms) {
   if (!display) return 0;
-  struct sync_state *state = calloc(1, sizeof(*state));
-  if (!state) return 0;
+  // done lives on this frame, which is safe because the callback is destroyed
+  // before returning, so the listener cannot fire against a dead pointer.
+  int done = 0;
   struct wl_callback *callback = wl_display_sync(display);
-  if (!callback) {
-    free(state);
-    return 0;
-  }
-  wl_callback_add_listener(callback, &sync_listener, state);
+  if (!callback) return 0;
+  wl_callback_add_listener(callback, &sync_listener, &done);
 
   const int fd = wl_display_get_fd(display);
   int remaining = timeout_ms;
-  while (!state->done) {
+  while (!done) {
     while (wl_display_prepare_read(display) != 0) {
       if (wl_display_dispatch_pending(display) < 0) goto finish;
     }
@@ -442,7 +429,7 @@ static int roundtrip_timeout(int timeout_ms) {
       wl_display_cancel_read(display);
       goto finish;
     }
-    if (state->done) {
+    if (done) {
       wl_display_cancel_read(display);
       break;
     }
@@ -463,10 +450,8 @@ static int roundtrip_timeout(int timeout_ms) {
   }
 
 finish:;
-  int ok = state->done;
-  if (ok) free(state);
-  else state->abandoned = 1;
-  return ok;
+  wl_callback_destroy(callback);
+  return done;
 }
 
 static int ensure_init(void) {
@@ -805,8 +790,11 @@ static napi_value Destroy(napi_env env, napi_callback_info info) {
   napi_get_value_int32(env, argv[0], &handle);
   if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) return undefined;
 
-  if (pointer_focus == handle) pointer_focus = -1;
   struct layer_window *win = &windows[handle];
+  // Drained before the slot is cleared, so anything already queued for this
+  // window is dispatched against it rather than against its replacement.
+  pump_events();
+  if (pointer_focus == handle) pointer_focus = -1;
   for (int i = 0; i < BUFFER_SLOTS; i++) free_slot(&win->slots[i]);
   if (win->layer) zwlr_layer_surface_v1_destroy(win->layer);
   if (win->surface) wl_surface_destroy(win->surface);
