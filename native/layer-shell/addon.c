@@ -53,6 +53,8 @@ struct pointer_event {
 struct output_entry {
   struct wl_output *output;
   struct zxdg_output_v1 *xdg_output;
+  // Registry name, so global_remove can find the entry the compositor dropped.
+  uint32_t global_id;
   char name[64];
   int scale;
   // wlroots reports wl_output.geometry at 0,0 and expects xdg-output to carry
@@ -354,17 +356,37 @@ static void on_global(void *data, struct wl_registry *registry, uint32_t id, con
     uint32_t want = version < 5 ? version : 5;
     seat = wl_registry_bind(registry, id, &wl_seat_interface, want);
     wl_seat_add_listener(seat, &seat_listener, NULL);
-  } else if (strcmp(interface, wl_output_interface.name) == 0 && output_count < MAX_OUTPUTS &&
-             version >= 4) {
-    struct output_entry *entry = &outputs[output_count++];
+  } else if (strcmp(interface, wl_output_interface.name) == 0 && version >= 4) {
+    // Slots are reused rather than compacted: every wl_output listener holds a
+    // pointer to its own slot, so moving an entry would strand one.
+    struct output_entry *entry = NULL;
+    for (int i = 0; i < output_count; i++) {
+      if (!outputs[i].output) {
+        entry = &outputs[i];
+        break;
+      }
+    }
+    if (!entry && output_count < MAX_OUTPUTS) entry = &outputs[output_count++];
+    if (!entry) return;
+    memset(entry, 0, sizeof(*entry));
+    entry->global_id = id;
     entry->output = wl_registry_bind(registry, id, &wl_output_interface, 4);
-    entry->name[0] = '\0';
     wl_output_add_listener(entry->output, &output_listener, entry);
   }
 }
 
 static void on_global_remove(void *d, struct wl_registry *r, uint32_t id) {
-  (void)d; (void)r; (void)id;
+  (void)d; (void)r;
+  for (int i = 0; i < output_count; i++) {
+    struct output_entry *entry = &outputs[i];
+    if (!entry->output || entry->global_id != id) continue;
+    // The proxy dies with the global. Handing a stale one to get_layer_surface
+    // is a fatal protocol error, which would latch layer-shell off for good.
+    if (entry->xdg_output) zxdg_output_v1_destroy(entry->xdg_output);
+    wl_output_release(entry->output);
+    memset(entry, 0, sizeof(*entry));
+    return;
+  }
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -453,6 +475,7 @@ static int ensure_init(void) {
   // bound, so it needs the second pass to deliver its geometry.
   if (xdg_output_manager) {
     for (int i = 0; i < output_count; i++) {
+      if (!outputs[i].output) continue;
       outputs[i].xdg_output =
           zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, outputs[i].output);
       zxdg_output_v1_add_listener(outputs[i].xdg_output, &xdg_output_listener, &outputs[i]);
@@ -559,10 +582,12 @@ static napi_value Outputs(napi_env env, napi_callback_info info) {
   napi_value list;
   napi_create_array(env, &list);
   if (!ensure_init()) return list;
+  uint32_t index = 0;
   for (int i = 0; i < output_count; i++) {
+    if (!outputs[i].output) continue;
     napi_value name;
     napi_create_string_utf8(env, outputs[i].name, NAPI_AUTO_LENGTH, &name);
-    napi_set_element(env, list, (uint32_t)i, name);
+    napi_set_element(env, list, index++, name);
   }
   return list;
 }
@@ -600,6 +625,7 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   int scale = 1;
   if (wanted[0]) {
     for (int i = 0; i < output_count; i++) {
+      if (!outputs[i].output) continue;
       if (strcmp(outputs[i].name, wanted) == 0) {
         target = outputs[i].output;
         scale = outputs[i].scale > 0 ? outputs[i].scale : 1;
@@ -612,7 +638,7 @@ static napi_value Create(napi_env env, napi_callback_info info) {
     // The compositor picks the output, so size for the sharpest one it could
     // pick. An over-scaled buffer still maps to the right logical size.
     for (int i = 0; i < output_count; i++) {
-      if (outputs[i].scale > scale) scale = outputs[i].scale;
+      if (outputs[i].output && outputs[i].scale > scale) scale = outputs[i].scale;
     }
   }
 
@@ -721,10 +747,6 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
   // it, so a slot allocated earlier can be smaller than the frame now expects.
   if (expected > slot->size) return no;
 
-  // The compositor may configure a new size at any time and win->width follows
-  // it, so a slot allocated earlier can be smaller than the frame now expects.
-  if (expected > slot->size) return no;
-
   memcpy(slot->pixels, data, expected);
   slot->busy = 1;
   wl_surface_attach(win->surface, slot->buffer, 0, 0);
@@ -794,8 +816,10 @@ static napi_value OutputRects(napi_env env, napi_callback_info info) {
   // geometry updates are already waiting before answering.
   pump_events();
 
+  uint32_t index = 0;
   for (int i = 0; i < output_count; i++) {
     const struct output_entry *entry = &outputs[i];
+    if (!entry->output) continue;
     int scale = entry->scale > 0 ? entry->scale : 1;
     napi_value item, name;
     napi_create_object(env, &item);
@@ -813,7 +837,7 @@ static napi_value OutputRects(napi_env env, napi_callback_info info) {
     set_event_field(env, item, "scale", scale);
     napi_get_boolean(env, entry->has_logical ? true : false, &placed);
     napi_set_named_property(env, item, "placed", placed);
-    napi_set_element(env, list, (uint32_t)i, item);
+    napi_set_element(env, list, index++, item);
   }
   return list;
 }
