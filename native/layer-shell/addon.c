@@ -926,6 +926,58 @@ static napi_value SetMargin(napi_env env, napi_callback_info info) {
   return yes;
 }
 
+// resize(handle, width, height) -> {width, height} the compositor granted, or
+// null. The granted size is returned because the caller sizes its frames from
+// it, and a compositor may answer a set_size with something else.
+//
+// The old buffer stays attached across the change. Committing a null buffer
+// instead unmaps the surface, and wlroots then treats it as never configured,
+// so the next real frame is killed with a protocol error.
+static napi_value Resize(napi_env env, napi_callback_info info) {
+  size_t argc = 3;
+  napi_value argv[3];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+
+  napi_value failed;
+  napi_get_null(env, &failed);
+  if (argc < 3 || !init_ok) return failed;
+
+  int32_t handle = -1, width = 0, height = 0;
+  napi_get_value_int32(env, argv[0], &handle);
+  napi_get_value_int32(env, argv[1], &width);
+  napi_get_value_int32(env, argv[2], &height);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) return failed;
+  if (width <= 0 || height <= 0) return failed;
+  struct layer_window *win = &windows[handle];
+  if (win->closed) return failed;
+
+  if (win->width != width || win->height != height) {
+    win->width = width;
+    win->height = height;
+    zwlr_layer_surface_v1_set_size(win->layer, (uint32_t)width, (uint32_t)height);
+    wl_surface_commit(win->surface);
+    roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS);
+    if (win->closed) return failed;
+
+    for (int i = 0; i < BUFFER_SLOTS; i++) free_slot(&win->slots[i]);
+    for (int i = 0; i < BUFFER_SLOTS; i++) {
+      if (!alloc_slot(&win->slots[i], win->width * win->scale, win->height * win->scale)) {
+        for (int j = 0; j < i; j++) free_slot(&win->slots[j]);
+        // With no buffers no frame can ever land again, so report the surface
+        // as gone and let the caller build a fresh one.
+        win->closed = 1;
+        return failed;
+      }
+    }
+  }
+
+  napi_value out;
+  napi_create_object(env, &out);
+  set_event_field(env, out, "width", win->width);
+  set_event_field(env, out, "height", win->height);
+  return out;
+}
+
 NAPI_MODULE_INIT() {
   napi_property_descriptor props[] = {
       {"available", NULL, Available, NULL, NULL, NULL, napi_default, NULL},
@@ -939,6 +991,7 @@ NAPI_MODULE_INIT() {
       {"pollEvents", NULL, PollEvents, NULL, NULL, NULL, napi_default, NULL},
       {"outputRects", NULL, OutputRects, NULL, NULL, NULL, napi_default, NULL},
       {"setMargin", NULL, SetMargin, NULL, NULL, NULL, napi_default, NULL},
+      {"resize", NULL, Resize, NULL, NULL, NULL, napi_default, NULL},
   };
   napi_define_properties(env, exports, sizeof(props) / sizeof(props[0]), props);
   return exports;

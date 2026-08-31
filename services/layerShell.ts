@@ -31,6 +31,7 @@ interface LayerShellAddon {
   pollEvents?(): RawPointerEvent[];
   outputRects?(): LayerOutputRect[];
   setMargin?(handle: number, top: number, right: number, bottom: number, left: number): boolean;
+  resize?(handle: number, width: number, height: number): { width: number; height: number } | null;
 }
 
 /** One monitor in the compositor's logical layout, which is the same space an
@@ -153,6 +154,9 @@ export interface LayerSurface {
   /** Distance from each anchored edge, in logical pixels. A layer surface has no
    *  position of its own, so this is the only way to move one. */
   setMargin(top: number, right: number, bottom: number, left: number): boolean;
+  /** Ask for a new logical size. False means the surface is gone and the caller
+   *  must build a fresh one; frameWidth and frameHeight follow a success. */
+  resize(width: number, height: number): boolean;
 }
 
 const ANCHOR_TOP = 1;
@@ -226,9 +230,6 @@ function makeSurface(
   height: number,
   scale: number,
 ): LayerSurface {
-  const frameWidth = width * scale;
-  const frameHeight = height * scale;
-  const frameBytes = frameWidth * frameHeight * 4;
   let destroyed = false;
   // One latch for every per-frame failure. A surface that fails once fails on
   // every following frame, so an unlatched warning would flood the log.
@@ -240,10 +241,26 @@ function makeSurface(
     log.warn(message);
   };
 
-  return {
+  const surface: LayerSurface = {
     scale,
-    frameWidth,
-    frameHeight,
+    frameWidth: width * scale,
+    frameHeight: height * scale,
+    resize(nextWidth: number, nextHeight: number): boolean {
+      if (destroyed) return false;
+      let granted: { width: number; height: number } | null | undefined;
+      try {
+        granted = addon.resize?.(handle, Math.floor(nextWidth), Math.floor(nextHeight));
+      } catch (err) {
+        warnOnce(`[LayerShell] resize failed: ${(err as Error)?.message}`);
+        return false;
+      }
+      if (!granted || granted.width <= 0 || granted.height <= 0) return false;
+      // The compositor has the last word on the size, so frames are measured
+      // against what it granted rather than what was asked for.
+      surface.frameWidth = granted.width * scale;
+      surface.frameHeight = granted.height * scale;
+      return true;
+    },
     setMargin(top: number, right: number, bottom: number, left: number): boolean {
       if (destroyed) return false;
       try {
@@ -271,12 +288,13 @@ function makeSurface(
     },
     commit(frame: Buffer): boolean {
       if (destroyed) return false;
+      const frameBytes = surface.frameWidth * surface.frameHeight * 4;
       // A short frame would be read past the end of the shm mapping in C.
       if (!Buffer.isBuffer(frame) || frame.length < frameBytes) {
         const got = Buffer.isBuffer(frame) ? `${frame.length} bytes` : "a non-buffer frame";
         warnOnce(
-          `[LayerShell] rejected ${got} for a ${frameWidth}x${frameHeight} surface, ` +
-            `need ${frameBytes}`,
+          `[LayerShell] rejected ${got} for a ` +
+            `${surface.frameWidth}x${surface.frameHeight} surface, need ${frameBytes}`,
         );
         return false;
       }
@@ -309,6 +327,7 @@ function makeSurface(
       }
     },
   };
+  return surface;
 }
 
 /** The monitor layout as the compositor sees it. Empty when the addon is absent

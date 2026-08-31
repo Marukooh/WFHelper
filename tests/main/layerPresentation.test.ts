@@ -38,6 +38,7 @@ function fakeSurface(overrides: Partial<Record<string, unknown>> = {}) {
     frameHeight: 1,
     setInteractive: vi.fn(),
     setMargin: vi.fn(() => true),
+    resize: vi.fn(() => true),
     ...overrides,
   };
 }
@@ -346,6 +347,44 @@ describe("createLayerPresentation", () => {
       probe.presentation.applyGeometry();
 
       expect(probe.surface.setMargin).toHaveBeenCalledWith(260, 0, 0, 140);
+    });
+
+    it("resizes a live surface when the scale setting changes", async () => {
+      const probe = withGeometry({ x: 100, y: 200, width: 980, height: 140 });
+      const window = fakeWindow();
+      probe.presentation.attach(window, 980, 140);
+      await probe.presentation.show();
+      window.setSize.mockClear();
+
+      probe.move({ width: 1127, height: 161 });
+      probe.presentation.applyGeometry();
+
+      expect(probe.surface.resize).toHaveBeenCalledWith(1127, 161);
+      expect(window.setSize).toHaveBeenCalledWith(1127, 161);
+    });
+
+    it("leaves the surface size alone for a move", async () => {
+      const probe = withGeometry({ x: 100, y: 200, width: 980, height: 140 });
+      probe.presentation.attach(fakeWindow(), 980, 140);
+      await probe.presentation.show();
+
+      probe.move({ x: 140 });
+      probe.presentation.applyGeometry();
+
+      expect(probe.surface.resize).not.toHaveBeenCalled();
+    });
+
+    it("drops a surface that cannot take the new size", async () => {
+      const probe = withGeometry({ x: 0, y: 0, width: 980, height: 140 });
+      probe.surface.resize.mockReturnValue(false);
+      probe.presentation.attach(fakeWindow(), 980, 140);
+      await probe.presentation.show();
+
+      probe.move({ width: 1127 });
+      probe.presentation.applyGeometry();
+
+      expect(probe.surface.destroy).toHaveBeenCalled();
+      expect(probe.presentation.isShowing()).toBe(false);
     });
 
     it("does nothing while the overlay is hidden", async () => {

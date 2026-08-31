@@ -465,9 +465,12 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   ): void {
     const overlayWindow = readOverlayWindow();
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
-    // The compositor places a layer surface, and the window behind one is sized
-    // to the surface buffer. Both writes here would fight that sizing.
-    if (isLayerMode()) return;
+    // The compositor places and sizes a layer surface, so the geometry goes to
+    // the surface and the offscreen window behind it follows its buffer.
+    if (isLayerMode()) {
+      layer?.applyGeometry();
+      return;
+    }
     const { zoomFactor, ...rect } = getOverlayBoundsForActiveDisplay(anchorMeta);
     suppressMoveSave = true;
     selfRequestedSize = { width: rect.width, height: rect.height };

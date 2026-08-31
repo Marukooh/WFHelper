@@ -60,8 +60,8 @@ interface LayerPresentationOptions {
   log?: { info?: (...args: unknown[]) => void; warn?: (...args: unknown[]) => void };
   createSurface?: typeof createLayerSurface;
   resolveOutput?: () => Promise<string | null>;
-  /** Read on every show and on every applyGeometry, so a saved spot and a live
-   *  drag both land. Absent for overlays that take whatever the anchor gives. */
+  /** Read on every show and on every applyGeometry, so a saved spot, a live drag
+   *  and a scale change all land. Absent for overlays with a fixed size. */
   resolveGeometry?: () => LayerGeometry | null;
   /** Distance to hold off the anchored edges when there is no geometry, so a
    *  corner overlay is not flush against the screen edge. */
@@ -313,13 +313,25 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
       return surface !== null && !surface.isClosed();
     },
 
-    /** Push the current spot to a surface that is already up, which is how a
-     *  drag moves one. A hidden overlay picks it up on its next show instead. */
+    /** Push a new size or spot to a surface that is already up. A drag and a
+     *  scale change both land here; a hidden overlay picks the geometry up on
+     *  its next show instead. */
     applyGeometry(): void {
       if (!surface || surface.isClosed()) return;
       const geometry = resolveGeometry?.();
       if (!geometry) return;
+      const resized = geometry.width !== width || geometry.height !== height;
+      width = geometry.width;
+      height = geometry.height;
       zoom = geometry.zoomFactor;
+      if (resized && !surface.resize(width, height)) {
+        // No buffers at the new size means no frame can land, so drop the
+        // surface and let the next show build one that fits.
+        log?.warn?.(`[${label}] layer surface refused ${width}x${height}; dropping it`);
+        surface.destroy();
+        surface = null;
+        return;
+      }
       const margins = marginsFor(geometry, currentOutput);
       surface.setMargin(margins.top, 0, 0, margins.left);
       applyWindowSize(surface.scale);
