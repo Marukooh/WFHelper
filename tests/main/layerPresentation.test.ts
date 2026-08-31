@@ -463,6 +463,10 @@ describe("createLayerPresentation", () => {
         type: "mouseDown",
         x: 3,
         y: 1,
+        globalX: 3,
+        globalY: 1,
+        // The button being pressed counts as held, the way the DOM reports it.
+        modifiers: ["leftbuttondown"],
         button: "left",
         clickCount: 1,
       });
@@ -470,6 +474,9 @@ describe("createLayerPresentation", () => {
         type: "mouseUp",
         x: 3,
         y: 1,
+        globalX: 3,
+        globalY: 1,
+        modifiers: [],
         button: "left",
         clickCount: 1,
       });
@@ -502,7 +509,64 @@ describe("createLayerPresentation", () => {
         type: "mouseMove",
         x: 20,
         y: 40,
+        // Screen coordinates stay logical; only widget coordinates take the scale.
+        globalX: 10,
+        globalY: 20,
+        modifiers: [],
       });
+    });
+
+    // Both halves of this are what overlay-drag.js reads: it stops on the first
+    // motion with no buttons, and it measures its deltas in screen coordinates.
+    it("keeps a held button set while dragging", async () => {
+      const { presentation, window, emit } = interactiveBuild();
+      await presentation.show();
+      presentation.setInteractive(true);
+
+      emit(event({ kind: "button", x: 2, y: 1, button: 0, pressed: true }));
+      emit(event({ kind: "motion", x: 3, y: 1 }));
+
+      expect(window.webContents.sendInputEvent).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: "mouseMove", modifiers: ["leftbuttondown"] }),
+      );
+    });
+
+    it("reports the pointer in screen coordinates as the surface moves", async () => {
+      deps.rects = [
+        { name: "DP-1", x: 1920, y: 0, width: 1920, height: 1080, scale: 1, placed: true },
+      ];
+      let spot = { x: 100, y: 200, width: 4, height: 1, zoomFactor: 1 };
+      let sink: ((event: unknown) => void) | undefined;
+      const surface = fakeSurface({
+        setInteractive: vi.fn((_on: boolean, onEvent?: (event: unknown) => void) => {
+          sink = onEvent;
+          return true;
+        }),
+      });
+      const { presentation } = build({
+        createSurface: vi.fn(() => surface as never),
+        resolveGeometry: () => spot,
+      });
+      const window = fakeWindow();
+      presentation.attach(window, 4, 1);
+      await presentation.show();
+      presentation.setInteractive(true);
+
+      // Output origin 1920 plus the 100 margin plus 3 into the surface.
+      sink?.(event({ kind: "motion", x: 3, y: 1 }));
+      expect(window.webContents.sendInputEvent).toHaveBeenLastCalledWith(
+        expect.objectContaining({ globalX: 2023, globalY: 201 }),
+      );
+
+      // A drag moved the surface 40 right; the same spot under the pointer is
+      // now 40 further along the screen.
+      spot = { ...spot, x: 140 };
+      presentation.applyGeometry();
+      sink?.(event({ kind: "motion", x: 3, y: 1 }));
+
+      expect(window.webContents.sendInputEvent).toHaveBeenLastCalledWith(
+        expect.objectContaining({ globalX: 2063 }),
+      );
     });
 
     it("survives a webContents that is already gone", async () => {

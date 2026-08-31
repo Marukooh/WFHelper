@@ -16,17 +16,39 @@ interface PaintImage {
   toBitmap: () => Buffer;
 }
 
+// Lowercase because that is what electron's typings declare; chromium takes
+// either, but only this form typechecks.
+type ButtonModifier = "leftbuttondown" | "middlebuttondown" | "rightbuttondown";
+
 // Narrowed to the one overload we use, so an Electron BrowserWindow satisfies it
 // without dragging the whole WebContents event map in.
-interface InputEvent {
-  type: "mouseEnter" | "mouseLeave" | "mouseMove" | "mouseDown" | "mouseUp" | "mouseWheel";
+interface PointerInputBase {
   x: number;
   y: number;
+  /** Logical screen pixels. Chromium passes these through to DOM screenX and
+   *  screenY untouched by the page zoom, and the overlay drag measures its
+   *  deltas in them. */
+  globalX: number;
+  globalY: number;
+  /** Held buttons, which is the only thing that sets DOM event.buttons. Without
+   *  it every drag stops on its first motion event. */
+  modifiers: ButtonModifier[];
+}
+
+// Split the way electron splits it, so the union assigns to sendInputEvent.
+interface MouseInputEvent extends PointerInputBase {
+  type: "mouseEnter" | "mouseLeave" | "mouseMove" | "mouseDown" | "mouseUp";
   button?: "left" | "middle" | "right";
   clickCount?: number;
-  deltaX?: number;
-  deltaY?: number;
 }
+
+interface WheelInputEvent extends PointerInputBase {
+  type: "mouseWheel";
+  deltaX: number;
+  deltaY: number;
+}
+
+type InputEvent = MouseInputEvent | WheelInputEvent;
 
 interface OffscreenWindow {
   setSize?: (width: number, height: number) => void;
@@ -115,6 +137,10 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   // like the trade toast, which never reports a geometry.
   let zoom = 1;
   let currentOutput: string | null = null;
+  // Top-left of the surface in the compositor's logical space. Wayland only
+  // gives surface-local coordinates, and a drag has to be measured on screen.
+  let originX = 0;
+  let originY = 0;
   let interactive = false;
   // Bumped on every hide so a slow output lookup cannot map a surface for a
   // show the user already dismissed.
@@ -158,6 +184,15 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
     };
   }
 
+  /** Remember where the surface's top-left landed, so forwarded events can be
+   *  reported in screen coordinates. Only a placed surface is draggable, so an
+   *  anchored one settles for the output's own origin. */
+  function setOrigin(output: string | null, margins: { top: number; left: number } | null): void {
+    const rect = output ? layerOutputRects().find((entry) => entry.name === output) : undefined;
+    originX = (rect?.x ?? 0) + (margins?.left ?? 0);
+    originY = (rect?.y ?? 0) + (margins?.top ?? 0);
+  }
+
   /** How the surface is placed. A geometry pins it to the output's top-left and
    *  positions it by margins; without one it keeps its anchor and the inset
    *  only holds it off the edges it is anchored to. */
@@ -180,6 +215,13 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   }
 
   const BUTTONS: Array<"left" | "middle" | "right"> = ["left", "middle", "right"];
+  const BUTTON_MODIFIERS: ButtonModifier[] = [
+    "leftbuttondown",
+    "middlebuttondown",
+    "rightbuttondown",
+  ];
+  // Buttons the compositor has reported down and not yet up.
+  const heldButtons = new Set<number>();
 
   /** One wayland axis notch is 15 units; chromium counts a notch as 120. */
   const WHEEL_PER_AXIS_UNIT = 8;
@@ -189,26 +231,39 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
     // buffer pixels and the page is zoomed by the same factor.
     const x = Math.round(event.x * scale);
     const y = Math.round(event.y * scale);
+    // Screen coordinates stay logical: the page zoom does not touch them, and
+    // the surface origin moves under the pointer while a drag is running.
+    const globalX = Math.round(originX + event.x);
+    const globalY = Math.round(originY + event.y);
+    if (event.kind === "button") {
+      // Updated before the event is built, so a press reports itself as held
+      // and a release does not, which is what the DOM does.
+      if (event.pressed) heldButtons.add(event.button);
+      else heldButtons.delete(event.button);
+    }
+    if (event.kind === "leave") heldButtons.clear();
+    const modifiers = [...heldButtons]
+      .map((button) => BUTTON_MODIFIERS[button])
+      .filter((modifier): modifier is ButtonModifier => modifier !== undefined);
+    const base = { x, y, globalX, globalY, modifiers };
     switch (event.kind) {
       case "enter":
-        return { type: "mouseEnter", x, y };
+        return { ...base, type: "mouseEnter" };
       case "leave":
-        return { type: "mouseLeave", x, y };
+        return { ...base, type: "mouseLeave" };
       case "motion":
-        return { type: "mouseMove", x, y };
+        return { ...base, type: "mouseMove" };
       case "button":
         return {
+          ...base,
           type: event.pressed ? "mouseDown" : "mouseUp",
-          x,
-          y,
           button: BUTTONS[event.button] ?? "left",
           clickCount: 1,
         };
       case "axis":
         return {
+          ...base,
           type: "mouseWheel",
-          x,
-          y,
           deltaX: -event.deltaX * WHEEL_PER_AXIS_UNIT,
           deltaY: -event.deltaY * WHEEL_PER_AXIS_UNIT,
         };
@@ -286,6 +341,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
           return false;
         }
         warnedCommit = false;
+        setOrigin(currentOutput, geometry ? marginsFor(geometry, currentOutput) : null);
         applyWindowSize(surface.scale);
         if (interactive) surface.setInteractive(true, forwardEvent);
         log?.info?.(
@@ -301,6 +357,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
 
     hide(): void {
       generation++;
+      heldButtons.clear();
       // Drop the in-flight show too, or the next show would return its promise
       // and resolve false against the generation this hide just bumped.
       pending = null;
@@ -334,6 +391,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
       }
       const margins = marginsFor(geometry, currentOutput);
       surface.setMargin(margins.top, 0, 0, margins.left);
+      setOrigin(currentOutput, margins);
       applyWindowSize(surface.scale);
     },
 
