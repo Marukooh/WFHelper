@@ -14,6 +14,9 @@ import {
 } from "../config/shared/ipcChannels";
 import { scheduleClickThroughReassert, setClickThrough } from "./overlay/clickThrough";
 import { createKeepMappedMode } from "./overlay/keepMapped";
+import { createLayerPresentation } from "./overlay/layerPresentation";
+import { isNativeWayland } from "../services/linuxDisplayBackend";
+import { probeLayerShell } from "../services/layerShell";
 import { tradeNotificationBody, tradeNotificationTitle } from "../config/shared/notifications";
 import { durationMsFromSeconds } from "../config/shared/numeric";
 import { resolveRepOffer } from "../config/shared/tradeMatch";
@@ -67,11 +70,25 @@ let _notificationRevision = 0;
 // blank-the-DOM hide the overlay controllers use on native Wayland.
 const _keepMapped = createKeepMappedMode({ label: "TradeNotification", transparent: true, log });
 
+// Non-null only while the toast is presented as a layer surface. The toast is
+// always click-through, so it needs none of the input work a clickable overlay does.
+let _layer: ReturnType<typeof createLayerPresentation> | null = null;
+
+/** Native Wayland cannot place a window on the game's monitor or keep it above a
+ *  fullscreen game; a layer surface is the only thing that can do either. */
+function _layerModeAvailable(): boolean {
+  return process.platform === "linux" && isNativeWayland() && probeLayerShell()?.available === true;
+}
+
 function _setContentVisible(win: InstanceType<typeof BrowserWindow>): (visible: boolean) => void {
   return (visible) => win.webContents.send(OVERLAY_CONTENT_VISIBLE, visible);
 }
 
 function _presentWindow(win: InstanceType<typeof BrowserWindow>): void {
+  if (_layer) {
+    void _layer.show();
+    return;
+  }
   if (_keepMapped.isActive()) {
     _keepMapped.present(win, _setContentVisible(win));
   } else {
@@ -86,6 +103,10 @@ function _presentWindow(win: InstanceType<typeof BrowserWindow>): void {
 }
 
 function _hideWindow(win: InstanceType<typeof BrowserWindow>): void {
+  if (_layer) {
+    _layer.hide();
+    return;
+  }
   if (_keepMapped.hide(win, _setContentVisible(win))) {
     // The blanked toast stays mapped, so it would swallow clicks over the game.
     setClickThrough(win, true);
@@ -244,6 +265,11 @@ function _getOrCreateWindow(): InstanceType<typeof BrowserWindow> {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { x: dX, y: dY, width: dW } = primaryDisplay.workArea;
 
+  const layerMode = _layerModeAvailable();
+  const nextLayer = layerMode
+    ? createLayerPresentation({ label: "TradeNotification", anchor: "top-right", log })
+    : null;
+
   const win = new BrowserWindow({
     // Notification windows prevent Linux focus-on-map for non-interactive toasts.
     ...(process.platform === "linux" ? { type: "notification" } : {}),
@@ -252,8 +278,8 @@ function _getOrCreateWindow(): InstanceType<typeof BrowserWindow> {
     title: "WFHelper Trade Notification",
     width: WIN_W,
     height: WIN_H,
-    x: dX + dW - WIN_W - MARGIN,
-    y: dY + MARGIN,
+    // The compositor places a layer surface, so screen coordinates say nothing.
+    ...(layerMode ? {} : { x: dX + dW - WIN_W - MARGIN, y: dY + MARGIN }),
     show: false,
     transparent: true,
     frame: false,
@@ -267,8 +293,14 @@ function _getOrCreateWindow(): InstanceType<typeof BrowserWindow> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Offscreen so paints can be handed to the layer surface; the window
+      // itself is never mapped in this mode.
+      ...(layerMode ? { offscreen: true } : {}),
     },
   });
+
+  _layer = nextLayer;
+  _layer?.attach(win, WIN_W, WIN_H);
 
   hardenBrowserWindowNavigation(win, {
     label: "trade notification window",
@@ -288,13 +320,18 @@ function _getOrCreateWindow(): InstanceType<typeof BrowserWindow> {
       _displayNotification(win, pending);
     }
   });
-  win.setAlwaysOnTop(true, "screen-saver");
-  win.setIgnoreMouseEvents(true);
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // The compositor owns stacking, workspaces and input for a layer surface.
+  if (!layerMode) {
+    win.setAlwaysOnTop(true, "screen-saver");
+    win.setIgnoreMouseEvents(true);
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  }
 
   win.on("closed", () => {
     ctx.tradeNotificationWindow = null;
     _rendererReady = false;
+    _layer?.hide();
+    _layer = null;
     _invalidateNotification();
   });
 

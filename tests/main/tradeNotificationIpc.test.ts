@@ -18,6 +18,10 @@ interface WindowStub {
 const h = vi.hoisted(() => ({
   windows: [] as WindowStub[],
   keepMappedActive: false,
+  layerAvailable: false,
+  layerShow: vi.fn(),
+  layerHide: vi.fn(),
+  layerAttach: vi.fn(),
   hotkeys: new Map<string, () => void>(),
   registerHotkey: vi.fn(),
   unregisterHotkey: vi.fn(),
@@ -65,6 +69,7 @@ vi.mock("electron", () => {
 
     moveTop() {}
     setAlwaysOnTop() {}
+    setSize() {}
     setIgnoreMouseEvents(value: boolean) {
       this.ignoreMouse.push(value);
     }
@@ -91,6 +96,24 @@ vi.mock("../../ipc/overlay/keepMapped", () => ({
       setContentVisible(false);
       return true;
     },
+  }),
+}));
+
+// A layer surface is the only way to reach the game's monitor on native Wayland.
+vi.mock("../../services/linuxDisplayBackend", () => ({
+  isNativeWayland: () => h.layerAvailable,
+}));
+
+vi.mock("../../services/layerShell", () => ({
+  probeLayerShell: () => (h.layerAvailable ? { available: true, outputs: ["DP-1"] } : null),
+}));
+
+vi.mock("../../ipc/overlay/layerPresentation", () => ({
+  createLayerPresentation: () => ({
+    attach: h.layerAttach,
+    show: h.layerShow,
+    hide: h.layerHide,
+    isShowing: () => true,
   }),
 }));
 
@@ -176,10 +199,66 @@ async function flushPromises(): Promise<void> {
 beforeEach(() => {
   vi.useFakeTimers();
   h.keepMappedActive = false;
+  h.layerAvailable = false;
+  h.layerShow.mockReset();
+  h.layerHide.mockReset();
+  h.layerAttach.mockReset();
 });
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("native Wayland presentation", () => {
+  const realPlatform = process.platform;
+
+  function asLinux(): void {
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+  }
+
+  afterEach(() => {
+    Object.defineProperty(process, "platform", { value: realPlatform, configurable: true });
+  });
+
+  it("presents the toast as a layer surface instead of mapping the window", async () => {
+    asLinux();
+    h.layerAvailable = true;
+    const { notifications } = await setup({ tradeRepHotkeyEnabled: false });
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    const win = h.windows[0];
+    win.finishLoad();
+
+    expect(h.layerAttach).toHaveBeenCalledTimes(1);
+    expect(h.layerShow).toHaveBeenCalledTimes(1);
+    // Mapping it would put the toast on the wrong monitor, behind the game.
+    expect(win.hidden).toBe(false);
+    expect(win.ignoreMouse).toEqual([]);
+  });
+
+  it("takes the toast down by destroying the surface", async () => {
+    asLinux();
+    h.layerAvailable = true;
+    const { notifications } = await setup({ tradeRepHotkeyEnabled: false });
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    h.windows[0].finishLoad();
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(h.layerHide).toHaveBeenCalled();
+  });
+
+  it("keeps the ordinary window path when the addon is absent", async () => {
+    asLinux();
+    h.layerAvailable = false;
+    const { notifications } = await setup({ tradeRepHotkeyEnabled: false });
+
+    notifications.showTradeNotification(sale("Buyer"), "closed");
+    h.windows[0].finishLoad();
+
+    expect(h.layerShow).not.toHaveBeenCalled();
+    expect(h.windows[0].ignoreMouse.length).toBeGreaterThan(0);
+  });
 });
 
 describe("configured toast duration", () => {
