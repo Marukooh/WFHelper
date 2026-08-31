@@ -147,8 +147,6 @@ static void on_output_mode(void *data, struct wl_output *o, uint32_t flags, int3
   entry->mode_height = h;
 }
 static void noop_done(void *d, struct wl_output *o) { (void)d; (void)o; }
-// Declared here because on_output_scale has to reach the windows on the output
-// whose scale just changed.
 static void adopt_output_scale(struct wl_output *output, int scale);
 
 static void on_output_scale(void *data, struct wl_output *o, int32_t scale) {
@@ -789,8 +787,8 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   win->scale = scale;
 
   win->surface = wl_compositor_create_surface(compositor);
-  // Tells us which output the surface landed on, which is what makes a later
-  // scale change on that output reach this window.
+  // The listener is what lets a later scale change on this surface's output
+  // reach this window.
   wl_surface_add_listener(win->surface, &surface_listener, win);
   win->layer = zwlr_layer_shell_v1_get_layer_surface(
       layer_shell, win->surface, target, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "wfhelper");

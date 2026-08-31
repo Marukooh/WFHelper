@@ -410,8 +410,8 @@ export function sendDesktopNotificationRaw(
   recordNotification(kind, title, body);
   try {
     if (!canSendNotifications()) return;
-    // A trade body names the other player, and main.log is what people attach
-    // to a support report, so only the world and app kinds log their text.
+    // A trade body names the other player and main.log is what people attach to
+    // a support report, so that kind is logged without its text.
     const shown = kind === "trade" ? "(body withheld)" : body;
     log.info(`[WorldState] sending ${kind} notification:`, title, "-", shown);
     if (desktopNotificationSender) {

@@ -694,9 +694,9 @@ describe("correctScannedStats", () => {
     ]);
   });
 
-  // A genuine 3-buff Paracesis roll (disposition 0.65) read while the overlay
-  // had detected Pride (0.50). Critical Damage alone would fit Melee Damage,
-  // but Finisher Damage misfits too, so the weapon is what is wrong.
+  // A 3-buff Paracesis roll (0.65) graded against Pride (0.50). Critical Damage
+  // alone would fit Melee Damage, but Finisher Damage misfits too, so the
+  // weapon is what is wrong.
   const paracesisRoll = [
     { name: "Critical Damage", positive: true, value: 47.4 },
     { name: "Heat", positive: true, value: 44.8 },
@@ -797,9 +797,9 @@ describe("x-multiplier faction damage", () => {
 });
 
 describe("unranked cards", () => {
-  // An unranked mod shows one ninth of its max-rank values, and browse.wf puts
-  // all four Wolf Sledge rolls inside range at Level 0, so grading them at rank
-  // 8 scores every one an F.
+  // An unranked mod shows one ninth of its max-rank values, so all four rolls
+  // sit inside range at Level 0 and grading them at rank 8 scores every one
+  // an F.
   const UNRANKED_WOLF_SLEDGE = [
     { name: "Range", positive: true, value: 0.2 },
     { name: "Critical Damage", positive: true, value: 12.3 },

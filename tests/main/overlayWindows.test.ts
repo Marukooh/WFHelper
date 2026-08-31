@@ -1513,8 +1513,6 @@ describe("layer-shell presentation", () => {
     probe.controller.createOverlayWindow();
     const win = probe.windows[0];
 
-    // The surface's scale is applied by resizing this window, so a persisted
-    // resize would read our own paint as a user drag and rewrite their scale.
     expect(win.on.mock.calls.filter(([event]) => event === "resize")).toEqual([]);
     expect(win.on.mock.calls.filter(([event]) => event === "move")).toEqual([]);
     expect(saves).toEqual([]);

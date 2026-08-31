@@ -273,7 +273,6 @@ describe("windows toast audio and lifetime", () => {
       "trade",
     );
 
-    // main.log is what people attach to a support report.
     expect(logged.join("\n")).not.toContain("Someone");
     expect(logged.some((line) => line.includes("Trade complete"))).toBe(true);
   });
@@ -306,8 +305,6 @@ describe("windows toast audio and lifetime", () => {
     registerWithQuitHook();
     worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
 
-    // The system sound is billed to System Sounds, so that slider applies. The
-    // renderer clip would be billed to WFHelper, so only one of them may play.
     expect(toastXml()).toContain('<audio src="ms-winsoundevent:Notification.Default"/>');
     expect(soundSends).toEqual([]);
   });

@@ -377,8 +377,8 @@ function ctcGreedyDecode(
 
 // PP-OCRv3 pads every crop in a batch out to the widest one, so an 80:1 panel
 // rule beside nine text lines costs 667MB and freezes the main process. Aspect
-// cannot tell a rule from text (measured: solid rules 27-37, real text to 59),
-// so crops group by width instead and only budget-busting singles are dropped.
+// cannot tell a rule from text, because their ranges overlap, so crops group by
+// width instead and only budget-busting singles are dropped.
 const REC_IMG_HEIGHT = 48;
 const REC_MAX_CHUNK = 6;
 const REC_OUTPUT_BUDGET = 48 * 1024 * 1024;

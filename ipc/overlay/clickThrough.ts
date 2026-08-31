@@ -9,8 +9,8 @@ interface ShapeableWindow {
 export const CLICK_THROUGH_REASSERT_DELAYS_MS = [250, 1_500];
 
 /** Turning click-through on drops the region first: re-setting an identical X11
- *  input shape tells the compositor nothing, and that transition is what F7
- *  makes by hand. */
+ *  input shape tells the compositor nothing, and that transition is what the
+ *  interaction hotkey makes by hand. */
 export function setClickThrough(
   win: ShapeableWindow,
   ignoreMouse: boolean,

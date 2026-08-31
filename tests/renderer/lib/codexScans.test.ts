@@ -356,8 +356,8 @@ describe("entries that span two factions", () => {
 });
 
 describe("scan requirements", () => {
-  // Verified in-game 2026-08-23: the wiki is right wherever the export says 5,
-  // which is the value DE writes when an avatar states no requirement.
+  // The export writes 5 when an avatar states no requirement, so the wiki count
+  // is the one that stands wherever it says 5.
   it("keeps the wiki count where the export states its placeholder", () => {
     const rows = buildCodexRows([]);
     expect(rows.find((row) => row.name === "Rana Del")?.required).toBe(3);
