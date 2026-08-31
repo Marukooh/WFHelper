@@ -1436,6 +1436,30 @@ describe("layer-shell presentation", () => {
     expect(probe.windows[0].options.webPreferences.offscreen).toBe(true);
   });
 
+  // The arbi summary is clickable without the unlock hotkey, so its surface must
+  // take input even though the controller reports passive mode.
+  it("gives a never-click-through overlay an input region straight away", () => {
+    const presentation = fakePresentation();
+    const probe = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      neverClickThrough: true,
+      createPresentation: vi.fn(() => presentation),
+    });
+
+    probe.controller.createOverlayWindow();
+
+    expect(presentation.setInteractive).toHaveBeenLastCalledWith(true);
+  });
+
+  it("leaves an ordinary overlay click-through until asked", () => {
+    const probe = probeWithLayer(true);
+
+    probe.controller.createOverlayWindow();
+
+    expect(probe.presentation.setInteractive).toHaveBeenLastCalledWith(false);
+  });
+
   it("is never built on XWayland or off linux", () => {
     const onXWayland = probeWithLayer(false);
     onXWayland.controller.createOverlayWindow();

@@ -555,6 +555,13 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     return platform === "linux" && isNativeWayland();
   }
 
+  /** Whether the surface should accept clicks. Interactive mode asks for them,
+   *  and so does an overlay that is never click-through: the arbi summary is
+   *  right-draggable and has a deep-link button without the unlock hotkey. */
+  function layerWantsInput(): boolean {
+    return neverClickThrough || readInteractiveMode();
+  }
+
   function applyClickThrough(overlayWindow: import("electron").BrowserWindow, force = false): void {
     if (neverClickThrough && !force) return;
     clickThroughApplied = true;
@@ -988,7 +995,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     if (isLayerMode()) {
       // The surface swaps its input region in place, so there is no window to
       // rebuild and no focus flag to flip; the compositor owns both.
-      layer?.setInteractive(interactive);
+      layer?.setInteractive(layerWantsInput());
       if (lastAppliedInteractive !== interactive) {
         lastAppliedInteractive = interactive;
         log.info?.(
