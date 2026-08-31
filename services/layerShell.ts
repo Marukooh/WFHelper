@@ -27,7 +27,35 @@ interface LayerShellAddon {
   destroy(handle: number): void;
   isClosed(handle: number): boolean;
   scaleOf?(handle: number): number;
+  setInteractive?(handle: number, interactive: boolean): boolean;
+  pollEvents?(): RawPointerEvent[];
 }
+
+interface RawPointerEvent {
+  handle: number;
+  type: number;
+  x: number;
+  y: number;
+  button: number;
+  pressed: boolean;
+  dx: number;
+  dy: number;
+}
+
+/** Pointer events the compositor delivered to a surface, in surface-local
+ *  logical pixels. Mirrors the enum in addon.c. */
+export interface LayerPointerEvent {
+  kind: "enter" | "leave" | "motion" | "button" | "axis";
+  x: number;
+  y: number;
+  /** 0 left, 1 middle, 2 right. */
+  button: number;
+  pressed: boolean;
+  deltaX: number;
+  deltaY: number;
+}
+
+const EVENT_KINDS: LayerPointerEvent["kind"][] = ["enter", "leave", "motion", "button", "axis"];
 
 interface LayerShellProbe {
   available: boolean;
@@ -50,6 +78,51 @@ export interface LayerSurfaceOptions {
   marginLeft?: number;
 }
 
+type EventSink = (event: LayerPointerEvent) => void;
+
+const sinks = new Map<number, EventSink>();
+let drainTimer: ReturnType<typeof setInterval> | null = null;
+
+/** One shared drain for every surface: the addon queue is global and reading it
+ *  from one surface would swallow another surface's events. */
+function pumpEvents(addon: LayerShellAddon): void {
+  let raw: RawPointerEvent[];
+  try {
+    raw = addon.pollEvents?.() ?? [];
+  } catch (err) {
+    log.warn("[LayerShell] pollEvents failed:", (err as Error)?.message);
+    return;
+  }
+  for (const event of raw) {
+    const sink = sinks.get(event.handle);
+    const kind = EVENT_KINDS[event.type];
+    if (!sink || !kind) continue;
+    sink({
+      kind,
+      x: event.x,
+      y: event.y,
+      button: event.button,
+      pressed: event.pressed === true,
+      deltaX: event.dx,
+      deltaY: event.dy,
+    });
+  }
+}
+
+function updateDrain(addon: LayerShellAddon): void {
+  if (sinks.size > 0 && !drainTimer) {
+    // Fast enough that a click never feels late, cheap because an empty queue
+    // costs one non-blocking wayland read.
+    drainTimer = setInterval(() => pumpEvents(addon), 16);
+    drainTimer.unref?.();
+    return;
+  }
+  if (sinks.size === 0 && drainTimer) {
+    clearInterval(drainTimer);
+    drainTimer = null;
+  }
+}
+
 export interface LayerSurface {
   /** BGRA, at least frameWidth * frameHeight * 4 bytes. False means dropped. */
   commit(frame: Buffer): boolean;
@@ -60,6 +133,8 @@ export interface LayerSurface {
   /** Pixel size a frame must have, which is the logical size times the scale. */
   frameWidth: number;
   frameHeight: number;
+  /** Accept pointer input, or let clicks fall through to the game. */
+  setInteractive(interactive: boolean, onEvent?: EventSink): boolean;
 }
 
 const ANCHOR_TOP = 1;
@@ -151,6 +226,22 @@ function makeSurface(
     scale,
     frameWidth,
     frameHeight,
+    setInteractive(interactive: boolean, onEvent?: EventSink): boolean {
+      if (destroyed) return false;
+      let applied: boolean;
+      try {
+        applied = addon.setInteractive?.(handle, interactive) === true;
+      } catch (err) {
+        warnOnce(`[LayerShell] setInteractive failed: ${(err as Error)?.message}`);
+        return false;
+      }
+      // Only route events while the surface actually accepts them, so a stale
+      // sink cannot feed clicks to an overlay the user made click-through.
+      if (applied && interactive && onEvent) sinks.set(handle, onEvent);
+      else sinks.delete(handle);
+      updateDrain(addon);
+      return applied;
+    },
     commit(frame: Buffer): boolean {
       if (destroyed) return false;
       // A short frame would be read past the end of the shm mapping in C.
@@ -182,6 +273,8 @@ function makeSurface(
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      sinks.delete(handle);
+      updateDrain(addon);
       try {
         addon.destroy(handle);
       } catch (err) {

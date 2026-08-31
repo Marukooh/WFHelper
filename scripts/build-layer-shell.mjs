@@ -69,8 +69,14 @@ try {
     generated.push(code);
   }
 
-  const cflags = capture("pkg-config", ["--cflags", "wayland-client"]).split(/\s+/).filter(Boolean);
-  const libs = capture("pkg-config", ["--libs", "wayland-client"]).split(/\s+/).filter(Boolean);
+  // wayland-cursor draws the pointer over an interactive surface.
+  const packages = ["wayland-client", "wayland-cursor"];
+  const cflags = capture("pkg-config", ["--cflags", ...packages])
+    .split(/\s+/)
+    .filter(Boolean);
+  const libs = capture("pkg-config", ["--libs", ...packages])
+    .split(/\s+/)
+    .filter(Boolean);
 
   run(
     "cc",

@@ -13,7 +13,9 @@
 #include <sys/mman.h>
 #include <poll.h>
 #include <node_api.h>
+#include <linux/input-event-codes.h>
 #include <wayland-client.h>
+#include <wayland-cursor.h>
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
@@ -24,6 +26,28 @@
 #define MAX_OUTPUTS 16
 #define MAX_SURFACES 8
 #define BUFFER_SLOTS 2
+// One drain per frame at 30fps empties this many times over; a burst that
+// overflows drops the oldest, which is the right loss for pointer motion.
+#define MAX_EVENTS 256
+
+enum pointer_event_type {
+  EVENT_ENTER = 0,
+  EVENT_LEAVE = 1,
+  EVENT_MOTION = 2,
+  EVENT_BUTTON = 3,
+  EVENT_AXIS = 4,
+};
+
+struct pointer_event {
+  int handle;
+  int type;
+  double x;
+  double y;
+  int button;
+  int pressed;
+  double dx;
+  double dy;
+};
 
 struct output_entry {
   struct wl_output *output;
@@ -40,6 +64,7 @@ struct buffer_slot {
 
 struct layer_window {
   int used;
+  int interactive;
   struct wl_surface *surface;
   struct zwlr_layer_surface_v1 *layer;
   struct buffer_slot slots[BUFFER_SLOTS];
@@ -62,6 +87,21 @@ static int output_count = 0;
 static struct layer_window windows[MAX_SURFACES];
 static int init_attempted = 0;
 static int init_ok = 0;
+
+static struct wl_seat *seat = NULL;
+static struct wl_pointer *pointer = NULL;
+static struct wl_cursor_theme *cursor_theme = NULL;
+static struct wl_surface *cursor_surface = NULL;
+static int cursor_hotspot_x = 0;
+static int cursor_hotspot_y = 0;
+static struct pointer_event event_queue[MAX_EVENTS];
+static int event_count = 0;
+static int event_dropped = 0;
+// Surface the pointer is currently over, so motion and button events know
+// which overlay to route to; wayland only names the surface on enter.
+static int pointer_focus = -1;
+static double pointer_x = 0;
+static double pointer_y = 0;
 
 static void noop_geometry(void *d, struct wl_output *o, int32_t x, int32_t y, int32_t pw,
                           int32_t ph, int32_t sp, const char *make, const char *model, int32_t tr) {
@@ -94,6 +134,159 @@ static const struct wl_output_listener output_listener = {
     .description = noop_description,
 };
 
+static void push_event(const struct pointer_event *event) {
+  if (event_count >= MAX_EVENTS) {
+    // Drop the oldest: a stale motion is worth less than the newest one.
+    memmove(&event_queue[0], &event_queue[1], sizeof(event_queue[0]) * (MAX_EVENTS - 1));
+    event_count = MAX_EVENTS - 1;
+    event_dropped = 1;
+  }
+  event_queue[event_count++] = *event;
+}
+
+static int handle_for_surface(struct wl_surface *surface) {
+  for (int i = 0; i < MAX_SURFACES; i++) {
+    if (windows[i].used && windows[i].surface == surface) return i;
+  }
+  return -1;
+}
+
+/** Without an attached cursor buffer the pointer keeps whatever image the
+ *  surface underneath set, which over a game reads as a frozen crosshair. */
+static void apply_cursor(uint32_t serial) {
+  if (!pointer) return;
+  if (!cursor_surface) {
+    if (!cursor_theme) cursor_theme = wl_cursor_theme_load(NULL, 24, shm);
+    if (!cursor_theme) return;
+    struct wl_cursor *cursor = wl_cursor_theme_get_cursor(cursor_theme, "left_ptr");
+    if (!cursor || cursor->image_count == 0) return;
+    struct wl_cursor_image *image = cursor->images[0];
+    struct wl_buffer *buffer = wl_cursor_image_get_buffer(image);
+    if (!buffer) return;
+    cursor_surface = wl_compositor_create_surface(compositor);
+    if (!cursor_surface) return;
+    cursor_hotspot_x = (int)image->hotspot_x;
+    cursor_hotspot_y = (int)image->hotspot_y;
+    wl_surface_attach(cursor_surface, buffer, 0, 0);
+    wl_surface_damage(cursor_surface, 0, 0, (int32_t)image->width, (int32_t)image->height);
+    wl_surface_commit(cursor_surface);
+  }
+  wl_pointer_set_cursor(pointer, serial, cursor_surface, cursor_hotspot_x, cursor_hotspot_y);
+}
+
+static void on_pointer_enter(void *data, struct wl_pointer *wl_pointer, uint32_t serial,
+                             struct wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy) {
+  (void)data; (void)wl_pointer;
+  pointer_focus = handle_for_surface(surface);
+  if (pointer_focus < 0) return;
+  pointer_x = wl_fixed_to_double(sx);
+  pointer_y = wl_fixed_to_double(sy);
+  apply_cursor(serial);
+  struct pointer_event event = {.handle = pointer_focus,
+                               .type = EVENT_ENTER,
+                               .x = pointer_x,
+                               .y = pointer_y};
+  push_event(&event);
+}
+
+static void on_pointer_leave(void *data, struct wl_pointer *wl_pointer, uint32_t serial,
+                             struct wl_surface *surface) {
+  (void)data; (void)wl_pointer; (void)serial;
+  int handle = handle_for_surface(surface);
+  if (handle >= 0) {
+    struct pointer_event event = {
+        .handle = handle, .type = EVENT_LEAVE, .x = pointer_x, .y = pointer_y};
+    push_event(&event);
+  }
+  pointer_focus = -1;
+}
+
+static void on_pointer_motion(void *data, struct wl_pointer *wl_pointer, uint32_t time,
+                              wl_fixed_t sx, wl_fixed_t sy) {
+  (void)data; (void)wl_pointer; (void)time;
+  if (pointer_focus < 0) return;
+  pointer_x = wl_fixed_to_double(sx);
+  pointer_y = wl_fixed_to_double(sy);
+  struct pointer_event event = {
+      .handle = pointer_focus, .type = EVENT_MOTION, .x = pointer_x, .y = pointer_y};
+  push_event(&event);
+}
+
+static void on_pointer_button(void *data, struct wl_pointer *wl_pointer, uint32_t serial,
+                              uint32_t time, uint32_t button, uint32_t state) {
+  (void)data; (void)wl_pointer; (void)serial; (void)time;
+  if (pointer_focus < 0) return;
+  int mapped;
+  if (button == BTN_LEFT) mapped = 0;
+  else if (button == BTN_MIDDLE) mapped = 1;
+  else if (button == BTN_RIGHT) mapped = 2;
+  else return;
+  struct pointer_event event = {.handle = pointer_focus,
+                               .type = EVENT_BUTTON,
+                               .x = pointer_x,
+                               .y = pointer_y,
+                               .button = mapped,
+                               .pressed = state == WL_POINTER_BUTTON_STATE_PRESSED};
+  push_event(&event);
+}
+
+static void on_pointer_axis(void *data, struct wl_pointer *wl_pointer, uint32_t time,
+                            uint32_t axis, wl_fixed_t value) {
+  (void)data; (void)wl_pointer; (void)time;
+  if (pointer_focus < 0) return;
+  double amount = wl_fixed_to_double(value);
+  struct pointer_event event = {.handle = pointer_focus,
+                               .type = EVENT_AXIS,
+                               .x = pointer_x,
+                               .y = pointer_y,
+                               .dx = axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL ? amount : 0,
+                               .dy = axis == WL_POINTER_AXIS_VERTICAL_SCROLL ? amount : 0};
+  push_event(&event);
+}
+
+static void noop_pointer_frame(void *d, struct wl_pointer *p) { (void)d; (void)p; }
+static void noop_axis_source(void *d, struct wl_pointer *p, uint32_t s) { (void)d; (void)p; (void)s; }
+static void noop_axis_stop(void *d, struct wl_pointer *p, uint32_t t, uint32_t a) {
+  (void)d; (void)p; (void)t; (void)a;
+}
+static void noop_axis_discrete(void *d, struct wl_pointer *p, uint32_t a, int32_t v) {
+  (void)d; (void)p; (void)a; (void)v;
+}
+
+static const struct wl_pointer_listener pointer_listener = {
+    .enter = on_pointer_enter,
+    .leave = on_pointer_leave,
+    .motion = on_pointer_motion,
+    .button = on_pointer_button,
+    .axis = on_pointer_axis,
+    .frame = noop_pointer_frame,
+    .axis_source = noop_axis_source,
+    .axis_stop = noop_axis_stop,
+    .axis_discrete = noop_axis_discrete,
+};
+
+static void on_seat_capabilities(void *data, struct wl_seat *wl_seat, uint32_t capabilities) {
+  (void)data;
+  if ((capabilities & WL_SEAT_CAPABILITY_POINTER) && !pointer) {
+    pointer = wl_seat_get_pointer(wl_seat);
+    wl_pointer_add_listener(pointer, &pointer_listener, NULL);
+  } else if (!(capabilities & WL_SEAT_CAPABILITY_POINTER)) {
+    // The proxy is kept on purpose. Unplugging a mouse drops the capability and
+    // re-adding it raises a fresh event, and holding the proxy means a missed
+    // re-add cannot leave the overlays permanently deaf to clicks.
+    pointer_focus = -1;
+  }
+}
+
+static void noop_seat_name(void *d, struct wl_seat *s, const char *name) {
+  (void)d; (void)s; (void)name;
+}
+
+static const struct wl_seat_listener seat_listener = {
+    .capabilities = on_seat_capabilities,
+    .name = noop_seat_name,
+};
+
 static void on_global(void *data, struct wl_registry *registry, uint32_t id, const char *interface,
                       uint32_t version) {
   (void)data;
@@ -104,6 +297,10 @@ static void on_global(void *data, struct wl_registry *registry, uint32_t id, con
   } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
     uint32_t want = version < 4 ? version : 4;
     layer_shell = wl_registry_bind(registry, id, &zwlr_layer_shell_v1_interface, want);
+  } else if (strcmp(interface, wl_seat_interface.name) == 0 && !seat) {
+    uint32_t want = version < 5 ? version : 5;
+    seat = wl_registry_bind(registry, id, &wl_seat_interface, want);
+    wl_seat_add_listener(seat, &seat_listener, NULL);
   } else if (strcmp(interface, wl_output_interface.name) == 0 && output_count < MAX_OUTPUTS &&
              version >= 4) {
     struct output_entry *entry = &outputs[output_count++];
@@ -478,6 +675,7 @@ static napi_value Destroy(napi_env env, napi_callback_info info) {
   napi_get_value_int32(env, argv[0], &handle);
   if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) return undefined;
 
+  if (pointer_focus == handle) pointer_focus = -1;
   struct layer_window *win = &windows[handle];
   for (int i = 0; i < BUFFER_SLOTS; i++) free_slot(&win->slots[i]);
   if (win->layer) zwlr_layer_surface_v1_destroy(win->layer);
@@ -507,6 +705,80 @@ static napi_value IsClosed(napi_env env, napi_callback_info info) {
   return out;
 }
 
+// setInteractive(handle, boolean) -> boolean. Swaps the input region between the
+// whole surface and nothing. Keyboard interactivity stays NONE either way, so a
+// clickable overlay still never takes keyboard focus off the game.
+static napi_value SetInteractive(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value argv[2];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+
+  napi_value no, yes;
+  napi_get_boolean(env, false, &no);
+  napi_get_boolean(env, true, &yes);
+  if (argc < 2 || !init_ok) return no;
+
+  int32_t handle = -1;
+  napi_get_value_int32(env, argv[0], &handle);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) return no;
+  bool wanted = false;
+  napi_get_value_bool(env, argv[1], &wanted);
+
+  struct layer_window *win = &windows[handle];
+  if (win->closed) return no;
+  if (wanted) {
+    // A null region means the whole surface accepts input.
+    wl_surface_set_input_region(win->surface, NULL);
+  } else {
+    struct wl_region *empty = wl_compositor_create_region(compositor);
+    if (!empty) return no;
+    wl_surface_set_input_region(win->surface, empty);
+    wl_region_destroy(empty);
+    if (pointer_focus == handle) pointer_focus = -1;
+  }
+  win->interactive = wanted ? 1 : 0;
+  wl_surface_commit(win->surface);
+  wl_display_flush(display);
+  return yes;
+}
+
+static void set_event_field(napi_env env, napi_value object, const char *key, double value) {
+  napi_value number;
+  napi_create_double(env, value, &number);
+  napi_set_named_property(env, object, key, number);
+}
+
+// pollEvents() -> array of pointer events since the last call, oldest first.
+// Coordinates are surface-local logical pixels.
+static napi_value PollEvents(napi_env env, napi_callback_info info) {
+  (void)info;
+  napi_value list;
+  napi_create_array(env, &list);
+  if (!init_ok) return list;
+
+  pump_events();
+
+  for (int i = 0; i < event_count; i++) {
+    const struct pointer_event *event = &event_queue[i];
+    napi_value item;
+    napi_create_object(env, &item);
+    set_event_field(env, item, "handle", event->handle);
+    set_event_field(env, item, "type", event->type);
+    set_event_field(env, item, "x", event->x);
+    set_event_field(env, item, "y", event->y);
+    set_event_field(env, item, "button", event->button);
+    set_event_field(env, item, "dx", event->dx);
+    set_event_field(env, item, "dy", event->dy);
+    napi_value pressed;
+    napi_get_boolean(env, event->pressed ? true : false, &pressed);
+    napi_set_named_property(env, item, "pressed", pressed);
+    napi_set_element(env, list, (uint32_t)i, item);
+  }
+  event_count = 0;
+  event_dropped = 0;
+  return list;
+}
+
 // scaleOf(handle) -> buffer pixels per logical pixel, so the caller knows how
 // large a frame to render. 0 means the handle is not live.
 static napi_value ScaleOf(napi_env env, napi_callback_info info) {
@@ -533,6 +805,8 @@ NAPI_MODULE_INIT() {
       {"destroy", NULL, Destroy, NULL, NULL, NULL, napi_default, NULL},
       {"isClosed", NULL, IsClosed, NULL, NULL, NULL, napi_default, NULL},
       {"scaleOf", NULL, ScaleOf, NULL, NULL, NULL, napi_default, NULL},
+      {"setInteractive", NULL, SetInteractive, NULL, NULL, NULL, napi_default, NULL},
+      {"pollEvents", NULL, PollEvents, NULL, NULL, NULL, napi_default, NULL},
   };
   napi_define_properties(env, exports, sizeof(props) / sizeof(props[0]), props);
   return exports;

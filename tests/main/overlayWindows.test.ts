@@ -1348,6 +1348,7 @@ describe("layer-shell presentation", () => {
       show: vi.fn(async () => true),
       hide: vi.fn(),
       isShowing: vi.fn(() => true),
+      setInteractive: vi.fn(),
     };
   }
 
@@ -1400,15 +1401,39 @@ describe("layer-shell presentation", () => {
     expect(probe.windows[0].hide).not.toHaveBeenCalled();
   });
 
-  it("rebuilds as an ordinary window when interactive mode is entered", () => {
+  // The surface swaps its input region in place, so the rebuild the X11 path
+  // needs would only throw away a working surface.
+  it("takes clicks by making the surface interactive, not by rebuilding", () => {
     const probe = probeWithLayer(true);
     probe.controller.createOverlayWindow();
+    const built = probe.windows.length;
 
     probe.controller.setOverlayInteractiveMode(true);
 
-    expect(probe.windows.length).toBeGreaterThan(1);
-    const rebuilt = probe.windows[probe.windows.length - 1];
-    expect(rebuilt.options.webPreferences.offscreen).toBeUndefined();
+    expect(probe.presentation.setInteractive).toHaveBeenLastCalledWith(true);
+    expect(probe.windows).toHaveLength(built);
+    expect(probe.windows[0].options.webPreferences.offscreen).toBe(true);
+  });
+
+  it("hands clicks back to the game when interactive mode is left", () => {
+    const probe = probeWithLayer(true);
+    probe.controller.createOverlayWindow();
+    probe.controller.setOverlayInteractiveMode(true);
+
+    probe.controller.setOverlayInteractiveMode(false);
+
+    expect(probe.presentation.setInteractive).toHaveBeenLastCalledWith(false);
+    expect(probe.windows[0].setFocusable).not.toHaveBeenCalled();
+  });
+
+  it("opens straight onto a layer surface when interactive mode is already on", () => {
+    const probe = probeWithLayer(true);
+    probe.controller.setOverlayInteractiveMode(true);
+
+    probe.controller.createOverlayWindow();
+
+    expect(probe.createPresentation).toHaveBeenCalled();
+    expect(probe.windows[0].options.webPreferences.offscreen).toBe(true);
   });
 
   it("is never built on XWayland or off linux", () => {

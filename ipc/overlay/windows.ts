@@ -549,10 +549,10 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     return layer !== null;
   }
 
-  /** Interactive overlays keep the window path: a layer surface with no input
-   *  region cannot be clicked, and forwarding pointer events is separate work. */
+  /** A layer surface serves both modes: it swaps its input region live and
+   *  forwards pointer events into the offscreen window behind it. */
   function layerModeAllowed(): boolean {
-    return platform === "linux" && isNativeWayland() && !readInteractiveMode();
+    return platform === "linux" && isNativeWayland();
   }
 
   function applyClickThrough(overlayWindow: import("electron").BrowserWindow, force = false): void {
@@ -566,9 +566,6 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   // That stuck shape has not been seen on Wayland, and on tiling compositors
   // click-through never takes effect at all - see ipc/overlay/keepMapped.ts.
   function needsRebuildForInteractive(): boolean {
-    // An offscreen window cannot be shown, so entering interactive mode has to
-    // rebuild it as an ordinary one.
-    if (isLayerMode()) return true;
     return platform === "linux" && clickThroughApplied && !isNativeWayland();
   }
 
@@ -988,6 +985,19 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     const interactive = readInteractiveMode();
     const visible = isOverlayWindowVisible();
 
+    if (isLayerMode()) {
+      // The surface swaps its input region in place, so there is no window to
+      // rebuild and no focus flag to flip; the compositor owns both.
+      layer?.setInteractive(interactive);
+      if (lastAppliedInteractive !== interactive) {
+        lastAppliedInteractive = interactive;
+        log.info?.(
+          `[OverlayWindow] ${windowLabel} layer mode=${interactive ? "interactive" : "passive"}`,
+        );
+      }
+      return;
+    }
+
     if (interactive && visible && needsRebuildForInteractive()) {
       // The rebuilt window is created interactive, so it applies the mode itself.
       rebuildForInteractive();
@@ -1011,10 +1021,6 @@ export function createOverlayWindowsController(options: OverlayWindowsController
         `[OverlayWindow] ${windowLabel} mode=${interactive ? "interactive" : "passive"} visible=${visible}`,
       );
     }
-
-    // The compositor owns a layer surface's stacking and focus, and the window
-    // behind it is offscreen, so there is nothing here to apply.
-    if (isLayerMode()) return;
 
     // Stacking and focus only mean something for a window that is on screen.
     if (!visible) return;

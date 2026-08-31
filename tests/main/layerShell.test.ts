@@ -11,6 +11,9 @@ interface FakeAddon {
   commit: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
   isClosed: ReturnType<typeof vi.fn>;
+  scaleOf: ReturnType<typeof vi.fn>;
+  setInteractive: ReturnType<typeof vi.fn>;
+  pollEvents: ReturnType<typeof vi.fn>;
 }
 
 // The loader's own require is the only seam a native addon can be injected
@@ -71,6 +74,9 @@ function useAddon(overrides: Partial<FakeAddon> = {}): FakeAddon {
     commit: vi.fn(() => true),
     destroy: vi.fn(),
     isClosed: vi.fn(() => false),
+    scaleOf: vi.fn(() => 1),
+    setInteractive: vi.fn(() => true),
+    pollEvents: vi.fn(() => []),
     ...overrides,
   };
   injected.addon = addon;
@@ -320,5 +326,103 @@ describe("LayerSurface", () => {
     expect(surface.commit(fullFrame())).toBe(false);
     expect(surface.isClosed()).toBe(true);
     expect(() => surface.destroy()).not.toThrow();
+  });
+});
+
+describe("pointer input", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    setPlatform(realPlatform);
+    injected.addon = null;
+    vi.restoreAllMocks();
+  });
+
+  async function openTwo() {
+    vi.useFakeTimers();
+    let next = 0;
+    const addon = useAddon({ create: vi.fn(() => next++) });
+    const create = await freshCreate();
+    const first = create(surfaceOptions());
+    const second = create(surfaceOptions());
+    if (!first || !second) throw new Error("expected two surfaces");
+    return { addon, first, second };
+  }
+
+  it("routes an event to the surface the compositor named and no other", async () => {
+    const { addon, first, second } = await openTwo();
+    const toFirst = vi.fn();
+    const toSecond = vi.fn();
+    first.setInteractive(true, toFirst);
+    second.setInteractive(true, toSecond);
+    addon.pollEvents.mockReturnValueOnce([
+      { handle: 1, type: 3, x: 7, y: 9, button: 2, pressed: true, dx: 0, dy: 0 },
+    ]);
+
+    vi.advanceTimersByTime(20);
+
+    expect(toFirst).not.toHaveBeenCalled();
+    expect(toSecond).toHaveBeenCalledWith({
+      kind: "button",
+      x: 7,
+      y: 9,
+      button: 2,
+      pressed: true,
+      deltaX: 0,
+      deltaY: 0,
+    });
+  });
+
+  it("stops routing to a surface that went click-through", async () => {
+    const { addon, first } = await openTwo();
+    const sink = vi.fn();
+    first.setInteractive(true, sink);
+    first.setInteractive(false);
+    addon.pollEvents.mockReturnValue([
+      { handle: 0, type: 2, x: 1, y: 1, button: 0, pressed: false, dx: 0, dy: 0 },
+    ]);
+
+    vi.advanceTimersByTime(40);
+
+    expect(sink).not.toHaveBeenCalled();
+  });
+
+  it("stops polling once no surface wants input", async () => {
+    const { addon, first, second } = await openTwo();
+    first.setInteractive(true, vi.fn());
+    second.setInteractive(true, vi.fn());
+    vi.advanceTimersByTime(20);
+    expect(addon.pollEvents).toHaveBeenCalled();
+
+    addon.pollEvents.mockClear();
+    first.destroy();
+    second.setInteractive(false);
+    vi.advanceTimersByTime(100);
+
+    expect(addon.pollEvents).not.toHaveBeenCalled();
+  });
+
+  it("reports failure rather than routing when the addon refuses", async () => {
+    vi.useFakeTimers();
+    const addon = useAddon({ setInteractive: vi.fn(() => false) });
+    const create = await freshCreate();
+    const surface = create(surfaceOptions());
+    const sink = vi.fn();
+
+    expect(surface?.setInteractive(true, sink)).toBe(false);
+    addon.pollEvents.mockReturnValue([
+      { handle: 0, type: 2, x: 1, y: 1, button: 0, pressed: false, dx: 0, dy: 0 },
+    ]);
+    vi.advanceTimersByTime(40);
+
+    expect(sink).not.toHaveBeenCalled();
+  });
+
+  it("survives an addon built before pointer input existed", async () => {
+    const addon = useAddon();
+    delete (addon as Partial<FakeAddon>).setInteractive;
+    const create = await freshCreate();
+    const surface = create(surfaceOptions());
+
+    expect(surface?.setInteractive(true, vi.fn())).toBe(false);
   });
 });

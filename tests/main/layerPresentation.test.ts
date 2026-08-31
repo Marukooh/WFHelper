@@ -11,6 +11,7 @@ function fakeSurface(overrides: Partial<Record<string, unknown>> = {}) {
     scale: 1,
     frameWidth: 4,
     frameHeight: 1,
+    setInteractive: vi.fn(),
     ...overrides,
   };
 }
@@ -24,6 +25,7 @@ function fakeWindow() {
     webContents: {
       setFrameRate: vi.fn(),
       setZoomFactor: vi.fn(),
+      sendInputEvent: vi.fn(),
       on: vi.fn((event: "paint", listener: PaintListener) => {
         handlers[event] = listener;
       }),
@@ -217,6 +219,123 @@ describe("createLayerPresentation", () => {
     window.paint(Buffer.alloc(100 * 50 * 4));
 
     expect(scaled.commit).not.toHaveBeenCalled();
+  });
+
+  describe("interactive mode", () => {
+    /** Captures the sink the presentation hands to setInteractive. */
+    function interactiveBuild(scale = 1) {
+      let sink: ((event: unknown) => void) | undefined;
+      const surface = fakeSurface({
+        scale,
+        frameWidth: 4 * scale,
+        frameHeight: scale,
+        setInteractive: vi.fn((_on: boolean, onEvent?: (event: unknown) => void) => {
+          sink = onEvent;
+          return true;
+        }),
+      });
+      const { presentation } = build({ createSurface: vi.fn(() => surface as never) });
+      const window = fakeWindow();
+      presentation.attach(window, 4, 1);
+      return { presentation, surface, window, emit: (e: unknown) => sink?.(e) };
+    }
+
+    function event(overrides: Record<string, unknown>) {
+      return {
+        kind: "motion",
+        x: 0,
+        y: 0,
+        button: 0,
+        pressed: false,
+        deltaX: 0,
+        deltaY: 0,
+        ...overrides,
+      };
+    }
+
+    it("asks the surface for input only once interactive mode is on", async () => {
+      const { presentation, surface } = interactiveBuild();
+      await presentation.show();
+      expect(surface.setInteractive).not.toHaveBeenCalled();
+
+      presentation.setInteractive(true);
+
+      expect(surface.setInteractive).toHaveBeenCalledWith(true, expect.any(Function));
+    });
+
+    // The surface is remade on every show and starts click-through.
+    it("re-applies interactive mode to a surface made by a later show", async () => {
+      const { presentation, surface } = interactiveBuild();
+      presentation.setInteractive(true);
+      await presentation.show();
+
+      expect(surface.setInteractive).toHaveBeenCalledWith(true, expect.any(Function));
+    });
+
+    it("turns a click into a down and an up on the offscreen window", async () => {
+      const { presentation, window, emit } = interactiveBuild();
+      await presentation.show();
+      presentation.setInteractive(true);
+
+      emit(event({ kind: "button", x: 3, y: 1, button: 0, pressed: true }));
+      emit(event({ kind: "button", x: 3, y: 1, button: 0, pressed: false }));
+
+      expect(window.webContents.sendInputEvent).toHaveBeenNthCalledWith(1, {
+        type: "mouseDown",
+        x: 3,
+        y: 1,
+        button: "left",
+        clickCount: 1,
+      });
+      expect(window.webContents.sendInputEvent).toHaveBeenNthCalledWith(2, {
+        type: "mouseUp",
+        x: 3,
+        y: 1,
+        button: "left",
+        clickCount: 1,
+      });
+    });
+
+    it("maps the remaining pointer events onto their input events", async () => {
+      const { presentation, window, emit } = interactiveBuild();
+      await presentation.show();
+      presentation.setInteractive(true);
+
+      emit(event({ kind: "enter", x: 1, y: 1 }));
+      emit(event({ kind: "motion", x: 2, y: 1 }));
+      emit(event({ kind: "leave", x: 2, y: 1 }));
+      emit(event({ kind: "button", x: 2, y: 1, button: 2, pressed: true }));
+
+      const types = window.webContents.sendInputEvent.mock.calls.map(([e]) => e.type);
+      expect(types).toEqual(["mouseEnter", "mouseMove", "mouseLeave", "mouseDown"]);
+      expect(window.webContents.sendInputEvent.mock.calls[3][0].button).toBe("right");
+    });
+
+    // Surface coordinates are logical; the window is sized in buffer pixels.
+    it("scales pointer coordinates to the window on a HiDPI output", async () => {
+      const { presentation, window, emit } = interactiveBuild(2);
+      await presentation.show();
+      presentation.setInteractive(true);
+
+      emit(event({ kind: "motion", x: 10, y: 20 }));
+
+      expect(window.webContents.sendInputEvent).toHaveBeenCalledWith({
+        type: "mouseMove",
+        x: 20,
+        y: 40,
+      });
+    });
+
+    it("survives a webContents that is already gone", async () => {
+      const { presentation, window, emit } = interactiveBuild();
+      await presentation.show();
+      presentation.setInteractive(true);
+      window.webContents.sendInputEvent.mockImplementation(() => {
+        throw new Error("destroyed");
+      });
+
+      expect(() => emit(event({ kind: "motion", x: 1, y: 1 }))).not.toThrow();
+    });
   });
 
   it("survives a paint whose bitmap cannot be read", async () => {

@@ -2,7 +2,12 @@
 // It is the only way to pick the monitor and sit above a fullscreen game; both
 // are impossible for an ordinary window on native Wayland.
 
-import { createLayerSurface, type LayerAnchor, type LayerSurface } from "../../services/layerShell";
+import {
+  createLayerSurface,
+  type LayerAnchor,
+  type LayerPointerEvent,
+  type LayerSurface,
+} from "../../services/layerShell";
 import { resolveGameOutput } from "../../services/waylandCompositor";
 
 interface PaintImage {
@@ -11,11 +16,22 @@ interface PaintImage {
 
 // Narrowed to the one overload we use, so an Electron BrowserWindow satisfies it
 // without dragging the whole WebContents event map in.
+interface InputEvent {
+  type: "mouseEnter" | "mouseLeave" | "mouseMove" | "mouseDown" | "mouseUp" | "mouseWheel";
+  x: number;
+  y: number;
+  button?: "left" | "middle" | "right";
+  clickCount?: number;
+  deltaX?: number;
+  deltaY?: number;
+}
+
 interface OffscreenWindow {
   setSize?: (width: number, height: number) => void;
   webContents: {
     setFrameRate: (fps: number) => void;
     setZoomFactor?: (factor: number) => void;
+    sendInputEvent?: (event: InputEvent) => void;
     on: (
       event: "paint",
       listener: (event: unknown, dirty: unknown, image: PaintImage) => void,
@@ -49,6 +65,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   let width = 0;
   let height = 0;
   let appliedScale = 1;
+  let interactive = false;
   // Bumped on every hide so a slow output lookup cannot map a surface for a
   // show the user already dismissed.
   let generation = 0;
@@ -68,6 +85,55 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
       attached.webContents.setZoomFactor?.(scale);
     } catch (err) {
       log?.warn?.(`[${label}] could not scale to ${scale}x: ${(err as Error)?.message}`);
+    }
+  }
+
+  const BUTTONS: Array<"left" | "middle" | "right"> = ["left", "middle", "right"];
+
+  /** One wayland axis notch is 15 units; chromium counts a notch as 120. */
+  const WHEEL_PER_AXIS_UNIT = 8;
+
+  function toInputEvent(event: LayerPointerEvent, scale: number): InputEvent | null {
+    // Surface-local logical pixels to window pixels. The window is sized in
+    // buffer pixels and the page is zoomed by the same factor.
+    const x = Math.round(event.x * scale);
+    const y = Math.round(event.y * scale);
+    switch (event.kind) {
+      case "enter":
+        return { type: "mouseEnter", x, y };
+      case "leave":
+        return { type: "mouseLeave", x, y };
+      case "motion":
+        return { type: "mouseMove", x, y };
+      case "button":
+        return {
+          type: event.pressed ? "mouseDown" : "mouseUp",
+          x,
+          y,
+          button: BUTTONS[event.button] ?? "left",
+          clickCount: 1,
+        };
+      case "axis":
+        return {
+          type: "mouseWheel",
+          x,
+          y,
+          deltaX: -event.deltaX * WHEEL_PER_AXIS_UNIT,
+          deltaY: -event.deltaY * WHEEL_PER_AXIS_UNIT,
+        };
+      default:
+        return null;
+    }
+  }
+
+  function forwardEvent(event: LayerPointerEvent): void {
+    if (!attached || !surface) return;
+    const input = toInputEvent(event, surface.scale);
+    if (!input) return;
+    try {
+      attached.webContents.sendInputEvent?.(input);
+    } catch {
+      // A destroyed webContents throws; the next show rebuilds the wiring.
     }
   }
 
@@ -123,6 +189,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
         }
         warnedCommit = false;
         applyScale(surface.scale);
+        if (interactive) surface.setInteractive(true, forwardEvent);
         log?.info?.(
           `[${label}] layer surface up on ${output ?? "compositor choice"} at ${surface.scale}x`,
         );
@@ -146,6 +213,13 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
 
     isShowing(): boolean {
       return surface !== null && !surface.isClosed();
+    },
+
+    /** Accept clicks, or let them fall through to the game. Sticky across shows,
+     *  because the surface is remade on every show and starts click-through. */
+    setInteractive(next: boolean): void {
+      interactive = next;
+      surface?.setInteractive(next, forwardEvent);
     },
   };
 }
