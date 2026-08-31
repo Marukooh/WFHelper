@@ -290,7 +290,10 @@ function _getOrCreateWindow(): InstanceType<typeof BrowserWindow> {
     frame: false,
     alwaysOnTop: true,
     skipTaskbar: true,
-    resizable: false,
+    // resizable:false pins the min size to the constructed one, which blocks the
+    // setSize that fits an offscreen paint to a HiDPI layer surface. Frameless
+    // windows have no resize grips to worry about.
+    resizable: true,
     focusable: false,
     hasShadow: false,
     webPreferences: {
