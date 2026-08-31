@@ -27,6 +27,15 @@ function run(command, args, cwd) {
   execFileSync(command, args, { cwd, stdio: "pipe" });
 }
 
+// execFileSync puts "Command failed: cc ..." in the message and the compiler
+// diagnostics in stderr, so a failure reported from the message alone says
+// nothing about what went wrong.
+function failureReason(err) {
+  const stderr = String(err?.stderr ?? "").trim();
+  if (stderr) return stderr.split("\n").slice(-6).join("; ");
+  return err?.message?.split("\n")[0] ?? "compile failed";
+}
+
 function capture(command, args) {
   return execFileSync(command, args, { encoding: "utf8" }).trim();
 }
@@ -106,6 +115,6 @@ try {
 } catch (err) {
   // Same contract as a missing tool: optional off release builds, fatal under
   // --require, where a swallowed compile error ships the feature dead.
-  skip(err?.message?.split("\n")[0] ?? "compile failed");
+  skip(failureReason(err));
 }
 process.exit(0);
