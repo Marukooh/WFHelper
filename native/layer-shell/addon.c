@@ -444,6 +444,11 @@ static void on_global_remove(void *d, struct wl_registry *r, uint32_t id) {
   for (int i = 0; i < output_count; i++) {
     struct output_entry *entry = &outputs[i];
     if (!entry->output || entry->global_id != id) continue;
+    // A window holds this pointer to match later scale changes, and binding a
+    // fresh global can return the same address, so it goes with the output.
+    for (int w = 0; w < MAX_SURFACES; w++) {
+      if (windows[w].used && windows[w].output == entry->output) windows[w].output = NULL;
+    }
     // The proxy dies with the global. Handing a stale one to get_layer_surface
     // is a fatal protocol error, which would latch layer-shell off for good.
     if (entry->xdg_output) zxdg_output_v1_destroy(entry->xdg_output);
