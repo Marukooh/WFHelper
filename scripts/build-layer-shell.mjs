@@ -1,7 +1,7 @@
-// Builds the optional Wayland layer-shell addon. Never wired into `pnpm install`
-// so Windows and macOS contributors never try to compile Wayland code, and it
-// always exits 0: a Linux box without the dev headers still gets an AppImage,
-// just one that falls back to ordinary overlay windows.
+// Builds the optional Wayland layer-shell addon. Never wired into `pnpm install`,
+// so a box without the toolchain still gets an AppImage that falls back to
+// ordinary overlay windows. --require turns a skip into a failure, which release
+// builds want: a silent skip there ships the feature permanently dead.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -12,7 +12,13 @@ const source = path.join(root, "native", "layer-shell");
 const outDir = path.join(source, "build");
 const protocolXml = path.join(source, "wlr-layer-shell-unstable-v1.xml");
 
+const required = process.argv.includes("--require");
+
 function skip(reason) {
+  if (required) {
+    console.error(`build-layer-shell: ${reason} (required by --require)`);
+    process.exit(1);
+  }
   console.log(`build-layer-shell: skipped (${reason})`);
   process.exit(0);
 }

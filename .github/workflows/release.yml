@@ -242,10 +242,18 @@ jobs:
             fi
           done
 
+      # wayland-scanner and the protocol XML are build-time only; without them
+      # build-layer-shell skips and the AppImage ships with the addon missing.
+      - name: Install Wayland build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwayland-dev libwayland-bin wayland-protocols
+
       - name: Build Linux AppImage
         run: |
           pnpm run verify:onnx-models
           pnpm run build
+          node scripts/build-layer-shell.mjs --require
           pnpm exec electron-builder --linux AppImage --publish never
         env:
           # baked into the renderer bundle; without these a CI installer
