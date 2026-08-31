@@ -230,6 +230,7 @@ export function createOverlaySettingsController(options: OverlaySettingsControll
       ),
       fissureAlerts: normalizeFissureAlerts(candidate.fissureAlerts, defaults.fissureAlerts),
       notificationSoundEnabled: booleanSetting("notificationSoundEnabled"),
+      notificationSoundUsesSystem: booleanSetting("notificationSoundUsesSystem"),
       wfmNotificationsEnabled: booleanSetting("wfmNotificationsEnabled"),
       messageNotificationsEnabled: booleanSetting("messageNotificationsEnabled"),
       messageNotificationsWhileFocused: booleanSetting("messageNotificationsWhileFocused"),

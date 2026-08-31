@@ -405,6 +405,8 @@
   "settings.unlistOnTrade": "WFMarket-Orders nach Verkauf/Kauf schließen",
   "settings.wfmDmNotifications": "WFM-DM-Benachrichtigungen",
   "settings.windowsNotifSound": "Windows-Benachrichtigungston",
+  "settings.notificationSoundUsesSystem": "Windows-Benachrichtigungston verwenden",
+  "settings.notificationSoundUsesSystemHint": "Spielt den Systemton ab, sodass die Systemsound-Lautstärke gilt statt der von WFHelper.",
   "appearance.description": "Passe Farben, Schriften und Stil an.",
   "appearance.presets": "Presets",
   "appearance.customPreset": "Eigenes",

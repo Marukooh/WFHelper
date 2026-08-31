@@ -164,6 +164,7 @@
   const OVERLAY_FORM_KEYS = [
     "autoTriggerEnabled",
     "notificationSoundEnabled",
+    "notificationSoundUsesSystem",
     "wfmNotificationsEnabled",
     "messageNotificationsEnabled",
     "messageNotificationsWhileFocused",
@@ -419,6 +420,23 @@
                   class="accent-accent"
                 />
               </SettingsRow>
+
+              {#if isWindows}
+                <SettingsRow
+                  label={$tr("settings.notificationSoundUsesSystem")}
+                  hint={$tr("settings.notificationSoundUsesSystemHint")}
+                  dimmed={!form.notificationSoundEnabled}
+                >
+                  <input
+                    type="checkbox"
+                    data-setting="notification-sound-system"
+                    disabled={!form.notificationSoundEnabled}
+                    bind:checked={form.notificationSoundUsesSystem}
+                    on:change={autoSave}
+                    class="accent-accent"
+                  />
+                </SettingsRow>
+              {/if}
 
               <SettingsRow
                 label={$tr("settings.windowsNotificationSeconds")}

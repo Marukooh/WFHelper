@@ -1051,6 +1051,8 @@
   "settings.unlistOnTrade": "Unlist WFMarket orders when sold/bought",
   "settings.wfmDmNotifications": "WFM DM notifications",
   "settings.windowsNotifSound": "Windows notification sound",
+  "settings.notificationSoundUsesSystem": "Use the Windows notification sound",
+  "settings.notificationSoundUsesSystemHint": "Plays the system sound, so the System Sounds volume applies instead of WFHelper's.",
   "setup.appLogoAlt": "App Logo",
   "setup.appSize.hint": "Already fitted to your display. Drag if this looks too small or too big. Changeable later in Settings > Appearance.",
   "setup.borderStyle.hint": "Choose how sharp or rounded app controls should feel.",

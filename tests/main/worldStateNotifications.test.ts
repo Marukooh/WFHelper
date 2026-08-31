@@ -298,6 +298,33 @@ describe("windows toast audio and lifetime", () => {
     expect(execFileArgs().some((args) => args.join(" ").includes("SoundPlayer"))).toBe(false);
   });
 
+  it("hands the sound to Windows when the system sound is chosen", () => {
+    ctx.overlaySettings = {
+      ...OVERLAY_SETTINGS_DEFAULTS,
+      notificationSoundUsesSystem: true,
+    } as OverlaySettings;
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    // The system sound is billed to System Sounds, so that slider applies. The
+    // renderer clip would be billed to WFHelper, so only one of them may play.
+    expect(toastXml()).toContain('<audio src="ms-winsoundevent:Notification.Default"/>');
+    expect(soundSends).toEqual([]);
+  });
+
+  it("stays silent when the sound is off, whichever source is chosen", () => {
+    ctx.overlaySettings = {
+      ...OVERLAY_SETTINGS_DEFAULTS,
+      notificationSoundUsesSystem: true,
+      notificationSoundEnabled: false,
+    } as OverlaySettings;
+    registerWithQuitHook();
+    worldStateIpc.sendDesktopNotificationRaw("WFHelper", "Test notification", "app");
+
+    expect(toastXml()).toContain('<audio silent="true"/>');
+    expect(soundSends).toEqual([]);
+  });
+
   it("plays nothing when the notification sound is disabled", () => {
     ctx.overlaySettings = {
       ...OVERLAY_SETTINGS_DEFAULTS,

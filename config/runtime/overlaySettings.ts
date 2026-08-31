@@ -34,6 +34,9 @@ export interface OverlaySettings {
   cycleAlertMinutesBefore: number;
   fissureAlerts: FissureAlert[];
   notificationSoundEnabled: boolean;
+  /** Play the Windows notification sound instead of the app's own clip. The
+   *  system sound obeys the System Sounds volume; the clip obeys WFHelper's. */
+  notificationSoundUsesSystem: boolean;
   wfmNotificationsEnabled: boolean;
   messageNotificationsEnabled: boolean;
   messageNotificationsWhileFocused: boolean;
@@ -104,6 +107,7 @@ export const OVERLAY_SETTINGS_DEFAULTS = Object.freeze({
   cycleAlertMinutesBefore: 3,
   fissureAlerts: Object.freeze([] as FissureAlert[]),
   notificationSoundEnabled: true,
+  notificationSoundUsesSystem: false,
   wfmNotificationsEnabled: false,
   messageNotificationsEnabled: true,
   // Off by default: while focused you also see your own sends, so stay quiet.

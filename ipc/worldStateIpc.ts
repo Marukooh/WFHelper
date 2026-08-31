@@ -252,13 +252,23 @@ function notificationSoundEnabled(): boolean {
 const SOUND_MIN_GAP_MS = 3_000;
 let _lastSoundAt = 0;
 
-// The toast never carries audio: a system sound plays at master volume and a
-// separate player process is billed to that process, so neither one lands on the
-// app's volume-mixer slider. The renderer owns the clip instead.
+// The two are exclusive on purpose. The app's own clip is billed to WFHelper in
+// the volume mixer, so its slider applies; the system sound is billed to System
+// Sounds, so that slider applies instead. Neither one obeys both.
 const TOAST_SILENT_AUDIO = '<audio silent="true"/>';
+const TOAST_SYSTEM_AUDIO = '<audio src="ms-winsoundevent:Notification.Default"/>';
+
+function notificationSoundUsesSystem(): boolean {
+  return ctx.overlaySettings.notificationSoundUsesSystem === true;
+}
+
+function toastAudio(): string {
+  if (!notificationSoundEnabled()) return TOAST_SILENT_AUDIO;
+  return notificationSoundUsesSystem() ? TOAST_SYSTEM_AUDIO : TOAST_SILENT_AUDIO;
+}
 
 function playNotificationSound(): void {
-  if (!notificationSoundEnabled()) return;
+  if (!notificationSoundEnabled() || notificationSoundUsesSystem()) return;
   const window = ctx.mainWindow;
   if (!window || window.isDestroyed()) return;
   const now = Date.now();
@@ -332,7 +342,7 @@ function sendWindowsToast(title: string, body: string): void {
   const tag = `wfc-${++_toastTagCounter}`;
   const xml = `<toast scenario="incomingCall"><visual><binding template="ToastGeneric"><text>${escapeXml(
     title,
-  )}</text><text>${escapeXml(body)}</text></binding></visual>${TOAST_SILENT_AUDIO}</toast>`;
+  )}</text><text>${escapeXml(body)}</text></binding></visual>${toastAudio()}</toast>`;
   const xmlPath = path.join(os.tmpdir(), `wfc-toast-${process.pid}-${Date.now()}-${tag}.xml`);
   try {
     fs.writeFileSync(xmlPath, xml, "utf8");
