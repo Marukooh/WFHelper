@@ -157,6 +157,10 @@ export interface LayerSurface {
   /** Ask for a new logical size. False means the surface is gone and the caller
    *  must build a fresh one; frameWidth and frameHeight follow a success. */
   resize(width: number, height: number): boolean;
+  /** Re-read the density the compositor now uses for this surface, which
+   *  changes when its monitor is rescaled. True means scale and the frame size
+   *  moved and the caller has to resize whatever paints into it. */
+  refreshScale(): boolean;
 }
 
 const ANCHOR_TOP = 1;
@@ -231,6 +235,8 @@ function makeSurface(
   scale: number,
 ): LayerSurface {
   let destroyed = false;
+  let logicalWidth = width;
+  let logicalHeight = height;
   // One latch for every per-frame failure. A surface that fails once fails on
   // every following frame, so an unlatched warning would flood the log.
   let warned = false;
@@ -257,8 +263,26 @@ function makeSurface(
       if (!granted || granted.width <= 0 || granted.height <= 0) return false;
       // The compositor has the last word on the size, so frames are measured
       // against what it granted rather than what was asked for.
-      surface.frameWidth = granted.width * scale;
-      surface.frameHeight = granted.height * scale;
+      logicalWidth = granted.width;
+      logicalHeight = granted.height;
+      surface.frameWidth = logicalWidth * surface.scale;
+      surface.frameHeight = logicalHeight * surface.scale;
+      return true;
+    },
+    refreshScale(): boolean {
+      if (destroyed) return false;
+      let reported: number | undefined;
+      try {
+        reported = addon.scaleOf?.(handle);
+      } catch {
+        return false;
+      }
+      if (typeof reported !== "number" || !Number.isInteger(reported) || reported <= 0)
+        return false;
+      if (reported === surface.scale) return false;
+      surface.scale = reported;
+      surface.frameWidth = logicalWidth * reported;
+      surface.frameHeight = logicalHeight * reported;
       return true;
     },
     setMargin(top: number, right: number, bottom: number, left: number): boolean {

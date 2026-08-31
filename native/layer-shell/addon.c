@@ -83,6 +83,9 @@ struct layer_window {
   int interactive;
   struct wl_surface *surface;
   struct zwlr_layer_surface_v1 *layer;
+  // The output the surface is currently shown on, so an output scale change can
+  // find the windows it applies to. NULL until the compositor says.
+  struct wl_output *output;
   struct buffer_slot slots[BUFFER_SLOTS];
   int next_slot;
   int width;
@@ -134,10 +137,17 @@ static void on_output_mode(void *data, struct wl_output *o, uint32_t flags, int3
   entry->mode_height = h;
 }
 static void noop_done(void *d, struct wl_output *o) { (void)d; (void)o; }
+// Declared here because on_output_scale has to reach the windows on the output
+// whose scale just changed.
+static void adopt_output_scale(struct wl_output *output, int scale);
+
 static void on_output_scale(void *data, struct wl_output *o, int32_t scale) {
   (void)o;
   struct output_entry *entry = data;
-  if (scale > 0) entry->scale = scale;
+  if (scale > 0) {
+    entry->scale = scale;
+    adopt_output_scale(entry->output, scale);
+  }
 }
 static void on_output_name(void *data, struct wl_output *o, const char *name) {
   (void)o;
@@ -147,6 +157,44 @@ static void on_output_name(void *data, struct wl_output *o, const char *name) {
 static void noop_description(void *d, struct wl_output *o, const char *desc) {
   (void)d; (void)o; (void)desc;
 }
+
+// A live surface has to follow its output's scale, or its buffers stay at the
+// old density and every later frame is sized for a scale the compositor
+// dropped. resize_slots re-makes the mapping on the next commit.
+static void adopt_output_scale(struct wl_output *output, int scale) {
+  if (!output || scale <= 0) return;
+  for (int i = 0; i < MAX_SURFACES; i++) {
+    if (!windows[i].used || windows[i].output != output) continue;
+    windows[i].scale = scale;
+    // Double-buffered, so it lands with the first frame at the new density.
+    wl_surface_set_buffer_scale(windows[i].surface, scale);
+  }
+}
+
+static void on_surface_enter(void *data, struct wl_surface *surface, struct wl_output *output) {
+  (void)surface;
+  struct layer_window *win = data;
+  win->output = output;
+  for (int i = 0; i < MAX_OUTPUTS; i++) {
+    if (outputs[i].output != output || outputs[i].scale <= 0) continue;
+    if (win->scale != outputs[i].scale) {
+      win->scale = outputs[i].scale;
+      wl_surface_set_buffer_scale(win->surface, win->scale);
+    }
+    return;
+  }
+}
+
+static void on_surface_leave(void *data, struct wl_surface *surface, struct wl_output *output) {
+  (void)surface;
+  struct layer_window *win = data;
+  if (win->output == output) win->output = NULL;
+}
+
+static const struct wl_surface_listener surface_listener = {
+    .enter = on_surface_enter,
+    .leave = on_surface_leave,
+};
 
 static const struct wl_output_listener output_listener = {
     .geometry = noop_geometry,
@@ -679,6 +727,9 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   win->scale = scale;
 
   win->surface = wl_compositor_create_surface(compositor);
+  // Tells us which output the surface landed on, which is what makes a later
+  // scale change on that output reach this window.
+  wl_surface_add_listener(win->surface, &surface_listener, win);
   win->layer = zwlr_layer_shell_v1_get_layer_surface(
       layer_shell, win->surface, target, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "wfhelper");
   zwlr_layer_surface_v1_add_listener(win->layer, &layer_listener, win);

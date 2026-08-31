@@ -39,6 +39,7 @@ function fakeSurface(overrides: Partial<Record<string, unknown>> = {}) {
     setInteractive: vi.fn(),
     setMargin: vi.fn(() => true),
     resize: vi.fn(() => true),
+    refreshScale: vi.fn(() => false),
     ...overrides,
   };
 }
@@ -246,6 +247,39 @@ describe("createLayerPresentation", () => {
     window.paint(Buffer.alloc(100 * 50 * 4));
 
     expect(scaled.commit).not.toHaveBeenCalled();
+  });
+
+  describe("an output rescaled under a live surface", () => {
+    it("resizes the window to the new density and drops the frame painted at the old one", async () => {
+      const surface = fakeSurface();
+      const { presentation } = build({ createSurface: vi.fn(() => surface as never) });
+      const win = fakeWindow();
+      presentation.attach(win, 4, 1);
+      await presentation.show();
+
+      win.setSize.mockClear();
+      win.webContents.setZoomFactor.mockClear();
+      // The compositor moved this surface to 2x; the in-flight frame is still 1x.
+      surface.refreshScale.mockReturnValueOnce(true);
+      surface.scale = 2;
+      win.paint(Buffer.alloc(4 * 1 * 4));
+
+      expect(surface.commit).not.toHaveBeenCalled();
+      expect(win.setSize).toHaveBeenCalledWith(8, 2);
+      expect(win.webContents.setZoomFactor).toHaveBeenCalledWith(2);
+    });
+
+    it("commits normally while the density is unchanged", async () => {
+      const surface = fakeSurface({ frameWidth: 4, frameHeight: 1 });
+      const { presentation } = build({ createSurface: vi.fn(() => surface as never) });
+      const win = fakeWindow();
+      presentation.attach(win, 4, 1);
+      await presentation.show();
+
+      win.paint(Buffer.alloc(4 * 1 * 4));
+
+      expect(surface.commit).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("placement", () => {

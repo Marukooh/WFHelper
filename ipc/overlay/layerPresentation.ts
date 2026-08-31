@@ -291,6 +291,13 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
     } catch {
       return;
     }
+    // A monitor rescaled under a live overlay changes the density the
+    // compositor wants, so the window behind it is resized and this frame,
+    // painted at the old one, is dropped.
+    if (surface.refreshScale()) {
+      applyWindowSize(surface.scale);
+      return;
+    }
     // A resize takes a frame or two to land, and those carry the old size.
     if (frame.length !== surface.frameWidth * surface.frameHeight * 4) return;
     if (surface.commit(frame)) return;
