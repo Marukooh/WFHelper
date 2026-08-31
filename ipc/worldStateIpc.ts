@@ -296,9 +296,12 @@ function removeOutstandingToasts(): void {
 }
 
 function removeToast(tag: string): void {
-  if (!_outstandingToastTags.delete(tag)) return;
+  if (!_outstandingToastTags.has(tag)) return;
   const removeScriptPath = writeToastScript("remove", tag);
+  // Keep the tag on a failed write: dropping it here would strand the toast on
+  // screen, because the quit-time group cleanup bails on an empty set.
   if (!removeScriptPath) return;
+  _outstandingToastTags.delete(tag);
   execFile(
     "powershell.exe",
     [
@@ -313,8 +316,12 @@ function removeToast(tag: string): void {
       APP_USER_MODEL_ID,
     ],
     { windowsHide: true, timeout: 5000 },
-    () => {
+    (err) => {
       fs.unlink(removeScriptPath, () => {});
+      if (!err) return;
+      // The toast is still up, so put it back for the quit-time group removal.
+      _outstandingToastTags.add(tag);
+      log.warn("[WorldState] toast remove failed:", normalizeErrorMessage(err));
     },
   );
 }
