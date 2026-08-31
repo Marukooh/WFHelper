@@ -470,7 +470,9 @@ static int ensure_init(void) {
 static void pump_events(void) {
   if (!display) return;
   while (wl_display_prepare_read(display) != 0) {
-    wl_display_dispatch_pending(display);
+    // A broken connection fails prepare_read forever. This runs on Electron's
+    // main thread, so a failed dispatch has to end the loop, not spin on it.
+    if (wl_display_dispatch_pending(display) < 0) return;
   }
   wl_display_flush(display);
   struct pollfd pfd = {.fd = wl_display_get_fd(display), .events = POLLIN, .revents = 0};
@@ -714,6 +716,10 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
   } else {
     win->next_slot = (win->next_slot + 1) % BUFFER_SLOTS;
   }
+
+  // The compositor may configure a new size at any time and win->width follows
+  // it, so a slot allocated earlier can be smaller than the frame now expects.
+  if (expected > slot->size) return no;
 
   // The compositor may configure a new size at any time and win->width follows
   // it, so a slot allocated earlier can be smaller than the frame now expects.
