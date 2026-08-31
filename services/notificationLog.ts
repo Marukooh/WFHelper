@@ -14,7 +14,15 @@ function reviveEntry(raw: unknown): NotificationEntry | null {
   if (typeof at !== "string" || !at) return null;
   if (typeof kind !== "string" || !KINDS.has(kind)) return null;
   if (typeof title !== "string" || typeof body !== "string") return null;
-  return { id, at, kind: kind as NotificationKind, title, body };
+  // Re-applied on load: the file is user-writable, so a stored entry is not
+  // bounded by whatever record() enforced when it was written.
+  return {
+    id,
+    at,
+    kind: kind as NotificationKind,
+    title: title.slice(0, MAX_TITLE_CHARS),
+    body: body.slice(0, MAX_BODY_CHARS),
+  };
 }
 
 // Stored oldest-first so the cap trims from the front; getAll reverses for the UI.

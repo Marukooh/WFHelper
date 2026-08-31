@@ -94,6 +94,28 @@ describe("notification log", () => {
     ).toEqual([...NOTIFICATION_KINDS].sort());
   });
 
+  it("trims an over-long stored entry back to the cap on load", async () => {
+    fs.writeFileSync(
+      logFile,
+      JSON.stringify([
+        {
+          id: "a",
+          at: "2026-01-01T00:00:00.000Z",
+          kind: "app",
+          title: "t".repeat(400),
+          body: "b".repeat(900),
+        },
+      ]),
+    );
+
+    // The file is user-writable, so record()'s caps say nothing about the size
+    // of a row that comes back off disk.
+    const [entry] = (await importLog()).getAll();
+
+    expect(entry.title).toHaveLength(200);
+    expect(entry.body).toHaveLength(500);
+  });
+
   it("clears the stored history", async () => {
     const log = await importLog();
     log.record("trade", "Listing Closed", "Ash Prime Chassis 45p with Buyer");
