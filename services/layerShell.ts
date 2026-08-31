@@ -29,6 +29,20 @@ interface LayerShellAddon {
   scaleOf?(handle: number): number;
   setInteractive?(handle: number, interactive: boolean): boolean;
   pollEvents?(): RawPointerEvent[];
+  outputRects?(): LayerOutputRect[];
+}
+
+/** One monitor in the compositor's logical layout, which is the same space an
+ *  XWayland window's geometry is reported in. `placed` is false when the
+ *  compositor offers no xdg-output, leaving the position unknowable. */
+interface LayerOutputRect {
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scale: number;
+  placed: boolean;
 }
 
 interface RawPointerEvent {
@@ -282,6 +296,21 @@ function makeSurface(
       }
     },
   };
+}
+
+/** The monitor layout as the compositor sees it. Empty when the addon is absent
+ *  or too old to report it, which callers must read as "no opinion". */
+export function layerOutputRects(): LayerOutputRect[] {
+  const addon = loadAddon();
+  if (!addon) return [];
+  try {
+    if (addon.available() !== true) return [];
+    const rects = addon.outputRects?.();
+    return Array.isArray(rects) ? rects : [];
+  } catch (err) {
+    log.warn("[LayerShell] outputRects failed:", (err as Error)?.message);
+    return [];
+  }
 }
 
 /** A layer-shell surface, or null when one cannot be had. Null is the caller's

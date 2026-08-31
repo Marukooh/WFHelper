@@ -1,6 +1,31 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createLayerPresentation } from "../../ipc/overlay/layerPresentation";
+
+const deps = vi.hoisted(() => ({
+  compositorOutput: null as string | null,
+  gameBounds: null as { x: number; y: number; width: number; height: number } | null,
+  rects: [] as Array<Record<string, unknown>>,
+}));
+
+vi.mock("../../services/waylandCompositor", () => ({
+  resolveGameOutput: vi.fn(async () => deps.compositorOutput),
+}));
+
+vi.mock("../../services/warframeStatus", () => ({
+  getWarframeWindowBoundsLinux: vi.fn(async () => deps.gameBounds),
+}));
+
+vi.mock("../../services/layerShell", () => ({
+  createLayerSurface: vi.fn(() => null),
+  layerOutputRects: vi.fn(() => deps.rects),
+}));
+
+beforeEach(() => {
+  deps.compositorOutput = null;
+  deps.gameBounds = null;
+  deps.rects = [];
+});
 
 /** Frame size defaults match the 4x1 surface the painting tests attach. */
 function fakeSurface(overrides: Partial<Record<string, unknown>> = {}) {
@@ -360,5 +385,80 @@ describe("createLayerPresentation", () => {
       }),
     ).not.toThrow();
     expect(surface.commit).not.toHaveBeenCalled();
+  });
+});
+
+// The compositor picks the monitor when asked for none, which is how overlays
+// ended up on the wrong screen for anyone not running niri, sway or Hyprland.
+describe("choosing the monitor the game is on", () => {
+  /** An ultrawide left of a 1080p, matching the reported DP-3 / DP-2 desk. */
+  function twoMonitors() {
+    deps.rects = [
+      { name: "DP-3", x: 0, y: 0, width: 3440, height: 1440, scale: 1, placed: true },
+      { name: "DP-2", x: 3440, y: 0, width: 1920, height: 1080, scale: 1, placed: true },
+    ];
+  }
+
+  function build() {
+    const createSurface = vi.fn((_options: { output: string | null }) => null);
+    const presentation = createLayerPresentation({
+      label: "test",
+      anchor: "center",
+      createSurface: createSurface as never,
+    });
+    presentation.attach({ webContents: { setFrameRate: vi.fn(), on: vi.fn() } }, 100, 100);
+    return { presentation, createSurface };
+  }
+
+  async function chosenOutput() {
+    const { presentation, createSurface } = build();
+    await presentation.show();
+    return createSurface.mock.calls[0]?.[0]?.output ?? null;
+  }
+
+  it("puts the overlay on the monitor holding the game window", async () => {
+    twoMonitors();
+    deps.gameBounds = { x: 3440, y: 0, width: 1920, height: 1080 };
+
+    expect(await chosenOutput()).toBe("DP-2");
+  });
+
+  it("reads the reported ultrawide layout as the left monitor", async () => {
+    twoMonitors();
+    deps.gameBounds = { x: 0, y: 0, width: 3440, height: 1440 };
+
+    expect(await chosenOutput()).toBe("DP-3");
+  });
+
+  it("takes the compositor's answer over the geometry match", async () => {
+    twoMonitors();
+    deps.compositorOutput = "DP-2";
+    deps.gameBounds = { x: 0, y: 0, width: 3440, height: 1440 };
+
+    expect(await chosenOutput()).toBe("DP-2");
+  });
+
+  it("leaves the choice to the compositor when the game cannot be located", async () => {
+    twoMonitors();
+
+    expect(await chosenOutput()).toBeNull();
+  });
+
+  it("leaves the choice to the compositor on a single monitor", async () => {
+    deps.rects = [{ name: "DP-3", x: 0, y: 0, width: 3440, height: 1440, scale: 1, placed: true }];
+    deps.gameBounds = { x: 0, y: 0, width: 3440, height: 1440 };
+
+    expect(await chosenOutput()).toBeNull();
+  });
+
+  // No xdg-output means no trustworthy position, so a guess would be a coin flip.
+  it("ignores outputs the compositor never placed", async () => {
+    deps.rects = [
+      { name: "DP-3", x: 0, y: 0, width: 3440, height: 1440, scale: 1, placed: false },
+      { name: "DP-2", x: 0, y: 0, width: 1920, height: 1080, scale: 1, placed: false },
+    ];
+    deps.gameBounds = { x: 0, y: 0, width: 3440, height: 1440 };
+
+    expect(await chosenOutput()).toBeNull();
   });
 });

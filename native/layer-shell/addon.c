@@ -18,6 +18,7 @@
 #include <wayland-cursor.h>
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "xdg-output-unstable-v1-client-protocol.h"
 
 // A compositor is another process; every wait on one is bounded because these
 // calls all land on Electron's main thread.
@@ -51,8 +52,18 @@ struct pointer_event {
 
 struct output_entry {
   struct wl_output *output;
+  struct zxdg_output_v1 *xdg_output;
   char name[64];
   int scale;
+  // wlroots reports wl_output.geometry at 0,0 and expects xdg-output to carry
+  // the real layout, so logical_* is the only usable source for placement.
+  int logical_x;
+  int logical_y;
+  int logical_width;
+  int logical_height;
+  int has_logical;
+  int mode_width;
+  int mode_height;
 };
 
 struct buffer_slot {
@@ -82,6 +93,7 @@ static struct wl_display *display = NULL;
 static struct wl_compositor *compositor = NULL;
 static struct wl_shm *shm = NULL;
 static struct zwlr_layer_shell_v1 *layer_shell = NULL;
+static struct zxdg_output_manager_v1 *xdg_output_manager = NULL;
 static struct output_entry outputs[MAX_OUTPUTS];
 static int output_count = 0;
 static struct layer_window windows[MAX_SURFACES];
@@ -105,10 +117,16 @@ static double pointer_y = 0;
 
 static void noop_geometry(void *d, struct wl_output *o, int32_t x, int32_t y, int32_t pw,
                           int32_t ph, int32_t sp, const char *make, const char *model, int32_t tr) {
-  (void)d; (void)o; (void)x; (void)y; (void)pw; (void)ph; (void)sp; (void)make; (void)model; (void)tr;
+  (void)d; (void)o; (void)x; (void)y; (void)pw; (void)ph; (void)sp; (void)make; (void)model;
+  (void)tr;
 }
-static void noop_mode(void *d, struct wl_output *o, uint32_t f, int32_t w, int32_t h, int32_t r) {
-  (void)d; (void)o; (void)f; (void)w; (void)h; (void)r;
+static void on_output_mode(void *data, struct wl_output *o, uint32_t flags, int32_t w, int32_t h,
+                           int32_t r) {
+  (void)o; (void)r;
+  struct output_entry *entry = data;
+  if (!(flags & WL_OUTPUT_MODE_CURRENT)) return;
+  entry->mode_width = w;
+  entry->mode_height = h;
 }
 static void noop_done(void *d, struct wl_output *o) { (void)d; (void)o; }
 static void on_output_scale(void *data, struct wl_output *o, int32_t scale) {
@@ -127,7 +145,7 @@ static void noop_description(void *d, struct wl_output *o, const char *desc) {
 
 static const struct wl_output_listener output_listener = {
     .geometry = noop_geometry,
-    .mode = noop_mode,
+    .mode = on_output_mode,
     .done = noop_done,
     .scale = on_output_scale,
     .name = on_output_name,
@@ -287,6 +305,37 @@ static const struct wl_seat_listener seat_listener = {
     .name = noop_seat_name,
 };
 
+static void on_xdg_logical_position(void *data, struct zxdg_output_v1 *o, int32_t x, int32_t y) {
+  (void)o;
+  struct output_entry *entry = data;
+  entry->logical_x = x;
+  entry->logical_y = y;
+  entry->has_logical = 1;
+}
+
+static void on_xdg_logical_size(void *data, struct zxdg_output_v1 *o, int32_t w, int32_t h) {
+  (void)o;
+  struct output_entry *entry = data;
+  if (w > 0) entry->logical_width = w;
+  if (h > 0) entry->logical_height = h;
+}
+
+static void noop_xdg_done(void *d, struct zxdg_output_v1 *o) { (void)d; (void)o; }
+static void noop_xdg_name(void *d, struct zxdg_output_v1 *o, const char *n) {
+  (void)d; (void)o; (void)n;
+}
+static void noop_xdg_desc(void *d, struct zxdg_output_v1 *o, const char *n) {
+  (void)d; (void)o; (void)n;
+}
+
+static const struct zxdg_output_v1_listener xdg_output_listener = {
+    .logical_position = on_xdg_logical_position,
+    .logical_size = on_xdg_logical_size,
+    .done = noop_xdg_done,
+    .name = noop_xdg_name,
+    .description = noop_xdg_desc,
+};
+
 static void on_global(void *data, struct wl_registry *registry, uint32_t id, const char *interface,
                       uint32_t version) {
   (void)data;
@@ -297,6 +346,10 @@ static void on_global(void *data, struct wl_registry *registry, uint32_t id, con
   } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
     uint32_t want = version < 4 ? version : 4;
     layer_shell = wl_registry_bind(registry, id, &zwlr_layer_shell_v1_interface, want);
+  } else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0 &&
+             !xdg_output_manager) {
+    uint32_t want = version < 3 ? version : 3;
+    xdg_output_manager = wl_registry_bind(registry, id, &zxdg_output_manager_v1_interface, want);
   } else if (strcmp(interface, wl_seat_interface.name) == 0 && !seat) {
     uint32_t want = version < 5 ? version : 5;
     seat = wl_registry_bind(registry, id, &wl_seat_interface, want);
@@ -396,7 +449,16 @@ static int ensure_init(void) {
   struct wl_registry *registry = wl_display_get_registry(display);
   wl_registry_add_listener(registry, &registry_listener, NULL);
   if (!roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS)) return 0;
-  // Second pass so the per-output name events land.
+  // An xdg-output can only be made once the manager and the outputs are both
+  // bound, so it needs the second pass to deliver its geometry.
+  if (xdg_output_manager) {
+    for (int i = 0; i < output_count; i++) {
+      outputs[i].xdg_output =
+          zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, outputs[i].output);
+      zxdg_output_v1_add_listener(outputs[i].xdg_output, &xdg_output_listener, &outputs[i]);
+    }
+  }
+  // Second pass so the per-output name and logical geometry events land.
   roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS);
   init_ok = compositor && shm && layer_shell;
   return init_ok;
@@ -705,6 +767,47 @@ static napi_value IsClosed(napi_env env, napi_callback_info info) {
   return out;
 }
 
+static void set_event_field(napi_env env, napi_value object, const char *key, double value) {
+  napi_value number;
+  napi_create_double(env, value, &number);
+  napi_set_named_property(env, object, key, number);
+}
+
+// outputRects() -> [{name, x, y, width, height, scale}] in logical coordinates,
+// which is the space an XWayland window's geometry is reported in too.
+static napi_value OutputRects(napi_env env, napi_callback_info info) {
+  (void)info;
+  napi_value list;
+  napi_create_array(env, &list);
+  if (!ensure_init()) return list;
+  // Monitors get moved and rescaled while the app runs, so take whatever
+  // geometry updates are already waiting before answering.
+  pump_events();
+
+  for (int i = 0; i < output_count; i++) {
+    const struct output_entry *entry = &outputs[i];
+    int scale = entry->scale > 0 ? entry->scale : 1;
+    napi_value item, name;
+    napi_create_object(env, &item);
+    napi_create_string_utf8(env, entry->name, NAPI_AUTO_LENGTH, &name);
+    napi_set_named_property(env, item, "name", name);
+    // Without xdg-output there is no trustworthy position, so the entry says so
+    // and callers fall back to letting the compositor choose the output.
+    int width = entry->logical_width > 0 ? entry->logical_width : entry->mode_width / scale;
+    int height = entry->logical_height > 0 ? entry->logical_height : entry->mode_height / scale;
+    napi_value placed;
+    set_event_field(env, item, "x", entry->logical_x);
+    set_event_field(env, item, "y", entry->logical_y);
+    set_event_field(env, item, "width", width);
+    set_event_field(env, item, "height", height);
+    set_event_field(env, item, "scale", scale);
+    napi_get_boolean(env, entry->has_logical ? true : false, &placed);
+    napi_set_named_property(env, item, "placed", placed);
+    napi_set_element(env, list, (uint32_t)i, item);
+  }
+  return list;
+}
+
 // setInteractive(handle, boolean) -> boolean. Swaps the input region between the
 // whole surface and nothing. Keyboard interactivity stays NONE either way, so a
 // clickable overlay still never takes keyboard focus off the game.
@@ -740,12 +843,6 @@ static napi_value SetInteractive(napi_env env, napi_callback_info info) {
   wl_surface_commit(win->surface);
   wl_display_flush(display);
   return yes;
-}
-
-static void set_event_field(napi_env env, napi_value object, const char *key, double value) {
-  napi_value number;
-  napi_create_double(env, value, &number);
-  napi_set_named_property(env, object, key, number);
 }
 
 // pollEvents() -> array of pointer events since the last call, oldest first.
@@ -807,6 +904,7 @@ NAPI_MODULE_INIT() {
       {"scaleOf", NULL, ScaleOf, NULL, NULL, NULL, napi_default, NULL},
       {"setInteractive", NULL, SetInteractive, NULL, NULL, NULL, napi_default, NULL},
       {"pollEvents", NULL, PollEvents, NULL, NULL, NULL, napi_default, NULL},
+      {"outputRects", NULL, OutputRects, NULL, NULL, NULL, napi_default, NULL},
   };
   napi_define_properties(env, exports, sizeof(props) / sizeof(props[0]), props);
   return exports;

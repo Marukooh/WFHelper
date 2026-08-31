@@ -42,10 +42,13 @@ for (const tool of ["wayland-scanner", "pkg-config", "cc"]) {
 }
 
 let xdgShellXml = "";
+let xdgOutputXml = "";
 try {
   const dir = capture("pkg-config", ["--variable=pkgdatadir", "wayland-protocols"]);
   xdgShellXml = path.join(dir, "stable", "xdg-shell", "xdg-shell.xml");
+  xdgOutputXml = path.join(dir, "unstable", "xdg-output", "xdg-output-unstable-v1.xml");
   if (!fs.existsSync(xdgShellXml)) skip("xdg-shell.xml not found");
+  if (!fs.existsSync(xdgOutputXml)) skip("xdg-output-unstable-v1.xml not found");
 } catch {
   skip("wayland-protocols not installed");
 }
@@ -62,6 +65,7 @@ try {
   for (const [xml, base] of [
     [protocolXml, "wlr-layer-shell-unstable-v1"],
     [xdgShellXml, "xdg-shell"],
+    [xdgOutputXml, "xdg-output-unstable-v1"],
   ]) {
     run("wayland-scanner", ["client-header", xml, path.join(outDir, `${base}-client-protocol.h`)]);
     const code = path.join(outDir, `${base}-protocol.c`);

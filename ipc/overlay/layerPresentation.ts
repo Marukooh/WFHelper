@@ -4,10 +4,12 @@
 
 import {
   createLayerSurface,
+  layerOutputRects,
   type LayerAnchor,
   type LayerPointerEvent,
   type LayerSurface,
 } from "../../services/layerShell";
+import { getWarframeWindowBoundsLinux } from "../../services/warframeStatus";
 import { resolveGameOutput } from "../../services/waylandCompositor";
 
 interface PaintImage {
@@ -45,10 +47,35 @@ interface LayerPresentationOptions {
   frameRate?: number;
   log?: { info?: (...args: unknown[]) => void; warn?: (...args: unknown[]) => void };
   createSurface?: typeof createLayerSurface;
-  resolveOutput?: typeof resolveGameOutput;
+  resolveOutput?: () => Promise<string | null>;
 }
 
 const DEFAULT_FRAME_RATE = 30;
+
+/** Which monitor holds the game, by matching its window against the compositor's
+ *  logical layout. XWayland reports geometry in that same space, so this works on
+ *  any compositor, unlike the ipc lookup that only niri, sway and Hyprland answer. */
+async function outputFromGameBounds(): Promise<string | null> {
+  const rects = layerOutputRects().filter((rect) => rect.placed && rect.width > 0);
+  // One monitor cannot be the wrong monitor.
+  if (rects.length < 2) return null;
+  const bounds = await getWarframeWindowBoundsLinux();
+  if (!bounds) return null;
+  const x = bounds.x + bounds.width / 2;
+  const y = bounds.y + bounds.height / 2;
+  const hit = rects.find(
+    (rect) => x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height,
+  );
+  return hit?.name ?? null;
+}
+
+/** The compositor knows best, so it is asked first. Only three answer, and the
+ *  rest used to land the overlay on whichever monitor the compositor preferred. */
+async function resolveOutputForGame(): Promise<string | null> {
+  const fromCompositor = await resolveGameOutput();
+  if (fromCompositor) return fromCompositor;
+  return outputFromGameBounds();
+}
 
 export function createLayerPresentation(options: LayerPresentationOptions) {
   const {
@@ -57,7 +84,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
     frameRate = DEFAULT_FRAME_RATE,
     log,
     createSurface = createLayerSurface,
-    resolveOutput = resolveGameOutput,
+    resolveOutput = resolveOutputForGame,
   } = options;
 
   let surface: LayerSurface | null = null;
