@@ -12,8 +12,10 @@ interface PaintImage {
 // Narrowed to the one overload we use, so an Electron BrowserWindow satisfies it
 // without dragging the whole WebContents event map in.
 interface OffscreenWindow {
+  setSize?: (width: number, height: number) => void;
   webContents: {
     setFrameRate: (fps: number) => void;
+    setZoomFactor?: (factor: number) => void;
     on: (
       event: "paint",
       listener: (event: unknown, dirty: unknown, image: PaintImage) => void,
@@ -43,8 +45,10 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   } = options;
 
   let surface: LayerSurface | null = null;
+  let attached: OffscreenWindow | null = null;
   let width = 0;
   let height = 0;
+  let appliedScale = 1;
   // Bumped on every hide so a slow output lookup cannot map a surface for a
   // show the user already dismissed.
   let generation = 0;
@@ -54,6 +58,19 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   // this both would see no surface and allocate one; the addon has eight slots.
   let pending: Promise<boolean> | null = null;
 
+  /** Grow the offscreen window to the surface's pixel size and zoom the page to
+   *  match, so a HiDPI output gets a sharp frame instead of an upscaled one. */
+  function applyScale(scale: number): void {
+    if (scale === appliedScale || !attached) return;
+    appliedScale = scale;
+    try {
+      attached.setSize?.(width * scale, height * scale);
+      attached.webContents.setZoomFactor?.(scale);
+    } catch (err) {
+      log?.warn?.(`[${label}] could not scale to ${scale}x: ${(err as Error)?.message}`);
+    }
+  }
+
   function commitFrame(image: PaintImage): void {
     if (!surface) return;
     let frame: Buffer;
@@ -62,6 +79,8 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
     } catch {
       return;
     }
+    // A resize takes a frame or two to land, and those carry the old size.
+    if (frame.length !== surface.frameWidth * surface.frameHeight * 4) return;
     if (surface.commit(frame)) return;
     if (surface.isClosed()) {
       // The compositor took the surface away; drop it so the next show remakes it.
@@ -79,6 +98,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   return {
     /** Wire an offscreen window's paints to whatever surface is up at the time. */
     attach(window: OffscreenWindow, frameWidth: number, frameHeight: number): void {
+      attached = window;
       width = frameWidth;
       height = frameHeight;
       window.webContents.setFrameRate(frameRate);
@@ -102,7 +122,10 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
           return false;
         }
         warnedCommit = false;
-        log?.info?.(`[${label}] layer surface up on ${output ?? "compositor choice"}`);
+        applyScale(surface.scale);
+        log?.info?.(
+          `[${label}] layer surface up on ${output ?? "compositor choice"} at ${surface.scale}x`,
+        );
         return true;
       })();
       pending = attempt;

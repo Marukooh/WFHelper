@@ -2,11 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createLayerPresentation } from "../../ipc/overlay/layerPresentation";
 
+/** Frame size defaults match the 4x1 surface the painting tests attach. */
 function fakeSurface(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     commit: vi.fn(() => true),
     isClosed: vi.fn(() => false),
     destroy: vi.fn(),
+    scale: 1,
+    frameWidth: 4,
+    frameHeight: 1,
     ...overrides,
   };
 }
@@ -16,8 +20,10 @@ type PaintListener = (event: unknown, dirty: unknown, image: { toBitmap: () => B
 function fakeWindow() {
   const handlers: Record<string, PaintListener> = {};
   return {
+    setSize: vi.fn(),
     webContents: {
       setFrameRate: vi.fn(),
+      setZoomFactor: vi.fn(),
       on: vi.fn((event: "paint", listener: PaintListener) => {
         handlers[event] = listener;
       }),
@@ -173,6 +179,44 @@ describe("createLayerPresentation", () => {
 
     expect(refusing.commit).toHaveBeenCalledTimes(5);
     expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders at the output's pixel density on a HiDPI screen", async () => {
+    const scaled = fakeSurface({ scale: 2, frameWidth: 200, frameHeight: 100 });
+    const { presentation } = build({ createSurface: vi.fn(() => scaled as never) });
+    const window = fakeWindow();
+    presentation.attach(window, 100, 50);
+
+    await presentation.show();
+
+    expect(window.setSize).toHaveBeenCalledWith(200, 100);
+    expect(window.webContents.setZoomFactor).toHaveBeenCalledWith(2);
+    window.paint(Buffer.alloc(200 * 100 * 4));
+    expect(scaled.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the window alone on a 1x screen", async () => {
+    const { presentation } = build();
+    const window = fakeWindow();
+    presentation.attach(window, 4, 1);
+
+    await presentation.show();
+
+    expect(window.setSize).not.toHaveBeenCalled();
+    expect(window.webContents.setZoomFactor).not.toHaveBeenCalled();
+  });
+
+  // A resize lands a frame or two later, so the stale-sized ones must not reach C.
+  it("drops frames that do not match the surface pixel size", async () => {
+    const scaled = fakeSurface({ scale: 2, frameWidth: 200, frameHeight: 100 });
+    const { presentation } = build({ createSurface: vi.fn(() => scaled as never) });
+    const window = fakeWindow();
+    presentation.attach(window, 100, 50);
+    await presentation.show();
+
+    window.paint(Buffer.alloc(100 * 50 * 4));
+
+    expect(scaled.commit).not.toHaveBeenCalled();
   });
 
   it("survives a paint whose bitmap cannot be read", async () => {

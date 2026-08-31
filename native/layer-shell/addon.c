@@ -28,6 +28,7 @@
 struct output_entry {
   struct wl_output *output;
   char name[64];
+  int scale;
 };
 
 struct buffer_slot {
@@ -45,6 +46,9 @@ struct layer_window {
   int next_slot;
   int width;
   int height;
+  // Buffer pixels per logical pixel. Buffers are width*scale by height*scale
+  // while set_size stays logical, which is what keeps text sharp on HiDPI.
+  int scale;
   int configured;
   int closed;
 };
@@ -67,7 +71,11 @@ static void noop_mode(void *d, struct wl_output *o, uint32_t f, int32_t w, int32
   (void)d; (void)o; (void)f; (void)w; (void)h; (void)r;
 }
 static void noop_done(void *d, struct wl_output *o) { (void)d; (void)o; }
-static void noop_scale(void *d, struct wl_output *o, int32_t s) { (void)d; (void)o; (void)s; }
+static void on_output_scale(void *data, struct wl_output *o, int32_t scale) {
+  (void)o;
+  struct output_entry *entry = data;
+  if (scale > 0) entry->scale = scale;
+}
 static void on_output_name(void *data, struct wl_output *o, const char *name) {
   (void)o;
   struct output_entry *entry = data;
@@ -81,7 +89,7 @@ static const struct wl_output_listener output_listener = {
     .geometry = noop_geometry,
     .mode = noop_mode,
     .done = noop_done,
-    .scale = noop_scale,
+    .scale = on_output_scale,
     .name = on_output_name,
     .description = noop_description,
 };
@@ -328,15 +336,23 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   if (width <= 0 || height <= 0) return failed;
 
   struct wl_output *target = NULL;
+  int scale = 1;
   if (wanted[0]) {
     for (int i = 0; i < output_count; i++) {
       if (strcmp(outputs[i].name, wanted) == 0) {
         target = outputs[i].output;
+        scale = outputs[i].scale > 0 ? outputs[i].scale : 1;
         break;
       }
     }
     // A named output that is gone is an error, not a silent move elsewhere.
     if (!target) return failed;
+  } else {
+    // The compositor picks the output, so size for the sharpest one it could
+    // pick. An over-scaled buffer still maps to the right logical size.
+    for (int i = 0; i < output_count; i++) {
+      if (outputs[i].scale > scale) scale = outputs[i].scale;
+    }
   }
 
   int handle = -1;
@@ -353,6 +369,7 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   win->used = 1;
   win->width = width;
   win->height = height;
+  win->scale = scale;
 
   win->surface = wl_compositor_create_surface(compositor);
   win->layer = zwlr_layer_shell_v1_get_layer_surface(
@@ -365,6 +382,8 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   zwlr_layer_surface_v1_set_exclusive_zone(win->layer, -1);
   zwlr_layer_surface_v1_set_keyboard_interactivity(
       win->layer, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+
+  wl_surface_set_buffer_scale(win->surface, scale);
 
   struct wl_region *empty = wl_compositor_create_region(compositor);
   wl_surface_set_input_region(win->surface, empty);
@@ -381,7 +400,7 @@ static napi_value Create(napi_env env, napi_callback_info info) {
   }
 
   for (int i = 0; i < BUFFER_SLOTS; i++) {
-    if (!alloc_slot(&win->slots[i], win->width, win->height)) {
+    if (!alloc_slot(&win->slots[i], win->width * win->scale, win->height * win->scale)) {
       for (int j = 0; j < i; j++) free_slot(&win->slots[j]);
       zwlr_layer_surface_v1_destroy(win->layer);
       wl_surface_destroy(win->surface);
@@ -420,7 +439,9 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
   if (!is_buffer) return no;
   napi_get_buffer_info(env, argv[1], &data, &length);
 
-  size_t expected = (size_t)win->width * (size_t)win->height * 4;
+  const int pixel_width = win->width * win->scale;
+  const int pixel_height = win->height * win->scale;
+  size_t expected = (size_t)pixel_width * (size_t)pixel_height * 4;
   if (!data || length < expected) return no;
 
   pump_events();
@@ -438,7 +459,7 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
   memcpy(slot->pixels, data, expected);
   slot->busy = 1;
   wl_surface_attach(win->surface, slot->buffer, 0, 0);
-  wl_surface_damage_buffer(win->surface, 0, 0, win->width, win->height);
+  wl_surface_damage_buffer(win->surface, 0, 0, pixel_width, pixel_height);
   wl_surface_commit(win->surface);
   wl_display_flush(display);
   return yes;
@@ -486,6 +507,23 @@ static napi_value IsClosed(napi_env env, napi_callback_info info) {
   return out;
 }
 
+// scaleOf(handle) -> buffer pixels per logical pixel, so the caller knows how
+// large a frame to render. 0 means the handle is not live.
+static napi_value ScaleOf(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value argv[1];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+  napi_value out;
+  int32_t handle = -1;
+  if (argc >= 1 && init_ok) napi_get_value_int32(env, argv[0], &handle);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) {
+    napi_create_int32(env, 0, &out);
+    return out;
+  }
+  napi_create_int32(env, windows[handle].scale, &out);
+  return out;
+}
+
 NAPI_MODULE_INIT() {
   napi_property_descriptor props[] = {
       {"available", NULL, Available, NULL, NULL, NULL, napi_default, NULL},
@@ -494,6 +532,7 @@ NAPI_MODULE_INIT() {
       {"commit", NULL, Commit, NULL, NULL, NULL, napi_default, NULL},
       {"destroy", NULL, Destroy, NULL, NULL, NULL, napi_default, NULL},
       {"isClosed", NULL, IsClosed, NULL, NULL, NULL, napi_default, NULL},
+      {"scaleOf", NULL, ScaleOf, NULL, NULL, NULL, napi_default, NULL},
   };
   napi_define_properties(env, exports, sizeof(props) / sizeof(props[0]), props);
   return exports;

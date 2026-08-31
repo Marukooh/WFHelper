@@ -26,6 +26,7 @@ interface LayerShellAddon {
   commit(handle: number, frame: Buffer): boolean;
   destroy(handle: number): void;
   isClosed(handle: number): boolean;
+  scaleOf?(handle: number): number;
 }
 
 interface LayerShellProbe {
@@ -50,10 +51,15 @@ export interface LayerSurfaceOptions {
 }
 
 export interface LayerSurface {
-  /** BGRA, at least width * height * 4 bytes. False means the frame was dropped. */
+  /** BGRA, at least frameWidth * frameHeight * 4 bytes. False means dropped. */
   commit(frame: Buffer): boolean;
   isClosed(): boolean;
   destroy(): void;
+  /** Buffer pixels per logical pixel on the output the surface landed on. */
+  scale: number;
+  /** Pixel size a frame must have, which is the logical size times the scale. */
+  frameWidth: number;
+  frameHeight: number;
 }
 
 const ANCHOR_TOP = 1;
@@ -125,8 +131,11 @@ function makeSurface(
   handle: number,
   width: number,
   height: number,
+  scale: number,
 ): LayerSurface {
-  const frameBytes = width * height * 4;
+  const frameWidth = width * scale;
+  const frameHeight = height * scale;
+  const frameBytes = frameWidth * frameHeight * 4;
   let destroyed = false;
   // One latch for every per-frame failure. A surface that fails once fails on
   // every following frame, so an unlatched warning would flood the log.
@@ -139,13 +148,17 @@ function makeSurface(
   };
 
   return {
+    scale,
+    frameWidth,
+    frameHeight,
     commit(frame: Buffer): boolean {
       if (destroyed) return false;
       // A short frame would be read past the end of the shm mapping in C.
       if (!Buffer.isBuffer(frame) || frame.length < frameBytes) {
         const got = Buffer.isBuffer(frame) ? `${frame.length} bytes` : "a non-buffer frame";
         warnOnce(
-          `[LayerShell] rejected ${got} for a ${width}x${height} surface, need ${frameBytes}`,
+          `[LayerShell] rejected ${got} for a ${frameWidth}x${frameHeight} surface, ` +
+            `need ${frameBytes}`,
         );
         return false;
       }
@@ -213,5 +226,15 @@ export function createLayerSurface(options: LayerSurfaceOptions): LayerSurface |
     log.warn(`[LayerShell] compositor refused a surface on ${options.output ?? "any output"}`);
     return null;
   }
-  return makeSurface(addon, handle, width, height);
+  // An addon built before scaleOf existed reports nothing, which is 1x.
+  let scale = 1;
+  try {
+    const reported = addon.scaleOf?.(handle);
+    if (typeof reported === "number" && Number.isInteger(reported) && reported > 0) {
+      scale = reported;
+    }
+  } catch {
+    scale = 1;
+  }
+  return makeSurface(addon, handle, width, height, scale);
 }
