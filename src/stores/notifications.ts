@@ -52,6 +52,15 @@ export function addNotificationEntry(entry: NotificationEntry): void {
   );
 }
 
+export async function removeNotificationEntry(id: string): Promise<void> {
+  try {
+    await invoke("removeNotificationEntry", id);
+    notificationHistory.update((entries) => entries.filter((entry) => entry.id !== id));
+  } catch (err) {
+    log.warn("[Notifications] history remove failed:", err);
+  }
+}
+
 export async function clearNotificationHistory(): Promise<void> {
   try {
     await invoke("clearNotificationHistory");

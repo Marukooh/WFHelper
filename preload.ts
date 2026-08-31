@@ -64,6 +64,7 @@ import {
   LOG_WARN,
   NOTIFICATION_HISTORY_GET,
   NOTIFICATION_HISTORY_CLEAR,
+  NOTIFICATION_HISTORY_REMOVE,
   NOTIFICATION_TEST,
   NOTIFICATION_HISTORY_ADDED,
   NOTIFICATION_SOUND_PLAY,
@@ -206,6 +207,7 @@ try {
 
     getNotificationHistory: inv<"getNotificationHistory">(NOTIFICATION_HISTORY_GET),
     clearNotificationHistory: inv<"clearNotificationHistory">(NOTIFICATION_HISTORY_CLEAR),
+    removeNotificationEntry: inv<"removeNotificationEntry">(NOTIFICATION_HISTORY_REMOVE),
     sendTestNotification: inv<"sendTestNotification">(NOTIFICATION_TEST),
     onNotificationHistoryAdded: ipcDataBridge<IpcEventMap["notification-history-added"]>(
       ipcRenderer,

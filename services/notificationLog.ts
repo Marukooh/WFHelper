@@ -72,6 +72,17 @@ export function getAll(): NotificationEntry[] {
   return load().slice().reverse();
 }
 
+/** Drops one entry and says whether it was there. A test notification, or any
+ *  single line the user would rather not keep, otherwise costs the whole log. */
+export function remove(id: string): boolean {
+  const current = load();
+  const at = current.findIndex((entry) => entry.id === id);
+  if (at < 0) return false;
+  current.splice(at, 1);
+  cache.write(current);
+  return true;
+}
+
 export function clear(): void {
   entries = [];
   cache.write(entries);

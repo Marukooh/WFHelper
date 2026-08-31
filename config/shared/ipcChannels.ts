@@ -57,6 +57,7 @@ export const LOG_WARN = "log:warn";
 
 export const NOTIFICATION_HISTORY_GET = "notification-history-get";
 export const NOTIFICATION_HISTORY_CLEAR = "notification-history-clear";
+export const NOTIFICATION_HISTORY_REMOVE = "notification-history-remove";
 export const NOTIFICATION_HISTORY_ADDED = "notification-history-added";
 export const NOTIFICATION_SOUND_PLAY = "notification-sound-play";
 export const NOTIFICATION_TEST = "notification-test";

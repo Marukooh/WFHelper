@@ -116,6 +116,34 @@ describe("notification log", () => {
     expect(entry.body).toHaveLength(500);
   });
 
+  it("drops one entry and keeps the rest", async () => {
+    const log = await importLog();
+    log.record("world", "First", "one");
+    const middle = log.record("app", "Test", "fired from the dev rail");
+    log.record("trade", "Third", "three");
+
+    expect(log.remove(middle.id)).toBe(true);
+
+    expect(log.getAll().map((entry) => entry.title)).toEqual(["Third", "First"]);
+  });
+
+  it("survives a removal of an id it does not hold", async () => {
+    const log = await importLog();
+    log.record("world", "First", "one");
+
+    expect(log.remove("nope")).toBe(false);
+    expect(log.getAll()).toHaveLength(1);
+  });
+
+  it("keeps a removal across a reload", async () => {
+    const first = await importLog();
+    const gone = first.record("app", "Test", "fired from the dev rail");
+    first.record("world", "Kept", "");
+    first.remove(gone.id);
+
+    expect((await importLog()).getAll().map((entry) => entry.title)).toEqual(["Kept"]);
+  });
+
   it("clears the stored history", async () => {
     const log = await importLog();
     log.record("trade", "Listing Closed", "Ash Prime Chassis 45p with Buyer");

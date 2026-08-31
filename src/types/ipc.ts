@@ -324,6 +324,10 @@ export interface IpcInvokeMap {
     args: [];
     return: void;
   };
+  removeNotificationEntry: {
+    args: [string];
+    return: boolean;
+  };
   sendTestNotification: {
     args: [];
     return: boolean;

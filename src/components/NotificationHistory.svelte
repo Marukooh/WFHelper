@@ -1,7 +1,11 @@
 <script lang="ts">
   import ModalShell from "./ModalShell.svelte";
   import { locale, tr } from "../lib/i18n.js";
-  import { clearNotificationHistory, notificationHistory } from "../stores/notifications.js";
+  import {
+    clearNotificationHistory,
+    notificationHistory,
+    removeNotificationEntry,
+  } from "../stores/notifications.js";
 
   let { onClose }: { onClose: () => void } = $props();
 
@@ -41,7 +45,7 @@
       <ul class="m-0 grid list-none gap-1 p-0">
         {#each $notificationHistory as entry (entry.id)}
           <li
-            class="grid grid-cols-[auto_1fr] items-start gap-x-2 rounded-md border border-border px-2.5 py-2"
+            class="grid grid-cols-[auto_1fr_auto] items-start gap-x-2 rounded-md border border-border px-2.5 py-2"
             data-notification-entry
             data-notification-kind={entry.kind}
           >
@@ -55,6 +59,13 @@
               </div>
               <p class="m-0 break-words text-xs text-text-muted">{entry.body}</p>
             </div>
+            <button
+              class="btn-secondary btn-sm !px-1.5 !py-0.5 text-xs"
+              data-notification-remove
+              aria-label={$tr("common.dismiss")}
+              title={$tr("common.dismiss")}
+              onclick={() => void removeNotificationEntry(entry.id)}>&times;</button
+            >
           </li>
         {/each}
       </ul>

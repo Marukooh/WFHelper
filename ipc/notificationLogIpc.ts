@@ -7,6 +7,7 @@ import {
   NOTIFICATION_HISTORY_ADDED,
   NOTIFICATION_HISTORY_CLEAR,
   NOTIFICATION_HISTORY_GET,
+  NOTIFICATION_HISTORY_REMOVE,
 } from "../config/shared/ipcChannels";
 import type { NotificationKind } from "../config/shared/notifications";
 
@@ -32,6 +33,10 @@ function register(): void {
   handleAuthorized(NOTIFICATION_HISTORY_CLEAR, assertMainRendererSender, () => {
     notificationLog.clear();
   });
+
+  handleAuthorized(NOTIFICATION_HISTORY_REMOVE, assertMainRendererSender, (_event, id: unknown) =>
+    typeof id === "string" && id ? notificationLog.remove(id) : false,
+  );
 }
 
 export { register };

@@ -66,6 +66,9 @@ export interface PreloadAPI {
   openLogFolder: () => Promise<IpcInvokeMap["openLogFolder"]["return"]>;
   getNotificationHistory: () => Promise<IpcInvokeMap["getNotificationHistory"]["return"]>;
   clearNotificationHistory: () => Promise<IpcInvokeMap["clearNotificationHistory"]["return"]>;
+  removeNotificationEntry: (
+    id: string,
+  ) => Promise<IpcInvokeMap["removeNotificationEntry"]["return"]>;
   sendTestNotification: () => Promise<IpcInvokeMap["sendTestNotification"]["return"]>;
   onNotificationHistoryAdded: (
     callback: (entry: IpcEventMap["notification-history-added"]) => void,
