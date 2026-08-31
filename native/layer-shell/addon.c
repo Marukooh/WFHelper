@@ -570,6 +570,32 @@ static void free_slot(struct buffer_slot *slot) {
   memset(slot, 0, sizeof(*slot));
 }
 
+// Re-makes both slots at the window's current pixel size, or leaves them alone
+// when they already match. Keyed on the mapping rather than on any requested
+// size, because the compositor can configure a size the client already asked
+// for and a dimension comparison would then skip a reallocation that is due.
+static int resize_slots(struct layer_window *win) {
+  const int pixel_width = win->width * win->scale;
+  const int pixel_height = win->height * win->scale;
+  const size_t needed = (size_t)pixel_width * (size_t)pixel_height * 4;
+  int stale = 0;
+  for (int i = 0; i < BUFFER_SLOTS; i++) {
+    if (win->slots[i].size != needed) stale = 1;
+  }
+  if (!stale) return 1;
+
+  for (int i = 0; i < BUFFER_SLOTS; i++) free_slot(&win->slots[i]);
+  for (int i = 0; i < BUFFER_SLOTS; i++) {
+    if (alloc_slot(&win->slots[i], pixel_width, pixel_height)) continue;
+    for (int j = 0; j < i; j++) free_slot(&win->slots[j]);
+    // With no buffers no frame can ever land again, so report the surface as
+    // gone and let the caller build a fresh one.
+    win->closed = 1;
+    return 0;
+  }
+  return 1;
+}
+
 static napi_value Available(napi_env env, napi_callback_info info) {
   (void)info;
   napi_value out;
@@ -726,12 +752,18 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
   if (!is_buffer) return no;
   napi_get_buffer_info(env, argv[1], &data, &length);
 
-  const int pixel_width = win->width * win->scale;
-  const int pixel_height = win->height * win->scale;
-  size_t expected = (size_t)pixel_width * (size_t)pixel_height * 4;
-  if (!data || length < expected) return no;
+  if (!data) return no;
 
   pump_events();
+  if (win->closed) return no;
+  // Sized after the pump, because a configure delivered by it moves win->width
+  // and the slots have to follow before anything is copied into them.
+  if (!resize_slots(win)) return no;
+
+  const int pixel_width = win->width * win->scale;
+  const int pixel_height = win->height * win->scale;
+  const size_t expected = (size_t)pixel_width * (size_t)pixel_height * 4;
+  if (length < expected) return no;
 
   struct buffer_slot *slot = &win->slots[win->next_slot];
   // Both slots still held by the compositor means we are ahead of it; dropping
@@ -743,8 +775,6 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
     win->next_slot = (win->next_slot + 1) % BUFFER_SLOTS;
   }
 
-  // The compositor may configure a new size at any time and win->width follows
-  // it, so a slot allocated earlier can be smaller than the frame now expects.
   if (expected > slot->size) return no;
 
   memcpy(slot->pixels, data, expected);
@@ -960,13 +990,10 @@ static napi_value SetMargin(napi_env env, napi_callback_info info) {
   return yes;
 }
 
-// resize(handle, width, height) -> {width, height} the compositor granted, or
-// null. The granted size is returned because the caller sizes its frames from
-// it, and a compositor may answer a set_size with something else.
-//
-// The old buffer stays attached across the change. Committing a null buffer
-// instead unmaps the surface, and wlroots then treats it as never configured,
-// so the next real frame is killed with a protocol error.
+// resize(handle, width, height) -> the granted {width, height}, or null; a
+// compositor may grant something else and the caller sizes its frames from the
+// answer. The old buffer stays attached across the change, because committing a
+// null buffer unmaps the surface and wlroots then reads it as never configured.
 static napi_value Resize(napi_env env, napi_callback_info info) {
   size_t argc = 3;
   napi_value argv[3];
@@ -992,18 +1019,8 @@ static napi_value Resize(napi_env env, napi_callback_info info) {
     wl_surface_commit(win->surface);
     roundtrip_timeout(ROUNDTRIP_TIMEOUT_MS);
     if (win->closed) return failed;
-
-    for (int i = 0; i < BUFFER_SLOTS; i++) free_slot(&win->slots[i]);
-    for (int i = 0; i < BUFFER_SLOTS; i++) {
-      if (!alloc_slot(&win->slots[i], win->width * win->scale, win->height * win->scale)) {
-        for (int j = 0; j < i; j++) free_slot(&win->slots[j]);
-        // With no buffers no frame can ever land again, so report the surface
-        // as gone and let the caller build a fresh one.
-        win->closed = 1;
-        return failed;
-      }
-    }
   }
+  if (!resize_slots(win)) return failed;
 
   napi_value out;
   napi_create_object(env, &out);
