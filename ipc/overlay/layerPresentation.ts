@@ -336,6 +336,13 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
         }
         currentOutput = output;
         surface = createSurface({ output, width, height, ...placementFor(geometry, output) });
+        if (!surface && output) {
+          // A named output that has gone away is refused outright. Letting the
+          // compositor pick may land on the wrong monitor, which beats nothing.
+          log?.warn?.(`[${label}] output ${output} refused a surface; letting the compositor pick`);
+          currentOutput = null;
+          surface = createSurface({ output: null, width, height, ...placementFor(geometry, null) });
+        }
         if (!surface) {
           log?.warn?.(`[${label}] layer surface unavailable; using a window instead`);
           return false;

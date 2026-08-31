@@ -606,6 +606,17 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     return layer !== null;
   }
 
+  /** Show the surface and say so when nothing lands. The window behind it was
+   *  built offscreen, so there is no window to fall back to; a log line is what
+   *  turns "the overlay stopped working" into a diagnosable report. */
+  function showLayerSurface(): void {
+    logicalVisible = true;
+    void layer?.show().then((up) => {
+      if (!up)
+        log.warn(`[OverlayWindow] ${windowLabel} got no layer surface; nothing is on screen`);
+    });
+  }
+
   /** A layer surface serves both modes: it swaps its input region live and
    *  forwards pointer events into the offscreen window behind it. */
   function layerModeAllowed(): boolean {
@@ -750,8 +761,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       keepOverlayAboveGame(existingWindow);
       if (shouldShow) {
         if (isLayerMode()) {
-          logicalVisible = true;
-          void layer?.show();
+          showLayerSurface();
         } else if (isKeepMappedActive()) {
           // Keep-mapped windows stay OS-visible while logically hidden, so the
           // visibility check below cannot gate this branch.
@@ -868,8 +878,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       if (isLayerMode()) {
         // No map, no raise, no click-through: the compositor owns all three for
         // a layer surface, and the window behind it stays offscreen.
-        logicalVisible = true;
-        void layer?.show();
+        showLayerSurface();
       } else {
         createdWindow.showInactive();
         keepOverlayAboveGame(createdWindow);
@@ -991,8 +1000,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     const overlayWindow = readOverlayWindow();
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
     if (isLayerMode()) {
-      logicalVisible = true;
-      void layer?.show();
+      showLayerSurface();
       return;
     }
     if (isKeepMappedActive()) {
