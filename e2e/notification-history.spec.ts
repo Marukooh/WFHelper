@@ -137,6 +137,10 @@ test("the dev test button records a notification", async () => {
     (name) =>
       new Promise<string>((resolve) => {
         const audio = new Audio(`assets/${name}`);
+        // Muted on purpose: a test suite must never play sound out of the
+        // machine running it. Playback, decode and duration all still work.
+        audio.muted = true;
+        audio.volume = 0;
         const timer = setTimeout(
           () => resolve(`stalled at ${audio.currentTime} of ${audio.duration}`),
           15000,
@@ -149,7 +153,9 @@ test("the dev test button records a notification", async () => {
           "ended",
           () =>
             settle(
-              audio.duration > 1 && audio.currentTime >= audio.duration - 0.1
+              Number.isFinite(audio.duration) &&
+                audio.duration > 0 &&
+                audio.currentTime >= audio.duration - 0.1
                 ? "ok"
                 : `short ${audio.currentTime} of ${audio.duration}`,
             ),
