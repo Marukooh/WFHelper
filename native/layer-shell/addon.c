@@ -715,6 +715,10 @@ static napi_value Commit(napi_env env, napi_callback_info info) {
     win->next_slot = (win->next_slot + 1) % BUFFER_SLOTS;
   }
 
+  // The compositor may configure a new size at any time and win->width follows
+  // it, so a slot allocated earlier can be smaller than the frame now expects.
+  if (expected > slot->size) return no;
+
   memcpy(slot->pixels, data, expected);
   slot->busy = 1;
   wl_surface_attach(win->surface, slot->buffer, 0, 0);
