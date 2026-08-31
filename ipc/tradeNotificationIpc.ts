@@ -267,7 +267,12 @@ function _getOrCreateWindow(): InstanceType<typeof BrowserWindow> {
 
   const layerMode = _layerModeAvailable();
   const nextLayer = layerMode
-    ? createLayerPresentation({ label: "TradeNotification", anchor: "top-right", log })
+    ? createLayerPresentation({
+        label: "TradeNotification",
+        anchor: "top-right",
+        inset: MARGIN,
+        log,
+      })
     : null;
 
   const win = new BrowserWindow({

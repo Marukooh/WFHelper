@@ -41,6 +41,18 @@ interface OffscreenWindow {
   };
 }
 
+/** Where an overlay wants to sit and how large it wants to be, in logical
+ *  pixels. x and y are measured from the top-left corner of the output it lands
+ *  on, because a layer surface is placed by margins and never by screen
+ *  coordinates. zoomFactor is the page zoom that makes the layout fill it. */
+export interface LayerGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zoomFactor: number;
+}
+
 interface LayerPresentationOptions {
   label: string;
   anchor: LayerAnchor;
@@ -48,6 +60,12 @@ interface LayerPresentationOptions {
   log?: { info?: (...args: unknown[]) => void; warn?: (...args: unknown[]) => void };
   createSurface?: typeof createLayerSurface;
   resolveOutput?: () => Promise<string | null>;
+  /** Read on every show, so a spot saved by an earlier run is picked up. Absent
+   *  for overlays that take whatever the anchor gives them. */
+  resolveGeometry?: () => LayerGeometry | null;
+  /** Distance to hold off the anchored edges when there is no geometry, so a
+   *  corner overlay is not flush against the screen edge. */
+  inset?: number;
 }
 
 const DEFAULT_FRAME_RATE = 30;
@@ -85,13 +103,17 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
     log,
     createSurface = createLayerSurface,
     resolveOutput = resolveOutputForGame,
+    resolveGeometry,
+    inset = 0,
   } = options;
 
   let surface: LayerSurface | null = null;
   let attached: OffscreenWindow | null = null;
   let width = 0;
   let height = 0;
-  let appliedScale = 1;
+  // Page zoom the layout needs at the current size. 1 for a fixed-size overlay
+  // like the trade toast, which never reports a geometry.
+  let zoom = 1;
   let interactive = false;
   // Bumped on every hide so a slow output lookup cannot map a surface for a
   // show the user already dismissed.
@@ -102,17 +124,58 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   // this both would see no surface and allocate one; the addon has eight slots.
   let pending: Promise<boolean> | null = null;
 
-  /** Grow the offscreen window to the surface's pixel size and zoom the page to
-   *  match, so a HiDPI output gets a sharp frame instead of an upscaled one. */
-  function applyScale(scale: number): void {
-    if (scale === appliedScale || !attached) return;
-    appliedScale = scale;
+  /** Size the offscreen window to the surface's pixel size and zoom the page to
+   *  match, so a HiDPI output gets a sharp frame instead of an upscaled one.
+   *  The zoom carries the overlay's own scale too, or the layout would render
+   *  at 1x inside a viewport the scale had already made larger. */
+  function applyWindowSize(scale: number): void {
+    if (!attached) return;
     try {
       attached.setSize?.(width * scale, height * scale);
-      attached.webContents.setZoomFactor?.(scale);
+      attached.webContents.setZoomFactor?.(Number((zoom * scale).toFixed(3)));
     } catch (err) {
-      log?.warn?.(`[${label}] could not scale to ${scale}x: ${(err as Error)?.message}`);
+      log?.warn?.(
+        `[${label}] could not size to ${width}x${height} at ${scale}x: ${(err as Error)?.message}`,
+      );
     }
+  }
+
+  /** The wanted spot as margins from the output's top-left corner, kept inside
+   *  the output: the saved spot may come from a monitor of a different size. */
+  function marginsFor(
+    geometry: LayerGeometry,
+    output: string | null,
+  ): { top: number; left: number } {
+    const rect = output ? layerOutputRects().find((entry) => entry.name === output) : undefined;
+    const left = Math.max(0, Math.round(geometry.x));
+    const top = Math.max(0, Math.round(geometry.y));
+    return {
+      left:
+        rect && rect.width > 0 ? Math.min(left, Math.max(0, rect.width - geometry.width)) : left,
+      top:
+        rect && rect.height > 0 ? Math.min(top, Math.max(0, rect.height - geometry.height)) : top,
+    };
+  }
+
+  /** How the surface is placed. A geometry pins it to the output's top-left and
+   *  positions it by margins; without one it keeps its anchor and the inset
+   *  only holds it off the edges it is anchored to. */
+  function placementFor(geometry: LayerGeometry | null, output: string | null) {
+    if (geometry) {
+      const margins = marginsFor(geometry, output);
+      return {
+        anchor: "top-left" as LayerAnchor,
+        marginTop: margins.top,
+        marginLeft: margins.left,
+      };
+    }
+    if (!inset || anchor === "center") return { anchor };
+    return {
+      anchor,
+      marginTop: inset,
+      marginLeft: anchor === "top-left" ? inset : 0,
+      marginRight: anchor === "top-right" ? inset : 0,
+    };
   }
 
   const BUTTONS: Array<"left" | "middle" | "right"> = ["left", "middle", "right"];
@@ -209,13 +272,19 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
       const attempt = (async () => {
         const output = await resolveOutput();
         if (token !== generation) return false;
-        surface = createSurface({ output, width, height, anchor });
+        const geometry = resolveGeometry?.() ?? null;
+        if (geometry) {
+          width = geometry.width;
+          height = geometry.height;
+          zoom = geometry.zoomFactor;
+        }
+        surface = createSurface({ output, width, height, ...placementFor(geometry, output) });
         if (!surface) {
           log?.warn?.(`[${label}] layer surface unavailable; using a window instead`);
           return false;
         }
         warnedCommit = false;
-        applyScale(surface.scale);
+        applyWindowSize(surface.scale);
         if (interactive) surface.setInteractive(true, forwardEvent);
         log?.info?.(
           `[${label}] layer surface up on ${output ?? "compositor choice"} at ${surface.scale}x`,

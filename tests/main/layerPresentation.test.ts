@@ -222,15 +222,15 @@ describe("createLayerPresentation", () => {
     expect(scaled.commit).toHaveBeenCalledTimes(1);
   });
 
-  it("leaves the window alone on a 1x screen", async () => {
+  it("keeps the window at its attached size on a 1x screen", async () => {
     const { presentation } = build();
     const window = fakeWindow();
     presentation.attach(window, 4, 1);
 
     await presentation.show();
 
-    expect(window.setSize).not.toHaveBeenCalled();
-    expect(window.webContents.setZoomFactor).not.toHaveBeenCalled();
+    expect(window.setSize).toHaveBeenCalledWith(4, 1);
+    expect(window.webContents.setZoomFactor).toHaveBeenCalledWith(1);
   });
 
   // A resize lands a frame or two later, so the stale-sized ones must not reach C.
@@ -244,6 +244,81 @@ describe("createLayerPresentation", () => {
     window.paint(Buffer.alloc(100 * 50 * 4));
 
     expect(scaled.commit).not.toHaveBeenCalled();
+  });
+
+  describe("placement", () => {
+    /** A 1920x1080 output at the origin, which is what the geometries below sit in. */
+    function singleOutput() {
+      deps.rects = [
+        { name: "DP-1", x: 0, y: 0, width: 1920, height: 1080, scale: 1, placed: true },
+      ];
+    }
+
+    it("puts the surface at the saved spot inside its output", async () => {
+      singleOutput();
+      const { presentation, createSurface } = build({
+        anchor: "center",
+        resolveGeometry: () => ({ x: 470, y: 604, width: 980, height: 140, zoomFactor: 1 }),
+      });
+      presentation.attach(fakeWindow(), 980, 140);
+
+      await presentation.show();
+
+      expect(createSurface).toHaveBeenCalledWith({
+        output: "DP-1",
+        width: 980,
+        height: 140,
+        // Margins only apply to anchored edges, so a placed surface leaves the
+        // centred anchor behind.
+        anchor: "top-left",
+        marginTop: 604,
+        marginLeft: 470,
+      });
+    });
+
+    it("keeps a spot saved on a larger monitor inside the output", async () => {
+      deps.rects = [{ name: "DP-1", x: 0, y: 0, width: 1280, height: 720, scale: 1, placed: true }];
+      const { presentation, createSurface } = build({
+        resolveGeometry: () => ({ x: 2400, y: 900, width: 980, height: 140, zoomFactor: 1 }),
+      });
+      presentation.attach(fakeWindow(), 980, 140);
+
+      await presentation.show();
+
+      expect(createSurface).toHaveBeenCalledWith(
+        expect.objectContaining({ marginLeft: 300, marginTop: 580 }),
+      );
+    });
+
+    it("holds a corner overlay off the edges it is anchored to", async () => {
+      singleOutput();
+      const { presentation, createSurface } = build({ anchor: "top-right", inset: 16 });
+      presentation.attach(fakeWindow(), 460, 236);
+
+      await presentation.show();
+
+      expect(createSurface).toHaveBeenCalledWith(
+        expect.objectContaining({ anchor: "top-right", marginTop: 16, marginRight: 16 }),
+      );
+    });
+
+    it("zooms by the overlay scale as well as the output density", async () => {
+      singleOutput();
+      const scaled = fakeSurface({ scale: 2, frameWidth: 1960, frameHeight: 280 });
+      const { presentation } = build({
+        createSurface: vi.fn(() => scaled as never),
+        resolveGeometry: () => ({ x: 0, y: 0, width: 980, height: 140, zoomFactor: 1.15 }),
+      });
+      const window = fakeWindow();
+      presentation.attach(window, 980, 140);
+
+      await presentation.show();
+
+      expect(window.setSize).toHaveBeenCalledWith(1960, 280);
+      // Without the overlay scale in the zoom the layout renders at 1x inside a
+      // viewport the scale already made larger.
+      expect(window.webContents.setZoomFactor).toHaveBeenCalledWith(2.3);
+    });
   });
 
   describe("interactive mode", () => {

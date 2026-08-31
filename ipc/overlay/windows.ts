@@ -12,7 +12,7 @@ import {
   setClickThrough,
 } from "./clickThrough";
 import { createKeepMappedMode } from "./keepMapped";
-import { createLayerPresentation } from "./layerPresentation";
+import { createLayerPresentation, type LayerGeometry } from "./layerPresentation";
 import { probeLayerShell } from "../../services/layerShell";
 import { placeWindowOnGameOutput } from "../../services/waylandCompositor";
 import type {
@@ -406,6 +406,25 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     return { x, y, width, height, zoomFactor };
   }
 
+  /** The overlay's spot as an offset inside its monitor, which is the only
+   *  placement a layer surface understands: the compositor owns the screen
+   *  position and the client owns the margin from the output's edge. */
+  function layerGeometry(): LayerGeometry | null {
+    const bounds = getOverlayBoundsForActiveDisplay(lastOverlayAnchorMeta);
+    const display = displayMatchingBounds(bounds) || getDisplayForOverlay(lastOverlayAnchorMeta);
+    // The surface sets an exclusive zone of -1, so its margins are measured from
+    // the whole output rather than from what panels left over.
+    const area = display?.bounds;
+    if (!area) return null;
+    return {
+      x: bounds.x - area.x,
+      y: bounds.y - area.y,
+      width: bounds.width,
+      height: bounds.height,
+      zoomFactor: bounds.zoomFactor,
+    };
+  }
+
   function positionOverlayWindow(
     anchorMeta: OverlayAnchorMeta | null = lastOverlayAnchorMeta,
   ): void {
@@ -724,7 +743,12 @@ export function createOverlayWindowsController(options: OverlayWindowsController
 
     const initialBounds = getOverlayBoundsForActiveDisplay(lastOverlayAnchorMeta);
     const nextLayer = layerModeAllowed()
-      ? createPresentation({ label: windowLabel, anchor: placement, log })
+      ? createPresentation({
+          label: windowLabel,
+          anchor: placement,
+          log,
+          resolveGeometry: layerGeometry,
+        })
       : null;
 
     const createdWindow = new BrowserWindow({
