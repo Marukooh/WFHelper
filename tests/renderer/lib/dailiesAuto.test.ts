@@ -23,7 +23,7 @@ function world(overrides: Partial<WorldState>): WorldState {
   return overrides as WorldState;
 }
 
-/** Live payload shape: the accepted task is a copy of the offer plus Scans. */
+/** An accepted task is a copy of the offer plus Scans. */
 function libraryTask(
   enemy: string,
   overrides: Record<string, unknown> = {},
@@ -92,9 +92,8 @@ describe("autoTrackerState", () => {
     ).toBeUndefined();
   });
 
-  // Never auto-ticked. An accepted task has no date and survives the daily reset
-  // until it is handed in, so a full count could belong to any past day; the live
-  // account shows a new target on offer beside a finished unclaimed one.
+  // Never auto-ticked. An accepted task has no date and survives the daily
+  // reset until it is handed in, so a full count could belong to any past day.
   it("reports the Simaris scan count without ever calling the daily done", () => {
     const offer = libraryTask("OrokinHealingAncient");
 
@@ -294,9 +293,8 @@ describe("autoTrackerState", () => {
   });
 
   it("never ticks a nightwave act from the season challenge history", () => {
-    // Live inventory carries 25 current-season history entries against 1,000
-    // season standing (one act). DE logs instantiated acts there, not
-    // completions, so a history hit must not read as done.
+    // DE logs instantiated acts in the history, not completions: 25 entries can
+    // sit against one act's worth of standing, so a hit must not read as done.
     const wd = world({
       nightwave: {
         activation: null,

@@ -607,8 +607,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
   }
 
   /** Show the surface and say so when nothing lands. The window behind it was
-   *  built offscreen, so there is no window to fall back to; a log line is what
-   *  turns "the overlay stopped working" into a diagnosable report. */
+   *  built offscreen, so there is nothing to fall back to and the log line is
+   *  the only evidence a blank overlay leaves. */
   function showLayerSurface(): void {
     logicalVisible = true;
     void layer?.show().then((up) => {
@@ -638,7 +638,7 @@ export function createOverlayWindowsController(options: OverlayWindowsController
 
   // X11 never hands input back after click-through: setIgnoreMouseEvents(false)
   // leaves the empty input shape, so the window must be rebuilt to take clicks.
-  // That stuck shape has not been seen on Wayland, and on tiling compositors
+  // Wayland keeps its input region settable, and on tiling compositors
   // click-through never takes effect at all - see ipc/overlay/keepMapped.ts.
   function needsRebuildForInteractive(): boolean {
     return platform === "linux" && clickThroughApplied && !isNativeWayland();

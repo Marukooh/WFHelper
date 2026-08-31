@@ -324,7 +324,7 @@ const FIXED_REWARD_LAYOUTS: Readonly<
 });
 
 // Ratios were measured on 16:9, so rescale the off axis about the centre: x on
-// wider frames (98e22b5, a real 21:9 report), y on taller ones (16:10, 4:3).
+// wider frames (21:9), y on taller ones (16:10, 4:3).
 const REFERENCE_ASPECT = 16 / 9;
 const REFERENCE_UI_SCALE = REFERENCE_WARFRAME_UI_SCALE;
 

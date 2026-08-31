@@ -120,8 +120,8 @@ describe("signed-in account profile slug", () => {
     expect(v1Paths()).toContain("/profile/alt-handle/auctions?limit=40");
   });
 
-  // Invented names in the shapes WFM mints, down to a numeric suffix that
-  // appears nowhere in the name. No local rule produces any of them.
+  // Names invented for the test, in the shapes WFM mints: no local rule
+  // derives any of them, least of all the numeric suffix.
   it.each([
     ["-Alt-Handle", "alt-handle"],
     ["Trade Partner", "trade-partner"],

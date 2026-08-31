@@ -121,9 +121,9 @@ function remainingPool(
 }
 
 /** Simaris daily scan task, reported as progress and never as done. The accepted
- *  task has no date and survives the reset until it is handed in, so finished
- *  yesterday and left unclaimed looks exactly like finished today; live inventory
- *  shows a new target on offer beside a finished one. Same call as nightwave. */
+ *  task carries no date and survives the reset until it is handed in, so a task
+ *  finished yesterday and left unclaimed is indistinguishable from one finished
+ *  today. Same call as nightwave. */
 function simarisTask(inv: RawInventoryData): AutoTask | null {
   const info = inv.LibraryActiveDailyTaskInfo;
   if (!info || typeof info !== "object") return null;
@@ -140,10 +140,9 @@ function simarisTask(inv: RawInventoryData): AutoTask | null {
   };
 }
 
-// SeasonChallengeHistory looks like a completion record but is not one: live
-// inventory carries 25 current-season entries against 1,000 season standing
-// (one act), with ChallengeProgress 0 on history-listed acts. DE logs
-// instantiated acts there, so it must never tick a checkbox; acts stay manual.
+// SeasonChallengeHistory logs instantiated acts, not completed ones: entries
+// appear with ChallengeProgress 0 and far outnumber what the season standing
+// accounts for. It must never tick a checkbox, so acts stay manual.
 function nightwaveTasks(inv: RawInventoryData, wd: WorldState, out: AutoState): void {
   const acts = wd.nightwave?.challenges ?? [];
   if (acts.length === 0) return;
@@ -177,8 +176,8 @@ function nightwaveTasks(inv: RawInventoryData, wd: WorldState, out: AutoState): 
   }
 }
 
-/** Season standing straight from the syndicate entry; the only number DE
- *  reports about Nightwave completion that live inventory confirms. */
+/** Season standing straight from the syndicate entry, the only Nightwave
+ *  completion number DE reports that can be trusted. */
 export function nightwaveSeasonStanding(
   inv: RawInventoryData | null,
   affiliationTag: string | undefined,

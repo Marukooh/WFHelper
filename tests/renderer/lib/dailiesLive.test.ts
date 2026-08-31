@@ -167,8 +167,8 @@ describe("trackerExpiries", () => {
   });
 
   it("alternates the coda batches across the 4-day boundary", () => {
-    // Wiki: batch A occupies the second half of the 8-day loop from 2025-03-18Z;
-    // rendered page confirmed batch A live on 2026-08-24.
+    // Batch A occupies the second half of the 8-day loop that starts
+    // 2025-03-18Z.
     expect(codaBatch(Date.parse("2026-08-24T12:00:00Z")).batch).toBe("A");
     expect(codaBatch(Date.parse("2026-08-23T12:00:00Z")).batch).toBe("B");
     expect(codaBatch(Date.parse("2026-08-28T12:00:00Z")).batch).toBe("B");

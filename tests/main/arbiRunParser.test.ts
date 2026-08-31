@@ -256,7 +256,7 @@ describe("arbi run stats", () => {
   });
 });
 
-// Lines below are verbatim from a real 2026-07-06 EE.log (aborted Oestrus arbi).
+// Verbatim EE.log lines for an aborted Oestrus arbitration.
 const REAL = {
   pendingElite:
     "158.074 Script [Info]: ThemedSquadOverlay.lua: Pending mission: SolNode167_EliteAlert",
@@ -271,7 +271,7 @@ const REAL = {
   abortConfirmed: "234.503 Script [Info]: TopMenu.lua: Abort: host/no session",
   eomCommit: "234.503 Sys [Info]: EOM missionLocationUnlocked=1",
   captureName: "255.746 Script [Info]: ThemedSquadOverlay.lua: Mission name: Isos (Eris)",
-  // From a real Mot survival arbi: EndOfMatch.lua initializes IN-mission, 11s in.
+  // EndOfMatch.lua initializes in-mission, about 11s in, so it cannot end a run.
   inMissionEndOfMatch: "432.123 Script [Info]: EndOfMatch.lua: Initialize",
   inMissionSucceeded: "432.123 Script [Info]: EndOfMatch.lua: Mission Succeeded",
   survivalReward: "735.449 Sys [Info]: Created /Lotus/Interface/SurvivalReward.swf",

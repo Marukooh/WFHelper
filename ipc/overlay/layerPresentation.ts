@@ -109,8 +109,8 @@ async function outputFromGameBounds(): Promise<string | null> {
   return hit?.name ?? null;
 }
 
-/** The compositor knows best, so it is asked first. Only three answer, and the
- *  rest used to land the overlay on whichever monitor the compositor preferred. */
+/** The compositor knows best, so it is asked first. Only niri, sway and Hyprland
+ *  answer; every other one falls through to matching the game's window rect. */
 async function resolveOutputForGame(): Promise<string | null> {
   const fromCompositor = await resolveGameOutput();
   if (fromCompositor) return fromCompositor;

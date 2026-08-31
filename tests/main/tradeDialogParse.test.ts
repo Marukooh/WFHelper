@@ -42,7 +42,7 @@ describe("_parseTradeDialog quantity handling", () => {
   });
 });
 
-// Corruption a real trade log carries: platform glyphs in both the live U+E000
+// Corruption a trade log can carry: platform glyphs in both the live U+E000
 // form and the DBWIN latin1 mojibake form.
 describe("_parseTradeDialog corruption hardening", () => {
   it("strips a trailing platform glyph (U+E000) from the partner name", () => {

@@ -380,7 +380,7 @@ export function createLayerSurface(options: LayerSurfaceOptions): LayerSurface |
     log.warn(`[LayerShell] compositor refused a surface on ${options.output ?? "any output"}`);
     return null;
   }
-  // An addon built before scaleOf existed reports nothing, which is 1x.
+  // An addon without scaleOf reports nothing, which means 1x.
   let scale = 1;
   try {
     const reported = addon.scaleOf?.(handle);

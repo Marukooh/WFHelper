@@ -552,8 +552,7 @@ describe("gradeRiven", () => {
   });
 
   it("grades shotgun stats against shotgun bases (Boar Critacan regression)", () => {
-    // AlecaFrame grades this real riven B/S/A-; it exercises shotgun bases and
-    // variant-disposition fitting together.
+    // Exercises shotgun bases and variant-disposition fitting together.
     const result = gradeRiven("Boar", [
       { name: "Multishot", positive: true, value: 199.3 },
       { name: "Critical Chance", positive: true, value: 163.6 },
@@ -775,7 +774,6 @@ describe("x-multiplier faction damage", () => {
   // 0.51 IS the displayed value. Scaling it to 51 counted the scale twice and
   // pinned every scanned faction roll to the end of its range.
   it("grades a real faction roll inside its range, not clamped", () => {
-    // A real Tatsu roll off a live card.
     const result = gradeRiven("Tatsu", [
       { name: "Status Duration", positive: true, value: 111.6 },
       { name: "Damage to Corpus", positive: true, value: 1.51, multiplier: true },
@@ -799,9 +797,9 @@ describe("x-multiplier faction damage", () => {
 });
 
 describe("unranked cards", () => {
-  // Three real chat-linked cards. An unranked mod shows one ninth of its max-rank
-  // values, and browse.wf puts all four Wolf Sledge rolls inside range at Level 0,
-  // so grading them at rank 8 scores every one an F.
+  // An unranked mod shows one ninth of its max-rank values, and browse.wf puts
+  // all four Wolf Sledge rolls inside range at Level 0, so grading them at rank
+  // 8 scores every one an F.
   const UNRANKED_WOLF_SLEDGE = [
     { name: "Range", positive: true, value: 0.2 },
     { name: "Critical Damage", positive: true, value: 12.3 },

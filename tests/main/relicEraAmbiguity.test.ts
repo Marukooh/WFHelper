@@ -6,8 +6,8 @@ import {
   detectRelicEraFromTileLabelText,
 } from "../../services/rewardScannerMatch";
 
-// Verbatim OCR preview from a real main.log. The player picked the Omnia
-// fissure, but two Requiem fissures are listed above it in the star chart.
+// Verbatim OCR preview of the star chart with the Omnia fissure picked and two
+// Requiem fissures listed above it, which is what makes the era ambiguous.
 const STAR_CHART_LIST =
   "Requiem Fissure Garus (Kuva Fortres: CIII 14m ASSAULT (160-17 Requiem Fissure Koro " +
   "(Kuva Fortress) C31m 27s VOID FLOOD (158. Omnia Fissure Everview Arc CI 4m 23s";

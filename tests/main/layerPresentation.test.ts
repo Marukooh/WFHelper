@@ -606,10 +606,10 @@ describe("createLayerPresentation", () => {
   });
 });
 
-// The compositor picks the monitor when asked for none, which is how overlays
-// ended up on the wrong screen for anyone not running niri, sway or Hyprland.
+// Asking for no output lets the compositor pick the monitor, so the overlay
+// can land on the wrong screen unless the game's output is named.
 describe("choosing the monitor the game is on", () => {
-  /** An ultrawide left of a 1080p, matching the reported DP-3 / DP-2 desk. */
+  /** An ultrawide left of a 1080p. */
   function twoMonitors() {
     deps.rects = [
       { name: "DP-3", x: 0, y: 0, width: 3440, height: 1440, scale: 1, placed: true },

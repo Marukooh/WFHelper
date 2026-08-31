@@ -324,8 +324,8 @@ function logStartupPaths(profileStage: ProfileStage): void {
   // Printed so a support request can name the exact file instead of guessing.
   log.info(`[Startup] logFile: ${getLogFilePath() || "unknown"}`);
   if (process.platform === "linux") {
-    // tiling decides whether overlays unmap or stay mapped, the first thing to
-    // check in a linux overlay report.
+    // Tiling decides whether overlays unmap or stay mapped, so the startup
+    // line carries it.
     log.info(
       `[Startup] display=${DISPLAY_BACKEND} gpu=${GPU_ACCELERATION_ENABLED ? "on" : "off"}` +
         ` tiling=${linuxDisplay.isTilingCompositor()}`,

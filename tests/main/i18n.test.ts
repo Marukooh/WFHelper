@@ -78,8 +78,8 @@ describe("i18n dictionaries", () => {
   });
 
   it.each(TRANSLATIONS)("has no %s key English does not define", (_name, dict) => {
-    // A JSON catalogue cannot be typechecked against MessageKey the way the old
-    // .ts one was, so a typo in a translated key would otherwise go unnoticed.
+    // A JSON catalogue is not typechecked against MessageKey, so a typo in a
+    // translated key would otherwise go unnoticed.
     const unknown = Object.keys(dict).filter((key) => !(key in en));
 
     expect(unknown).toEqual([]);

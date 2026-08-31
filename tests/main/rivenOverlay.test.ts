@@ -1082,8 +1082,8 @@ describe("parseRivenStats", () => {
   });
 
   it("strips the '(x2 for Bows)' qualifier instead of parsing a phantom stat", () => {
-    // Exact OCR lines from a real Boar Satidra scan: the qualifier wraps and
-    // clips to "(x2 fol" + "Bows)", and "fol" is close enough to fuzzy-match Cold.
+    // The qualifier wraps and clips to "(x2 fol" + "Bows)", and "fol" is close
+    // enough to fuzzy-match Cold.
     const text = [
       "Boar Satidra",
       "+211,9% Multishot",
@@ -1358,8 +1358,8 @@ describe("riven session reopen and close timing", () => {
 });
 
 describe("looksLikeStaleCardRead", () => {
-  // Current card from a real field log: the roll-reveal animation scrambles this
-  // text, so a too-early scan reads it back with 2+ values intact.
+  // The roll-reveal animation scrambles this text, so a too-early scan reads the
+  // current card back with 2+ values intact.
   const currentCard: RivenStat[] = [
     { name: "Damage to Infested", positive: true, value: 1.57, multiplier: true },
     { name: "Multishot", positive: true, value: 155.2 },

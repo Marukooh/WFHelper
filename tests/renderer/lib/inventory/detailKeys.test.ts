@@ -21,7 +21,7 @@ const DB: Record<string, ItemDbEntry> = {
   [FRAME]: { name: "Volt Prime", isPrime: true, tradable: true },
 };
 
-/** The set InventoryView feeds InventoryGrid, before the fix. */
+/** The key set built without per-part entries, which the rows below expose. */
 function detailKeysBefore(parsed: ParsedItem[]): Set<string> {
   return new Set(
     parsed.flatMap((entry) =>

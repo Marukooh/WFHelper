@@ -215,7 +215,7 @@ function ensureBuilt(): void {
       const nameLc = name.toLowerCase();
       const productCategory: string = w.productCategory || "";
       const existing = _weaponByNameLc.get(nameLc);
-      // Ties keep the later entry, so every other colliding name resolves as before.
+      // Ties keep the later entry, so a name collision resolves by insertion order.
       if (
         !existing ||
         weaponNameRank(productCategory) >= weaponNameRank(existing.productCategory)

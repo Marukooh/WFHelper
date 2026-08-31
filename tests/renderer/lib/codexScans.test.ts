@@ -221,8 +221,8 @@ describe("sortCodexRows", () => {
 });
 
 describe("codex entries whose scan lands on a world prop", () => {
-  // Real paths and counts from a player profile: the scan lands on the deco prop,
-  // so a row keyed only to the sculpture reads 0 while the in-game codex is complete.
+  // The scan lands on the deco prop, so a row keyed only to the sculpture reads
+  // 0 while the in-game codex is complete.
   it("credits an Ayatan sculpture scanned on its deco prop", () => {
     const rows = buildCodexRows([
       { type: "/Lotus/Objects/Gameplay/OroFusexADeco", count: 1 },
