@@ -922,7 +922,10 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       logicalVisible = false;
       pendingOverlayEvents.length = 0;
     });
-    attachBoundsPersistence(createdWindow);
+    // A layer surface's window is offscreen and only ever resized by us, so
+    // persisting those events would read our own paint as a user drag and
+    // rewrite the saved scale. Its spot is saved by the drag path instead.
+    if (!isLayerMode()) attachBoundsPersistence(createdWindow);
     // The window that just lost focus is the one the OS may have de-banded;
     // this closes the z-order poll's 2s rescue gap to one reassert delay.
     createdWindow.on("blur", () => {

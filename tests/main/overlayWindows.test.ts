@@ -293,6 +293,7 @@ function createPresentationProbe(options: {
   placeOnGameOutput?: (title: string) => Promise<boolean>;
   createPresentation?: (options: unknown) => unknown;
   windowStateKey?: OverlayWindowKey;
+  persistBoundsWhenPassive?: boolean;
   onWindowBoundsChanged?: (
     key: OverlayWindowKey,
     bounds: OverlaySavedWindowBounds,
@@ -389,6 +390,7 @@ function createPresentationProbe(options: {
     placeOnGameOutput: options.placeOnGameOutput,
     createPresentation: options.createPresentation as never,
     windowStateKey: options.windowStateKey,
+    persistBoundsWhenPassive: options.persistBoundsWhenPassive === true,
     onWindowBoundsChanged: options.onWindowBoundsChanged,
   });
 
@@ -1495,6 +1497,42 @@ describe("layer-shell presentation", () => {
     expect(presentation.applyGeometry).toHaveBeenCalledTimes(1);
     // The window behind a layer surface is offscreen, so moving it does nothing.
     expect(win.setPosition).not.toHaveBeenCalled();
+  });
+
+  it("never persists the offscreen window's own resizes in layer mode", () => {
+    const saves: OverlaySavedWindowBounds[] = [];
+    const probe = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      createPresentation: vi.fn(() => fakePresentation()),
+      windowStateKey: "reward",
+      persistBoundsWhenPassive: true,
+      onWindowBoundsChanged: (_key, bounds) => saves.push(bounds),
+    });
+
+    probe.controller.createOverlayWindow();
+    const win = probe.windows[0];
+
+    // The surface's scale is applied by resizing this window, so a persisted
+    // resize would read our own paint as a user drag and rewrite their scale.
+    expect(win.on.mock.calls.filter(([event]) => event === "resize")).toEqual([]);
+    expect(win.on.mock.calls.filter(([event]) => event === "move")).toEqual([]);
+    expect(saves).toEqual([]);
+  });
+
+  it("still persists resizes when there is no layer surface", () => {
+    const probe = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      createPresentation: () => null,
+      windowStateKey: "reward",
+      persistBoundsWhenPassive: true,
+      onWindowBoundsChanged: () => {},
+    });
+
+    probe.controller.createOverlayWindow();
+
+    expect(probe.windows[0].on.mock.calls.filter(([event]) => event === "resize")).toHaveLength(1);
   });
 
   it("is never built on XWayland or off linux", () => {
