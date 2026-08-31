@@ -611,12 +611,14 @@ void app.whenReady().then(async () => {
   }
 
   if (process.platform === "linux") {
-    // Diagnostic only for now. It is the one thing a bug report cannot tell us
-    // by inspection: whether this compositor offers the protocol at all.
+    // Connects to the compositor, so it is a real startup cost and gets a label.
+    // The answer also decides whether overlays present as layer surfaces at all.
+    const layerShellStart = Date.now();
     const layerShell = probeLayerShell();
     if (!layerShell) log.info("[LayerShell] addon not present in this build");
     else if (!layerShell.available) log.info("[LayerShell] compositor does not offer the protocol");
     else log.info(`[LayerShell] available, outputs: ${layerShell.outputs.join(", ") || "none"}`);
+    profileStage("layer-shell:probe", layerShellStart);
   }
 
   const sessionRestoreStart = Date.now();
