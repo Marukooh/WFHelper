@@ -1318,6 +1318,7 @@
   "dailies.autoHint": "Progress syncs from your inventory where possible. Tick the rest off manually.",
   "dailies.autoTracked": "Completed, synced from your inventory",
   "dailies.standingLeft": "{amount} standing left today",
+  "dailies.simarisScans": "{scans} of {required} scanned",
   "dailies.focusLeft": "{amount} Focus left today",
   "dailies.conquestScore": "Research score: {score}",
   "dailies.decrement": "Decrease progress",

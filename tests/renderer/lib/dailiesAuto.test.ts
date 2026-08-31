@@ -92,60 +92,52 @@ describe("autoTrackerState", () => {
     ).toBeUndefined();
   });
 
-  it("tracks the Simaris daily task from the active task record", () => {
+  // Never auto-ticked. An accepted task has no date and survives the daily reset
+  // until it is handed in, so a full count could belong to any past day; the live
+  // account shows a new target on offer beside a finished unclaimed one.
+  it("reports the Simaris scan count without ever calling the daily done", () => {
     const offer = libraryTask("OrokinHealingAncient");
 
-    const done = inv({
+    const full = inv({
       LibraryActiveDailyTaskInfo: libraryTask("OrokinHealingAncient", { Scans: 4 }),
       LibraryAvailableDailyTaskInfo: offer,
     });
-    expect(autoTrackerState(done, null, NOW, FRESH).simaris).toEqual({ count: 1 });
+    expect(autoTrackerState(full, null, NOW, FRESH).simaris).toEqual({
+      count: 0,
+      detail: { key: "dailies.simarisScans", params: { scans: "4", required: "4" } },
+    });
 
     const partial = inv({
       LibraryActiveDailyTaskInfo: libraryTask("OrokinHealingAncient", { Scans: 2 }),
       LibraryAvailableDailyTaskInfo: offer,
     });
-    expect(autoTrackerState(partial, null, NOW, FRESH).simaris).toEqual({ count: 0 });
-
-    const unaccepted = inv({
-      LibraryActiveDailyTaskInfo: libraryTask("OrokinHealingAncient"),
-      LibraryAvailableDailyTaskInfo: offer,
+    expect(autoTrackerState(partial, null, NOW, FRESH).simaris).toEqual({
+      count: 0,
+      detail: { key: "dailies.simarisScans", params: { scans: "2", required: "4" } },
     });
-    expect(autoTrackerState(unaccepted, null, NOW, FRESH).simaris).toEqual({ count: 0 });
   });
 
-  // An unclaimed task keeps its full scan count while the Sanctuary moves on to a
-  // new target. Nothing is left to scan, and the in-game widget still reads 4/4,
-  // so the offer is not evidence about the accepted task either way.
-  it("counts a finished target the Sanctuary no longer offers", () => {
+  it("keeps a finished target the Sanctuary no longer offers out of the done count", () => {
     const stale = inv({
       LibraryActiveDailyTaskInfo: libraryTask("OrokinBladeSawman", { Scans: 4 }),
       LibraryAvailableDailyTaskInfo: libraryTask("OrokinHealingAncient"),
     });
-    expect(autoTrackerState(stale, null, NOW, FRESH).simaris).toEqual({ count: 1 });
+    expect(autoTrackerState(stale, null, NOW, FRESH).simaris?.count).toBe(0);
   });
 
-  it("counts the accepted target while it is the one on offer", () => {
-    const accepted = inv({
-      LibraryActiveDailyTaskInfo: libraryTask("OrokinHealingAncient", { Scans: 4 }),
-      LibraryAvailableDailyTaskInfo: libraryTask("OrokinHealingAncient"),
+  it("caps the reported scans at the requirement", () => {
+    const over = inv({
+      LibraryActiveDailyTaskInfo: libraryTask("OrokinBladeSawman", { Scans: 9 }),
     });
-    expect(autoTrackerState(accepted, null, NOW, FRESH).simaris).toEqual({ count: 1 });
+    expect(autoTrackerState(over, null, NOW, FRESH).simaris?.detail?.params).toEqual({
+      scans: "4",
+      required: "4",
+    });
   });
 
-  it("counts a finished task with no offer record at all", () => {
-    const noOffer = inv({
-      LibraryActiveDailyTaskInfo: libraryTask("OrokinHealingAncient", { Scans: 4 }),
-    });
-    expect(autoTrackerState(noOffer, null, NOW, FRESH).simaris).toEqual({ count: 1 });
-  });
-
-  it("leaves the task open while the accepted scans are short", () => {
-    const short = inv({
-      LibraryActiveDailyTaskInfo: libraryTask("OrokinBladeSawman", { Scans: 3 }),
-      LibraryAvailableDailyTaskInfo: libraryTask("OrokinHealingAncient"),
-    });
-    expect(autoTrackerState(short, null, NOW, FRESH).simaris).toEqual({ count: 0 });
+  it("ignores a task record with no scan count", () => {
+    const noScans = inv({ LibraryActiveDailyTaskInfo: { ScansRequired: 4 } });
+    expect(autoTrackerState(noScans, null, NOW, FRESH).simaris).toBeUndefined();
   });
 
   it("derives standing and focus caps from the remaining pools", () => {

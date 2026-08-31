@@ -1300,6 +1300,7 @@
   "dailies.autoHint": "进度会尽可能从你的库存同步，其余请手动勾选。",
   "dailies.autoTracked": "已完成，来自库存同步",
   "dailies.standingLeft": "今日剩余 {amount} 声望",
+  "dailies.simarisScans": "已扫描 {scans}/{required}",
   "dailies.focusLeft": "今日剩余 {amount} 专精",
   "dailies.conquestScore": "研究分数：{score}",
   "dailies.decrement": "减少进度",

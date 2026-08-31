@@ -120,18 +120,24 @@ function remainingPool(
   return task;
 }
 
-/** Simaris daily scan task. Reports what the Sanctuary widget shows: an accepted
- *  task whose scans are full, whether or not it is today's offer. A finished task
- *  survives the reset until it is handed in, and while it does there is nothing
- *  left to scan, so matching it against the current offer only hides real progress. */
-function simarisDone(inv: RawInventoryData): boolean | null {
+/** Simaris daily scan task, reported as progress and never as done. The accepted
+ *  task has no date and survives the reset until it is handed in, so finished
+ *  yesterday and left unclaimed looks exactly like finished today; live inventory
+ *  shows a new target on offer beside a finished one. Same call as nightwave. */
+function simarisTask(inv: RawInventoryData): AutoTask | null {
   const info = inv.LibraryActiveDailyTaskInfo;
   if (!info || typeof info !== "object") return null;
   const scans = toFiniteNumber((info as { Scans?: unknown }).Scans);
   const required = toFiniteNumber((info as { ScansRequired?: unknown }).ScansRequired);
-  if (required === null || required <= 0) return null;
+  if (required === null || required <= 0 || scans === null || scans < 0) return null;
 
-  return scans !== null && scans >= required;
+  return {
+    count: 0,
+    detail: {
+      key: "dailies.simarisScans",
+      params: { scans: String(Math.min(scans, required)), required: String(required) },
+    },
+  };
 }
 
 // SeasonChallengeHistory looks like a completion record but is not one: live
@@ -218,8 +224,8 @@ export function autoTrackerState(
   // These three fields are point-in-time with no date of their own, so only the
   // file's mtime can place them in today's period; without it they say nothing.
   if (inventoryModifiedAt !== null && inventoryModifiedAt >= dayStartMs) {
-    const simaris = simarisDone(inv);
-    if (simaris !== null) out.simaris = { count: simaris ? 1 : 0 };
+    const simaris = simarisTask(inv);
+    if (simaris) out.simaris = simaris;
 
     const standing = remainingPool(inv, "DailyAffiliation", "dailies.standingLeft");
     if (standing) out.syndicateStanding = standing;

@@ -1301,6 +1301,7 @@
   "dailies.autoHint": "Fortschritt wird wo möglich aus deinem Inventar übernommen. Der Rest lässt sich manuell abhaken.",
   "dailies.autoTracked": "Erledigt, aus deinem Inventar übernommen",
   "dailies.standingLeft": "Heute noch {amount} Ansehen offen",
+  "dailies.simarisScans": "{scans} von {required} gescannt",
   "dailies.focusLeft": "Heute noch {amount} Fokus offen",
   "dailies.conquestScore": "Forschungspunkte: {score}",
   "dailies.decrement": "Fortschritt verringern",
