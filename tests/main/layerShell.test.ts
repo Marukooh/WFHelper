@@ -12,6 +12,7 @@ interface FakeAddon {
   destroy: ReturnType<typeof vi.fn>;
   isClosed: ReturnType<typeof vi.fn>;
   scaleOf: ReturnType<typeof vi.fn>;
+  sizeOf?: ReturnType<typeof vi.fn>;
   setInteractive: ReturnType<typeof vi.fn>;
   pollEvents: ReturnType<typeof vi.fn>;
 }
@@ -190,6 +191,24 @@ describe("createLayerSurface", () => {
     useAddon({ create: vi.fn(() => -1) });
 
     expect((await freshCreate())(surfaceOptions())).toBeNull();
+  });
+
+  it("measures frames against the size the compositor granted", async () => {
+    useAddon({ sizeOf: vi.fn(() => ({ width: 6, height: 3 })), scaleOf: vi.fn(() => 2) });
+
+    const surface = (await freshCreate())(surfaceOptions({ width: 4, height: 2 }));
+
+    expect(surface?.frameWidth).toBe(12);
+    expect(surface?.frameHeight).toBe(6);
+  });
+
+  it("keeps the requested size when the addon cannot report one", async () => {
+    useAddon({ sizeOf: vi.fn(() => null) });
+
+    const surface = (await freshCreate())(surfaceOptions({ width: 4, height: 2 }));
+
+    expect(surface?.frameWidth).toBe(4);
+    expect(surface?.frameHeight).toBe(2);
   });
 
   it.each([

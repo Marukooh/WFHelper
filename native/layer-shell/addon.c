@@ -1073,6 +1073,25 @@ static napi_value ScaleOf(napi_env env, napi_callback_info info) {
   return out;
 }
 
+// sizeOf(handle) -> {width, height} the compositor granted, or null. create()
+// answers with a handle alone, and the size it granted can differ from the ask.
+static napi_value SizeOf(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value argv[1];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+  napi_value out;
+  int32_t handle = -1;
+  if (argc >= 1 && init_ok) napi_get_value_int32(env, argv[0], &handle);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) {
+    napi_get_null(env, &out);
+    return out;
+  }
+  napi_create_object(env, &out);
+  set_event_field(env, out, "width", windows[handle].width);
+  set_event_field(env, out, "height", windows[handle].height);
+  return out;
+}
+
 // setMargin(handle, top, right, bottom, left) -> boolean. This is how a layer
 // surface is moved: the compositor owns the position, the client owns the
 // distance from the anchored edges, and the request is live-settable.
@@ -1154,6 +1173,7 @@ NAPI_MODULE_INIT() {
       {"destroy", NULL, Destroy, NULL, NULL, NULL, napi_default, NULL},
       {"isClosed", NULL, IsClosed, NULL, NULL, NULL, napi_default, NULL},
       {"scaleOf", NULL, ScaleOf, NULL, NULL, NULL, napi_default, NULL},
+      {"sizeOf", NULL, SizeOf, NULL, NULL, NULL, napi_default, NULL},
       {"setInteractive", NULL, SetInteractive, NULL, NULL, NULL, napi_default, NULL},
       {"pollEvents", NULL, PollEvents, NULL, NULL, NULL, napi_default, NULL},
       {"outputRects", NULL, OutputRects, NULL, NULL, NULL, napi_default, NULL},

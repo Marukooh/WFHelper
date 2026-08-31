@@ -27,6 +27,7 @@ interface LayerShellAddon {
   destroy(handle: number): void;
   isClosed(handle: number): boolean;
   scaleOf?(handle: number): number;
+  sizeOf?(handle: number): { width: number; height: number } | null;
   setInteractive?(handle: number, interactive: boolean): boolean;
   pollEvents?(): RawPointerEvent[];
   outputRects?(): LayerOutputRect[];
@@ -414,5 +415,15 @@ export function createLayerSurface(options: LayerSurfaceOptions): LayerSurface |
   } catch {
     scale = 1;
   }
-  return makeSurface(addon, handle, width, height, scale);
+  // The compositor has the last word on the size here too, and create() reports
+  // only the handle, so a granted size that differs would otherwise never be
+  // seen and every frame would be refused for its length.
+  let granted = { width, height };
+  try {
+    const reported = addon.sizeOf?.(handle);
+    if (reported && reported.width > 0 && reported.height > 0) granted = reported;
+  } catch {
+    granted = { width, height };
+  }
+  return makeSurface(addon, handle, granted.width, granted.height, scale);
 }
