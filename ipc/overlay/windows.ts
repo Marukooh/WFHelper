@@ -133,6 +133,25 @@ export function moveWindowBy(win: MovableWindow, dx: number, dy: number): void {
   win.setPosition(x + dx, y + dy, false);
 }
 
+// Controllers register the window they present as a layer surface, so the drag
+// IPC can move one without knowing which overlay it belongs to.
+const layerMovers = new Map<number, (dx: number, dy: number) => void>();
+
+/** Nudge an overlay by a drag delta. A layer surface has no window position to
+ *  write, so its controller rewrites the saved spot and re-anchors it instead. */
+export function moveOverlayWindowBy(
+  win: MovableWindow & { webContents?: { id: number } },
+  dx: number,
+  dy: number,
+): void {
+  const mover = win.webContents ? layerMovers.get(win.webContents.id) : undefined;
+  if (mover) {
+    mover(dx, dy);
+    return;
+  }
+  moveWindowBy(win, dx, dy);
+}
+
 export function createOverlayWindowBoundsChangeHandler(
   options: OverlaySettingsPersistenceOptions,
 ): (key: OverlayWindowKey, bounds: OverlaySavedWindowBounds, scale?: number) => void {
@@ -423,6 +442,22 @@ export function createOverlayWindowsController(options: OverlayWindowsController
       height: bounds.height,
       zoomFactor: bounds.zoomFactor,
     };
+  }
+
+  /** A drag has no window position to move in layer mode, so it rewrites the
+   *  saved spot and re-anchors the surface from it. Reading the bounds back
+   *  clamps them, so a drag past an edge cannot run away. */
+  function moveLayerOverlayBy(dx: number, dy: number): void {
+    if (!windowStateKey || !onWindowBoundsChanged) return;
+    const bounds = getOverlayBoundsForActiveDisplay(lastOverlayAnchorMeta);
+    const display = displayMatchingBounds(bounds) || getDisplayForOverlay(lastOverlayAnchorMeta);
+    const displayId = display ? String(display.id) : null;
+    onWindowBoundsChanged(windowStateKey, {
+      x: bounds.x + dx,
+      y: bounds.y + dy,
+      ...(displayId ? { displayId } : {}),
+    });
+    layer?.applyGeometry();
   }
 
   function positionOverlayWindow(
@@ -800,6 +835,11 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     layer?.hide();
     layer = nextLayer;
     layer?.attach(createdWindow, initialBounds.width, initialBounds.height);
+    if (nextLayer) {
+      const senderId = createdWindow.webContents.id;
+      layerMovers.set(senderId, moveLayerOverlayBy);
+      createdWindow.once("closed", () => layerMovers.delete(senderId));
+    }
 
     rendererReady = false;
     logicalVisible = false;
@@ -992,7 +1032,8 @@ export function createOverlayWindowsController(options: OverlayWindowsController
     // The zoom set while loadFile was still in flight is reset by the
     // navigation commit, so the first load re-applies it here. Only displays
     // with a base zoom other than 1 ever see the difference.
-    applyZoomForCurrentSize(targetWindow);
+    if (isLayerMode()) layer?.applyGeometry();
+    else applyZoomForCurrentSize(targetWindow);
     const pending = pendingOverlayEvents.splice(0);
     for (const event of pending) {
       targetWindow.webContents.send(event.channel, event.payload);

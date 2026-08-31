@@ -893,6 +893,39 @@ static napi_value ScaleOf(napi_env env, napi_callback_info info) {
   return out;
 }
 
+// setMargin(handle, top, right, bottom, left) -> boolean. This is how a layer
+// surface is moved: the compositor owns the position, the client owns the
+// distance from the anchored edges, and the request is live-settable.
+static napi_value SetMargin(napi_env env, napi_callback_info info) {
+  size_t argc = 5;
+  napi_value argv[5];
+  napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+
+  napi_value no, yes;
+  napi_get_boolean(env, false, &no);
+  napi_get_boolean(env, true, &yes);
+  if (argc < 5 || !init_ok) return no;
+
+  int32_t handle = -1;
+  napi_get_value_int32(env, argv[0], &handle);
+  if (handle < 0 || handle >= MAX_SURFACES || !windows[handle].used) return no;
+  struct layer_window *win = &windows[handle];
+  if (win->closed) return no;
+
+  int32_t top = 0, right = 0, bottom = 0, left = 0;
+  napi_get_value_int32(env, argv[1], &top);
+  napi_get_value_int32(env, argv[2], &right);
+  napi_get_value_int32(env, argv[3], &bottom);
+  napi_get_value_int32(env, argv[4], &left);
+
+  zwlr_layer_surface_v1_set_margin(win->layer, top, right, bottom, left);
+  // Layer state is double-buffered, so it only lands on a surface commit. No
+  // buffer is attached here; the currently shown one keeps its content.
+  wl_surface_commit(win->surface);
+  wl_display_flush(display);
+  return yes;
+}
+
 NAPI_MODULE_INIT() {
   napi_property_descriptor props[] = {
       {"available", NULL, Available, NULL, NULL, NULL, napi_default, NULL},
@@ -905,6 +938,7 @@ NAPI_MODULE_INIT() {
       {"setInteractive", NULL, SetInteractive, NULL, NULL, NULL, napi_default, NULL},
       {"pollEvents", NULL, PollEvents, NULL, NULL, NULL, napi_default, NULL},
       {"outputRects", NULL, OutputRects, NULL, NULL, NULL, napi_default, NULL},
+      {"setMargin", NULL, SetMargin, NULL, NULL, NULL, napi_default, NULL},
   };
   napi_define_properties(env, exports, sizeof(props) / sizeof(props[0]), props);
   return exports;

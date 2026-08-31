@@ -5,11 +5,13 @@ import { OVERLAY_CONTENT_VISIBLE } from "../../config/shared/ipcChannels";
 import {
   createOverlayWindowBoundsChangeHandler,
   createOverlayWindowsController,
+  moveOverlayWindowBy,
   moveWindowBy,
 } from "../../ipc/overlay/windows";
 import type {
   OverlaySavedWindowBounds,
   OverlaySettings,
+  OverlayWindowKey,
 } from "../../config/runtime/overlaySettings";
 
 function createController(overlaySettings: Record<string, unknown> = {}) {
@@ -290,6 +292,12 @@ function createPresentationProbe(options: {
   windowTitle?: string;
   placeOnGameOutput?: (title: string) => Promise<boolean>;
   createPresentation?: (options: unknown) => unknown;
+  windowStateKey?: OverlayWindowKey;
+  onWindowBoundsChanged?: (
+    key: OverlayWindowKey,
+    bounds: OverlaySavedWindowBounds,
+    scale?: number,
+  ) => void;
 }) {
   const display = {
     id: 1,
@@ -343,9 +351,11 @@ function createPresentationProbe(options: {
     setVisibleOnAllWorkspaces = vi.fn();
     setAlwaysOnTop = vi.fn();
     setBounds = vi.fn();
+    setPosition = vi.fn();
     setAspectRatio = vi.fn();
     getBounds = vi.fn(() => ({ x: 0, y: 0, width: 100, height: 100 }));
     on = vi.fn();
+    once = vi.fn();
     loadFile = vi.fn(() => Promise.resolve());
   }
 
@@ -378,6 +388,8 @@ function createPresentationProbe(options: {
     windowTitle: options.windowTitle,
     placeOnGameOutput: options.placeOnGameOutput,
     createPresentation: options.createPresentation as never,
+    windowStateKey: options.windowStateKey,
+    onWindowBoundsChanged: options.onWindowBoundsChanged,
   });
 
   const contentEvents = (win: FakePresentationWindow) =>
@@ -1350,6 +1362,7 @@ describe("layer-shell presentation", () => {
       hide: vi.fn(),
       isShowing: vi.fn(() => true),
       setInteractive: vi.fn(),
+      applyGeometry: vi.fn(),
     };
   }
 
@@ -1459,6 +1472,29 @@ describe("layer-shell presentation", () => {
     probe.controller.createOverlayWindow();
 
     expect(probe.presentation.setInteractive).toHaveBeenLastCalledWith(false);
+  });
+
+  it("drags a layer surface by rewriting the saved spot", () => {
+    const saves: OverlaySavedWindowBounds[] = [];
+    const presentation = fakePresentation();
+    const probe = createPresentationProbe({
+      platform: "linux",
+      nativeWayland: true,
+      createPresentation: vi.fn(() => presentation),
+      windowStateKey: "reward",
+      onWindowBoundsChanged: (_key, bounds) => saves.push(bounds),
+    });
+    probe.controller.createOverlayWindow();
+    presentation.applyGeometry.mockClear();
+    const win = probe.windows[0];
+
+    moveOverlayWindowBy(win as never, 40, -25);
+
+    // The centred default on a 1920x1080 display, moved by the delta.
+    expect(saves).toEqual([{ x: 510, y: 580, displayId: "1" }]);
+    expect(presentation.applyGeometry).toHaveBeenCalledTimes(1);
+    // The window behind a layer surface is offscreen, so moving it does nothing.
+    expect(win.setPosition).not.toHaveBeenCalled();
   });
 
   it("is never built on XWayland or off linux", () => {

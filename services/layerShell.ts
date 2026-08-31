@@ -30,6 +30,7 @@ interface LayerShellAddon {
   setInteractive?(handle: number, interactive: boolean): boolean;
   pollEvents?(): RawPointerEvent[];
   outputRects?(): LayerOutputRect[];
+  setMargin?(handle: number, top: number, right: number, bottom: number, left: number): boolean;
 }
 
 /** One monitor in the compositor's logical layout, which is the same space an
@@ -149,6 +150,9 @@ export interface LayerSurface {
   frameHeight: number;
   /** Accept pointer input, or let clicks fall through to the game. */
   setInteractive(interactive: boolean, onEvent?: EventSink): boolean;
+  /** Distance from each anchored edge, in logical pixels. A layer surface has no
+   *  position of its own, so this is the only way to move one. */
+  setMargin(top: number, right: number, bottom: number, left: number): boolean;
 }
 
 const ANCHOR_TOP = 1;
@@ -240,6 +244,15 @@ function makeSurface(
     scale,
     frameWidth,
     frameHeight,
+    setMargin(top: number, right: number, bottom: number, left: number): boolean {
+      if (destroyed) return false;
+      try {
+        return addon.setMargin?.(handle, top, right, bottom, left) === true;
+      } catch (err) {
+        warnOnce(`[LayerShell] setMargin failed: ${(err as Error)?.message}`);
+        return false;
+      }
+    },
     setInteractive(interactive: boolean, onEvent?: EventSink): boolean {
       if (destroyed) return false;
       let applied: boolean;

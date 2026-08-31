@@ -60,8 +60,8 @@ interface LayerPresentationOptions {
   log?: { info?: (...args: unknown[]) => void; warn?: (...args: unknown[]) => void };
   createSurface?: typeof createLayerSurface;
   resolveOutput?: () => Promise<string | null>;
-  /** Read on every show, so a spot saved by an earlier run is picked up. Absent
-   *  for overlays that take whatever the anchor gives them. */
+  /** Read on every show and on every applyGeometry, so a saved spot and a live
+   *  drag both land. Absent for overlays that take whatever the anchor gives. */
   resolveGeometry?: () => LayerGeometry | null;
   /** Distance to hold off the anchored edges when there is no geometry, so a
    *  corner overlay is not flush against the screen edge. */
@@ -114,6 +114,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
   // Page zoom the layout needs at the current size. 1 for a fixed-size overlay
   // like the trade toast, which never reports a geometry.
   let zoom = 1;
+  let currentOutput: string | null = null;
   let interactive = false;
   // Bumped on every hide so a slow output lookup cannot map a surface for a
   // show the user already dismissed.
@@ -278,6 +279,7 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
           height = geometry.height;
           zoom = geometry.zoomFactor;
         }
+        currentOutput = output;
         surface = createSurface({ output, width, height, ...placementFor(geometry, output) });
         if (!surface) {
           log?.warn?.(`[${label}] layer surface unavailable; using a window instead`);
@@ -309,6 +311,18 @@ export function createLayerPresentation(options: LayerPresentationOptions) {
 
     isShowing(): boolean {
       return surface !== null && !surface.isClosed();
+    },
+
+    /** Push the current spot to a surface that is already up, which is how a
+     *  drag moves one. A hidden overlay picks it up on its next show instead. */
+    applyGeometry(): void {
+      if (!surface || surface.isClosed()) return;
+      const geometry = resolveGeometry?.();
+      if (!geometry) return;
+      zoom = geometry.zoomFactor;
+      const margins = marginsFor(geometry, currentOutput);
+      surface.setMargin(margins.top, 0, 0, margins.left);
+      applyWindowSize(surface.scale);
     },
 
     /** Accept clicks, or let them fall through to the game. Sticky across shows,

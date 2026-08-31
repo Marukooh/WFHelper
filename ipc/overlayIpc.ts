@@ -9,7 +9,7 @@ import {
 import { overlayMessages, setOverlayLocale } from "./overlayI18n";
 import { disposeAppHotkeys, overlayHotkeyBackend } from "./hotkeyRegistry";
 import { createOverlaySettingsController } from "./overlay/settings";
-import { moveWindowBy } from "./overlay/windows";
+import { moveOverlayWindowBy } from "./overlay/windows";
 import { hideTradeNotification } from "./tradeNotificationIpc";
 import { writeFileAtomicSync } from "../services/atomicFile";
 import { userDataPath } from "../services/userDataPath";
@@ -345,7 +345,7 @@ function moveInteractiveOverlayWindow(sender: WebContents, rawDelta: unknown): v
   if (Math.abs(dx) > 1000 || Math.abs(dy) > 1000) return;
   if (dx === 0 && dy === 0) return;
 
-  moveWindowBy(win, dx, dy);
+  moveOverlayWindowBy(win, dx, dy);
 }
 
 function register(): void {

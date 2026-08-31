@@ -37,6 +37,7 @@ function fakeSurface(overrides: Partial<Record<string, unknown>> = {}) {
     frameWidth: 4,
     frameHeight: 1,
     setInteractive: vi.fn(),
+    setMargin: vi.fn(() => true),
     ...overrides,
   };
 }
@@ -318,6 +319,45 @@ describe("createLayerPresentation", () => {
       // Without the overlay scale in the zoom the layout renders at 1x inside a
       // viewport the scale already made larger.
       expect(window.webContents.setZoomFactor).toHaveBeenCalledWith(2.3);
+    });
+  });
+
+  describe("applyGeometry", () => {
+    function withGeometry(geometry: { x: number; y: number; width: number; height: number }) {
+      deps.rects = [
+        { name: "DP-1", x: 0, y: 0, width: 1920, height: 1080, scale: 1, placed: true },
+      ];
+      let current = { ...geometry, zoomFactor: 1 };
+      const built = build({ resolveGeometry: () => current });
+      return {
+        ...built,
+        move(next: Partial<typeof current>) {
+          current = { ...current, ...next };
+        },
+      };
+    }
+
+    it("moves a live surface to the spot a drag wrote", async () => {
+      const probe = withGeometry({ x: 100, y: 200, width: 980, height: 140 });
+      probe.presentation.attach(fakeWindow(), 980, 140);
+      await probe.presentation.show();
+
+      probe.move({ x: 140, y: 260 });
+      probe.presentation.applyGeometry();
+
+      expect(probe.surface.setMargin).toHaveBeenCalledWith(260, 0, 0, 140);
+    });
+
+    it("does nothing while the overlay is hidden", async () => {
+      const probe = withGeometry({ x: 0, y: 0, width: 980, height: 140 });
+      probe.presentation.attach(fakeWindow(), 980, 140);
+      await probe.presentation.show();
+      probe.presentation.hide();
+
+      probe.move({ x: 40 });
+      probe.presentation.applyGeometry();
+
+      expect(probe.surface.setMargin).not.toHaveBeenCalled();
     });
   });
 
