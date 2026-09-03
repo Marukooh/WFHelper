@@ -1,5 +1,6 @@
 ﻿import { describe, expect, it } from "vitest";
 
+import { setGameLocale } from "../../services/gameLocale";
 import * as parser from "../../services/worldStateParser";
 
 // parseRaw returns Record<string, unknown>; shape only what these tests read.
@@ -111,6 +112,59 @@ describe("worldStateParser.parseRaw", () => {
     expect(parsed.voidTrader?.location).toBe("Larunda Relay (Earth)");
     expect(parsed.vaultTrader?.location).toBe("Strata Relay (Mars)");
     expect(parsed.sortie?.expiry).toBeTruthy();
+  });
+
+  it("uses the Warframe mission data labels for fissures in title case", () => {
+    const now = Date.now();
+    const parsed = parseRaw({
+      ActiveMissions: [
+        {
+          Modifier: "VoidT1",
+          MissionType: "MT_CORRUPTION",
+          Node: "SolNode230",
+          Expiry: dateLong(now + 60_000),
+        },
+        {
+          Modifier: "VoidT2",
+          MissionType: "MT_PURIFY",
+          Node: "SolNode167",
+          Expiry: dateLong(now + 60_000),
+        },
+        {
+          Modifier: "VoidT3",
+          MissionType: "MT_ASSAULT",
+          Node: "SolNode741",
+          Expiry: dateLong(now + 60_000),
+        },
+      ],
+    });
+
+    expect(parsed.fissures.map((f) => f.missionType)).toEqual([
+      "Void Flood",
+      "Infested Salvage",
+      "Assault",
+    ]);
+  });
+
+  it("keeps fissure mission labels stable when the game locale changes", () => {
+    const now = Date.now();
+    setGameLocale("de");
+    try {
+      const parsed = parseRaw({
+        ActiveMissions: [
+          {
+            Modifier: "VoidT1",
+            MissionType: "MT_CORRUPTION",
+            Node: "SolNode230",
+            Expiry: dateLong(now + 60_000),
+          },
+        ],
+      });
+
+      expect(parsed.fissures[0].missionType).toBe("Void Flood");
+    } finally {
+      setGameLocale("en");
+    }
   });
 
   it("derives the real mission type for railjack void storms", () => {

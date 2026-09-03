@@ -360,22 +360,11 @@ function formatNodeLabel(nodeId: string): string {
 }
 
 function formatMissionTypeLabel(missionType: string, nodeId: string): string {
-  if (MISSION_TYPE[missionType]) {
-    return MISSION_TYPE[missionType];
-  }
-  const region = REGION_TRANSLATION.regions[nodeId];
-  const missionName = resolveDictValue(region?.missionName);
-  if (missionName) {
-    return missionName;
-  }
-  if (typeof missionType === "string" && missionType.startsWith("MT_")) {
-    return missionType
-      .replace(/^MT_/, "")
-      .toLowerCase()
-      .replace(/(^|\s|_)\w/g, (c) => c.toUpperCase())
-      .replace(/_/g, " ");
-  }
-  return missionType || "Unknown";
+  const fromExport = resolveDictValue(getMissionTypeLookup()[missionType]?.name);
+  if (fromExport) return titleCase(fromExport);
+  const fromNode = resolveDictValue(REGION_TRANSLATION.regions[nodeId]?.missionName);
+  if (fromNode) return titleCase(fromNode);
+  return MISSION_TYPE[missionType] || enumTailLabel(missionType, "MT_");
 }
 
 // Void storms omit MissionType, so resolve the node mission and normalize its dict label.

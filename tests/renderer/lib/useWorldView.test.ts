@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildFissureRows } from "../../../src/lib/world/useWorldView.js";
+import {
+  buildFissureRows,
+  fissureMissionTypeOptions,
+} from "../../../src/lib/world/useWorldView.js";
 import type { Fissure } from "../../../src/types/world.js";
 
 const NOW = Date.parse("2026-08-28T12:00:00.000Z");
@@ -73,5 +76,31 @@ describe("buildFissureRows in all mode", () => {
     ];
     expect(nodes(buildFissureRows(soon, "all", NOW, NOW))).toEqual(["Alive"]);
     expect(nodes(buildFissureRows(FISSURES, "all", NOW, NOW))).not.toContain("Meso Expired");
+  });
+});
+
+describe("fissureMissionTypeOptions", () => {
+  it("derives alert options from the active API fissures, including Railjack types", () => {
+    const fissures: Fissure[] = [
+      { missionType: "Void Flood" },
+      { missionType: "Alchemy" },
+      { missionType: "Assault" },
+      { missionType: "Infested Salvage" },
+      { missionType: "Skirmish", isStorm: true },
+      { missionType: "Orphix", isStorm: true },
+      { missionType: "Volatile", isStorm: true },
+      { missionType: "Void Flood" },
+      { missionType: "  " },
+    ];
+
+    expect(fissureMissionTypeOptions(fissures)).toEqual([
+      "Alchemy",
+      "Assault",
+      "Infested Salvage",
+      "Orphix",
+      "Skirmish",
+      "Void Flood",
+      "Volatile",
+    ]);
   });
 });

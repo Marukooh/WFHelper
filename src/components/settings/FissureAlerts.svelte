@@ -2,28 +2,13 @@
   import { overlaySettings, applyOverlaySettingsResponse } from "../../stores/overlaySettings.js";
   import { invoke } from "../../lib/ipc.js";
   import { tr, type MessageKey, type Translator } from "../../lib/i18n.js";
+  import { fissureMissionTypeOptions } from "../../lib/world/useWorldView.js";
+  import { worldData } from "../../stores/world.js";
   import type { FissureAlert } from "../../types/ipc.js";
   import ThemedButton from "../ThemedButton.svelte";
   import ThemedSelect from "../ThemedSelect.svelte";
 
   const TIERS = ["any", "Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"] as const;
-  const MISSION_TYPES = [
-    "any",
-    "Survival",
-    "Defense",
-    "Interception",
-    "Void Cascade",
-    "Mobile Defense",
-    "Capture",
-    "Exterminate",
-    "Spy",
-    "Excavation",
-    "Rescue",
-    "Sabotage",
-    "Disruption",
-    "Defection",
-    "Assassination",
-  ] as const;
   const STEEL_PATH_OPTIONS: ReadonlyArray<{
     value: "any" | "normal" | "steel";
     labelKey: MessageKey;
@@ -64,6 +49,7 @@
   let error = "";
 
   $: alerts = ($overlaySettings.fissureAlerts ?? []) as FissureAlert[];
+  $: missionTypes = fissureMissionTypeOptions($worldData?.fissures);
 
   async function persistAlerts(updated: FissureAlert[]): Promise<void> {
     saving = true;
@@ -153,8 +139,9 @@
       {/each}
     </ThemedSelect>
     <ThemedSelect bind:value={newMissionType} disabled={saving}>
-      {#each MISSION_TYPES as m}
-        <option value={m}>{m === "any" ? $tr("settings.fissureAnyMission") : m}</option>
+      <option value="any">{$tr("settings.fissureAnyMission")}</option>
+      {#each missionTypes as m}
+        <option value={m}>{m}</option>
       {/each}
     </ThemedSelect>
     <ThemedSelect bind:value={newSteelPath} disabled={saving}>

@@ -235,6 +235,12 @@ function fissureSourceMode(f: Fissure): Exclude<FissureMode, "all"> {
   return f.isHard === true ? "steel" : "normal";
 }
 
+export function fissureMissionTypeOptions(fissures: Fissure[] | undefined): string[] {
+  return [
+    ...new Set((fissures || []).map((f) => f.missionType?.trim()).filter(Boolean) as string[]),
+  ].sort((a, b) => a.localeCompare(b));
+}
+
 export function buildFissureRows(
   fissures: Fissure[] | undefined,
   mode: FissureMode,
