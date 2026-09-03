@@ -85,7 +85,11 @@ async function openSettings(page: Page, width: number, forcedColumn?: number): P
   // The masonry floor is 320px today; force it lower to exercise the degradation.
   await page.evaluate((column) => {
     for (const grid of Array.from(document.querySelectorAll<HTMLElement>(".settings-masonry"))) {
-      grid.style.columns = column ? `${column}px` : "";
+      // `column-width` is only a target: a multicol container redistributes its
+      // remaining width across columns. Pin a single column as well so this is
+      // genuinely the narrow-card case on every display size.
+      grid.style.columns = column ? "1" : "";
+      grid.style.width = column ? `${column}px` : "";
     }
   }, forcedColumn);
 }

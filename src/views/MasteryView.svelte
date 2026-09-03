@@ -472,7 +472,7 @@
 
     <!-- Stats overview -->
     <div class="grid gap-3 mb-3.5">
-      <div class="flex items-center gap-3.5" data-mastery-summary>
+      <div class="flex w-fit items-center gap-3.5" data-mastery-summary>
         <div class="shrink-0">
           <svg class="h-[120px] w-[120px]" viewBox="0 0 120 120">
             <circle

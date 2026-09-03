@@ -39,8 +39,14 @@ describeArbi("Arbitration schedule + post-run overlay", () => {
 
     // A pre-squad-parsing record plus its stored log: init must backfill players.
     const userData = path.join(appData, "wfhelper");
+    const helperDir = path.join(userData, "api-helper");
     const logsDir = path.join(userData, "arbi-logs");
+    fs.mkdirSync(helperDir, { recursive: true });
     fs.mkdirSync(logsDir, { recursive: true });
+    // Startup deliberately returns to setup when neither a game inventory nor
+    // helper inventory is available. Seed the same minimal fixture as the
+    // shared Electron harness so this schedule test exercises World, not setup.
+    fs.writeFileSync(path.join(helperDir, "inventory.json"), JSON.stringify({ Suits: [] }));
     const oldRunLog = [
       "100.000 Script [Info]: ThemedSquadOverlay.lua: Mission name: Arbitration: Casta Defense (Ceres)",
       "105.000 Game [Info]: HostPlayer loadout loader finished.",
@@ -89,8 +95,12 @@ describeArbi("Arbitration schedule + post-run overlay", () => {
     page = await mainWindow(app);
 
     // Fresh sandbox starts on the setup view; flag it done and reload.
+    // Wait for the renderer first: otherwise this writes to the provisional
+    // document while Electron is still navigating to the application bundle.
+    await expect(page.locator("#app")).toBeVisible({ timeout: 90_000 });
     await page.evaluate(() => {
       localStorage.setItem("setup-completed-v2", "1");
+      localStorage.setItem("feature-tour-done", "1");
       localStorage.setItem("app-language", "en");
     });
     await page.reload();

@@ -349,6 +349,7 @@ test.describe("Shared view layout", () => {
       const controlsRect = controls.getBoundingClientRect();
       return {
         rowFits: row.scrollWidth <= row.clientWidth,
+        horizontal: matchMedia("(min-width: 1800px)").matches,
         bottomDelta: Math.abs(tabsRect.bottom - controlsRect.bottom),
         maxControlHeight: Math.max(
           ...Array.from(controls.children, (child) => child.getBoundingClientRect().height),
@@ -356,7 +357,10 @@ test.describe("Shared view layout", () => {
       };
     });
     expect(layout.rowFits).toBe(true);
-    expect(layout.bottomDelta).toBeLessThanOrEqual(12);
+    // Native Electron windows cannot emulate beyond the physical display. At
+    // narrower widths this row intentionally wraps; only the desktop variant
+    // promises a shared baseline for tabs and controls.
+    if (layout.horizontal) expect(layout.bottomDelta).toBeLessThanOrEqual(12);
     expect(layout.maxControlHeight).toBeLessThanOrEqual(36);
 
     await (await relicOwnershipSelect(page)).selectOption("all");
